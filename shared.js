@@ -20,6 +20,10 @@ function shuffleArray(arr) {
   return a;
 }
 
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // ---- GameState ----
 const GameState = {
   xp: 0,
@@ -99,11 +103,9 @@ const GameState = {
   },
 
   isChapterUnlocked(ch) {
-    if (ch <= 1) return true;
-    const prevCh = ch - 1;
-    const prevLevels = prevCh === 4 ? 11 : 10;
-    const bossId = `${prevCh}.${prevLevels}`;
-    return this.isLevelCompleted(bossId);
+    const deps = CHAPTER_DEPS[ch] || [];
+    if (deps.length === 0) return true;
+    return deps.every((dep) => this.isLevelCompleted(`${dep.ch}.${dep.level}`));
   },
 
   getChapterProgress(ch) {
@@ -362,6 +364,669 @@ const Timer = {
     clearInterval(this.interval);
     this.interval = null;
   },
+};
+
+// ============================================================
+// VISUAL LEARNING COMPONENTS
+// ============================================================
+
+// ---- A. PipelineDiagram ----
+const PipelineDiagram = {
+  render(container, config) {
+    const { nodes, edges, animate = true } = config;
+    const nodeWidth = 130;
+    const nodeHeight = 64;
+    const gap = 40;
+    const padding = 20;
+    const totalWidth = nodes.length * (nodeWidth + gap) - gap + padding * 2;
+    const svgHeight = nodeHeight + padding * 2 + 20;
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${totalWidth} ${svgHeight}`);
+    svg.setAttribute("class", "pipeline-diagram");
+    svg.style.width = "100%";
+    svg.style.height = "auto";
+
+    const nodePositions = {};
+    nodes.forEach((node, i) => {
+      const x = padding + i * (nodeWidth + gap);
+      const y = padding + 10;
+      nodePositions[node.id] = { x: x + nodeWidth / 2, y: y + nodeHeight / 2 };
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "pipeline-node");
+
+      const rect = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect",
+      );
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", nodeWidth);
+      rect.setAttribute("height", nodeHeight);
+      rect.setAttribute("rx", "12");
+      rect.setAttribute("fill", "rgba(20,20,34,0.85)");
+      rect.setAttribute("stroke", "var(--accent)");
+      rect.setAttribute("stroke-width", "1");
+      g.appendChild(rect);
+
+      const icon = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+      icon.setAttribute("x", x + nodeWidth / 2);
+      icon.setAttribute("y", y + 24);
+      icon.setAttribute("text-anchor", "middle");
+      icon.setAttribute("font-size", "18");
+      icon.textContent = node.icon || "";
+      g.appendChild(icon);
+
+      const label = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+      label.setAttribute("x", x + nodeWidth / 2);
+      label.setAttribute("y", y + 48);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("class", "pipeline-node-label");
+      label.setAttribute("fill", "var(--text-primary)");
+      label.setAttribute("font-size", "11");
+      label.setAttribute("font-family", "var(--font-body)");
+      label.textContent = node.label;
+      g.appendChild(label);
+
+      if (node.dataPreview) {
+        const title = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "title",
+        );
+        title.textContent = node.dataPreview;
+        g.appendChild(title);
+      }
+
+      svg.appendChild(g);
+    });
+
+    edges.forEach(([fromId, toId]) => {
+      const from = nodePositions[fromId];
+      const to = nodePositions[toId];
+      if (!from || !to) return;
+
+      const line = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line",
+      );
+      line.setAttribute("x1", from.x + nodeWidth / 2 - 5);
+      line.setAttribute("y1", from.y);
+      line.setAttribute("x2", to.x - nodeWidth / 2 + 5);
+      line.setAttribute("y2", to.y);
+      line.setAttribute("class", "pipeline-edge");
+      line.setAttribute("stroke", "var(--accent)");
+      line.setAttribute("stroke-width", "2");
+      if (animate) {
+        line.style.strokeDasharray = "8 12";
+        line.style.animation = "flowPulse 1s linear infinite";
+      }
+      svg.insertBefore(line, svg.firstChild);
+    });
+
+    const wrapper = createElement("div", "pipeline-diagram-wrap");
+    wrapper.style.overflowX = "auto";
+    wrapper.appendChild(svg);
+    container.appendChild(wrapper);
+  },
+};
+
+// ---- B. AnnotatedCode ----
+const AnnotatedCode = {
+  PYTHON_KEYWORDS: new Set([
+    "from",
+    "import",
+    "def",
+    "class",
+    "return",
+    "if",
+    "else",
+    "elif",
+    "for",
+    "while",
+    "with",
+    "as",
+    "not",
+    "in",
+    "True",
+    "False",
+    "None",
+    "and",
+    "or",
+    "is",
+    "lambda",
+    "try",
+    "except",
+    "raise",
+    "yield",
+    "async",
+    "await",
+    "pass",
+    "break",
+    "continue",
+    "finally",
+    "del",
+    "global",
+    "nonlocal",
+    "assert",
+    "print",
+  ]),
+
+  highlightPython(code) {
+    // Escape HTML first
+    let escaped = escapeHtml(code);
+
+    // Comments (# ...)
+    escaped = escaped.replace(/(#.*)$/gm, '<span class="cmt">$1</span>');
+
+    // Triple-quoted strings
+    escaped = escaped.replace(
+      /("""[\s\S]*?"""|'''[\s\S]*?''')/g,
+      '<span class="str">$1</span>',
+    );
+
+    // Double and single quoted strings
+    escaped = escaped.replace(/(&quot;.*?&quot;|"[^"]*"|'[^']*')/g, (m) => {
+      if (m.includes('class="')) return m; // skip already-wrapped
+      return `<span class="str">${m}</span>`;
+    });
+
+    // Decorators
+    escaped = escaped.replace(/(@\w+)/g, '<span class="dec">$1</span>');
+
+    // Numbers
+    escaped = escaped.replace(
+      /\b(\d+\.?\d*)\b/g,
+      '<span class="num">$1</span>',
+    );
+
+    // Keywords
+    const kwPattern = new RegExp(
+      "\\b(" + Array.from(this.PYTHON_KEYWORDS).join("|") + ")\\b",
+      "g",
+    );
+    escaped = escaped.replace(kwPattern, (m) => {
+      return `<span class="kw">${m}</span>`;
+    });
+
+    // Function calls
+    escaped = escaped.replace(/\b(\w+)(\s*\()/g, (m, fn, paren) => {
+      if (this.PYTHON_KEYWORDS.has(fn)) return m;
+      return `<span class="fn">${fn}</span>${paren}`;
+    });
+
+    return escaped;
+  },
+
+  render(container, config) {
+    const { language = "python", title, code, annotations = [] } = config;
+    const lines = code.split("\n");
+
+    const wrapper = createElement("div", "code-block-container");
+
+    // Title bar
+    if (title) {
+      const titleBar = createElement("div", "code-block-title");
+      titleBar.innerHTML = `<span>${escapeHtml(title)}</span>`;
+      wrapper.appendChild(titleBar);
+    }
+
+    // Copy button
+    const copyBtn = createElement("button", "code-copy-btn", "Copy");
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(code).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.textContent = "Copy";
+        }, 1500);
+      });
+    });
+    wrapper.appendChild(copyBtn);
+
+    // Build annotation map: line number -> annotation index
+    const lineAnnotations = {};
+    annotations.forEach((ann, idx) => {
+      (ann.lines || []).forEach((ln) => {
+        if (!lineAnnotations[ln]) lineAnnotations[ln] = [];
+        lineAnnotations[ln].push(idx);
+      });
+    });
+
+    const codeEl = createElement("div", "code-block learn-code-block");
+    lines.forEach((line, i) => {
+      const lineNum = i + 1;
+      const isHighlighted = lineAnnotations[lineNum];
+      const highlighted =
+        language === "python" ? this.highlightPython(line) : escapeHtml(line);
+
+      const lineEl = createElement(
+        "div",
+        "code-line" + (isHighlighted ? " highlighted" : ""),
+      );
+      lineEl.innerHTML = `<span class="code-line-num">${lineNum}</span><span class="code-line-content">${highlighted}</span>`;
+
+      if (isHighlighted) {
+        lineAnnotations[lineNum].forEach((annIdx) => {
+          const marker = createElement("span", "code-annotation-marker");
+          marker.textContent = annIdx + 1;
+          marker.title = annotations[annIdx].text;
+          marker.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const existing = codeEl.querySelector(
+              `.code-annotation-body[data-ann="${annIdx}"]`,
+            );
+            if (existing) {
+              existing.remove();
+              return;
+            }
+            // Remove any other open annotations
+            codeEl
+              .querySelectorAll(".code-annotation-body")
+              .forEach((el) => el.remove());
+            const body = createElement("div", "code-annotation-body");
+            body.dataset.ann = annIdx;
+            body.textContent = annotations[annIdx].text;
+            lineEl.after(body);
+          });
+          lineEl.querySelector(".code-line-content").appendChild(marker);
+        });
+      }
+
+      codeEl.appendChild(lineEl);
+    });
+
+    wrapper.appendChild(codeEl);
+    container.appendChild(wrapper);
+  },
+};
+
+// ---- C. BeforeAfter ----
+const BeforeAfter = {
+  render(container, config) {
+    const { before, after } = config;
+    const wrapper = createElement("div", "comparison-container");
+
+    const tabs = createElement("div", "comparison-tabs");
+    const btnBefore = createElement(
+      "button",
+      "comparison-tab active",
+      before.label || "Before",
+    );
+    const btnAfter = createElement(
+      "button",
+      "comparison-tab",
+      after.label || "After",
+    );
+    tabs.appendChild(btnBefore);
+    tabs.appendChild(btnAfter);
+    wrapper.appendChild(tabs);
+
+    const contentArea = createElement("div", "comparison-content");
+    contentArea.innerHTML = before.content;
+    wrapper.appendChild(contentArea);
+
+    let showingBefore = true;
+    const toggle = (showBefore) => {
+      if (showBefore === showingBefore) return;
+      showingBefore = showBefore;
+      btnBefore.classList.toggle("active", showBefore);
+      btnAfter.classList.toggle("active", !showBefore);
+      contentArea.style.opacity = "0";
+      contentArea.style.transform = "translateY(6px)";
+      setTimeout(() => {
+        contentArea.innerHTML = showBefore ? before.content : after.content;
+        contentArea.style.opacity = "1";
+        contentArea.style.transform = "translateY(0)";
+      }, 150);
+    };
+
+    btnBefore.addEventListener("click", () => toggle(true));
+    btnAfter.addEventListener("click", () => toggle(false));
+
+    container.appendChild(wrapper);
+  },
+};
+
+// ---- D. StepReveal ----
+const StepReveal = {
+  render(container, config) {
+    const { steps } = config;
+    let current = 0;
+
+    const wrapper = createElement("div", "step-reveal-container");
+
+    const counter = createElement("div", "step-counter");
+    const contentArea = createElement("div", "step-content");
+    const nav = createElement("div", "step-nav");
+    const prevBtn = createElement("button", "btn btn-secondary btn-sm", "Prev");
+    const nextBtn = createElement("button", "btn btn-primary btn-sm", "Next");
+    const indicators = createElement("div", "step-indicator");
+
+    const render = () => {
+      counter.textContent = `Step ${current + 1} of ${steps.length}`;
+      contentArea.style.opacity = "0";
+      setTimeout(() => {
+        contentArea.innerHTML = `<h4>${steps[current].title}</h4><p>${steps[current].content}</p>`;
+        contentArea.style.opacity = "1";
+      }, 120);
+
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === steps.length - 1;
+
+      indicators.innerHTML = "";
+      steps.forEach((_, i) => {
+        const dot = createElement(
+          "span",
+          "step-dot" +
+            (i === current ? " active" : "") +
+            (i < current ? " done" : ""),
+        );
+        indicators.appendChild(dot);
+      });
+    };
+
+    prevBtn.addEventListener("click", () => {
+      if (current > 0) {
+        current--;
+        render();
+      }
+    });
+    nextBtn.addEventListener("click", () => {
+      if (current < steps.length - 1) {
+        current++;
+        render();
+      }
+    });
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(indicators);
+    nav.appendChild(nextBtn);
+
+    wrapper.appendChild(counter);
+    wrapper.appendChild(contentArea);
+    wrapper.appendChild(nav);
+
+    render();
+    container.appendChild(wrapper);
+  },
+};
+
+// ---- E. SliderPlayground ----
+const SliderPlayground = {
+  renderers: {
+    chunkPreview(previewEl, values, previewText) {
+      const chunkSize = values.chunk_size || 512;
+      const overlap = values.overlap || 10;
+      const overlapChars = Math.round(chunkSize * (overlap / 100));
+      const text = previewText || "Sample text for chunking preview...";
+      const chunks = [];
+      let pos = 0;
+      while (pos < text.length) {
+        const end = Math.min(pos + chunkSize, text.length);
+        chunks.push({ start: pos, end, text: text.slice(pos, end) });
+        pos = end - overlapChars;
+        if (pos >= text.length || overlapChars <= 0) break;
+      }
+      const colors = [
+        "rgba(59,130,246,0.15)",
+        "rgba(139,92,246,0.15)",
+        "rgba(16,185,129,0.15)",
+        "rgba(245,158,11,0.15)",
+      ];
+      previewEl.innerHTML =
+        `<div class="text-muted" style="font-size:0.75rem;margin-bottom:0.5rem;">${chunks.length} chunks, ~${chunkSize} chars each, ${overlap}% overlap (${overlapChars} chars)</div>` +
+        chunks
+          .map(
+            (c, i) =>
+              `<div style="background:${colors[i % colors.length]};padding:0.4rem 0.6rem;border-radius:6px;margin-bottom:0.25rem;font-size:0.8rem;font-family:var(--font-mono);border-left:3px solid ${colors[i % colors.length].replace("0.15", "0.6")}">
+            <span class="text-muted" style="font-size:0.65rem;">Chunk ${i + 1}</span><br>${escapeHtml(c.text.slice(0, 120))}${c.text.length > 120 ? "..." : ""}
+          </div>`,
+          )
+          .join("");
+    },
+
+    costCalculator(previewEl, values) {
+      const queries = values.queries_per_month || 100000;
+      const embeddingCost = ((queries * 500) / 1e6) * 0.02;
+      const vectorDbCost = queries < 100000 ? 0 : queries < 1000000 ? 25 : 70;
+      const rerankCost = queries * 0.005;
+      const llmCost = queries * 0.003;
+      const total = embeddingCost + vectorDbCost + rerankCost + llmCost;
+      previewEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">$${embeddingCost.toFixed(2)}</div><div class="gauge-label">Embedding</div></div>
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">$${vectorDbCost}</div><div class="gauge-label">Vector DB</div></div>
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">$${rerankCost.toFixed(2)}</div><div class="gauge-label">Re-ranking</div></div>
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">$${llmCost.toFixed(2)}</div><div class="gauge-label">LLM Inference</div></div>
+        </div>
+        <div style="text-align:center;margin-top:0.75rem;font-family:var(--font-mono);font-size:1.25rem;font-weight:700;color:var(--accent);">Total: $${total.toFixed(2)}/mo</div>`;
+    },
+
+    dimensionPreview(previewEl, values) {
+      const dims = values.dimensions || 1536;
+      const storagePerVec = dims * 4; // 4 bytes per float32
+      const vectors = 1000000;
+      const storageMB = (vectors * storagePerVec) / (1024 * 1024);
+      const quality =
+        dims >= 1024 ? 99 : dims >= 512 ? 98 : dims >= 256 ? 96 : 93;
+      previewEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">${dims}d</div><div class="gauge-label">Dimensions</div></div>
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;">${storageMB.toFixed(0)} MB</div><div class="gauge-label">Storage/1M vecs</div></div>
+          <div class="gauge-card"><div class="gauge-value" style="font-size:1rem;color:${quality >= 97 ? "var(--success)" : "var(--warning)"};">${quality}%</div><div class="gauge-label">Quality Retained</div></div>
+        </div>`;
+    },
+  },
+
+  render(container, config) {
+    const { title, sliders, previewText, render: renderFn } = config;
+    const values = {};
+    sliders.forEach((s) => {
+      values[s.name] = s.default;
+    });
+
+    const wrapper = createElement("div", "playground-container");
+
+    if (title) {
+      const titleEl = createElement("h4", "playground-title", title);
+      wrapper.appendChild(titleEl);
+    }
+
+    const slidersEl = createElement("div", "playground-sliders");
+    const previewEl = createElement("div", "playground-preview");
+
+    const updatePreview = () => {
+      const fn = this.renderers[renderFn];
+      if (fn) fn(previewEl, values, previewText);
+    };
+
+    sliders.forEach((s) => {
+      const group = createElement("div", "playground-slider-group");
+      group.innerHTML = `
+        <label><span>${s.label}</span><span class="mono" style="color:var(--accent);" id="pg-val-${s.name}">${s.default}${s.unit || ""}</span></label>
+        <input type="range" min="${s.min}" max="${s.max}" step="${s.step || 1}" value="${s.default}" data-name="${s.name}">
+      `;
+      group.querySelector("input").addEventListener("input", (e) => {
+        const v = parseFloat(e.target.value);
+        values[s.name] = v;
+        group.querySelector(`#pg-val-${s.name}`).textContent =
+          v + (s.unit || "");
+        updatePreview();
+      });
+      slidersEl.appendChild(group);
+    });
+
+    wrapper.appendChild(slidersEl);
+    wrapper.appendChild(previewEl);
+    updatePreview();
+    container.appendChild(wrapper);
+  },
+};
+
+// ============================================================
+// LEARN PANEL RENDERER
+// ============================================================
+
+const LearnPanel = {
+  parseMarkdown(text) {
+    let html = "";
+    const lines = text.split("\n");
+    let inList = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (trimmed === "") {
+        if (inList) {
+          html += "</ul>";
+          inList = false;
+        }
+        html += "<br>";
+        continue;
+      }
+
+      if (trimmed.startsWith("## ")) {
+        if (inList) {
+          html += "</ul>";
+          inList = false;
+        }
+        html += `<h3>${trimmed.slice(3)}</h3>`;
+        continue;
+      }
+
+      if (trimmed.startsWith("- ")) {
+        if (!inList) {
+          html += "<ul>";
+          inList = true;
+        }
+        html += `<li>${this.inlineFormat(trimmed.slice(2))}</li>`;
+        continue;
+      }
+
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+      html += `<p>${this.inlineFormat(trimmed)}</p>`;
+    }
+
+    if (inList) html += "</ul>";
+    return html;
+  },
+
+  inlineFormat(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>");
+  },
+
+  renderSection(container, section) {
+    const sectionEl = createElement("div", "learn-section");
+
+    switch (section.type) {
+      case "text":
+        const textEl = createElement("div", "learn-text");
+        textEl.innerHTML = this.parseMarkdown(section.content);
+        sectionEl.appendChild(textEl);
+        break;
+
+      case "diagram":
+        PipelineDiagram.render(sectionEl, section.config);
+        break;
+
+      case "code":
+        AnnotatedCode.render(sectionEl, section);
+        break;
+
+      case "comparison":
+        BeforeAfter.render(sectionEl, section);
+        break;
+
+      case "steps":
+        StepReveal.render(sectionEl, section);
+        break;
+
+      case "playground":
+        SliderPlayground.render(sectionEl, section);
+        break;
+    }
+
+    container.appendChild(sectionEl);
+  },
+
+  render(container, learnContent, onChallengeClick) {
+    container.innerHTML = "";
+
+    // Tab bar
+    const tabBar = createElement("div", "learn-challenge-tabs");
+    const learnTab = createElement("button", "lc-tab active", "Learn");
+    const challengeTab = createElement("button", "lc-tab", "Challenge");
+    tabBar.appendChild(learnTab);
+    tabBar.appendChild(challengeTab);
+    container.appendChild(tabBar);
+
+    // Learn panel content
+    const learnPanel = createElement("div", "learn-panel");
+    learnContent.forEach((section) => this.renderSection(learnPanel, section));
+    container.appendChild(learnPanel);
+
+    // Challenge area (lazy loaded)
+    const challengeArea = createElement("div", "challenge-area hidden");
+    container.appendChild(challengeArea);
+
+    // Skip button
+    const skipBtn = createElement(
+      "button",
+      "skip-to-challenge",
+      "Skip to Challenge →",
+    );
+    container.appendChild(skipBtn);
+
+    let challengeLoaded = false;
+
+    const showChallenge = () => {
+      learnTab.classList.remove("active");
+      challengeTab.classList.add("active");
+      learnPanel.classList.add("hidden");
+      challengeArea.classList.remove("hidden");
+      skipBtn.classList.add("hidden");
+      if (!challengeLoaded) {
+        challengeLoaded = true;
+        onChallengeClick(challengeArea);
+      }
+    };
+
+    const showLearn = () => {
+      challengeTab.classList.remove("active");
+      learnTab.classList.add("active");
+      challengeArea.classList.add("hidden");
+      learnPanel.classList.remove("hidden");
+      skipBtn.classList.remove("hidden");
+    };
+
+    learnTab.addEventListener("click", showLearn);
+    challengeTab.addEventListener("click", showChallenge);
+    skipBtn.addEventListener("click", showChallenge);
+  },
+};
+
+// ============================================================
+// CHAPTER DEPENDENCY MAP
+// ============================================================
+
+const CHAPTER_DEPS = {
+  1: [],
+  2: [{ ch: 1, level: 5 }],
+  3: [{ ch: 1, level: 5 }],
+  4: [{ ch: 1, level: 10 }],
+  5: [],
+  6: [],
 };
 
 // ============================================================
@@ -741,10 +1406,6 @@ class CodeDebugger {
   }
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 // ---- Pipeline Builder ----
 class PipelineBuilder {
   init(container, config) {
@@ -992,6 +1653,24 @@ const LevelRunner = {
     `;
     container.appendChild(header);
 
+    // If learnContent exists, show Learn/Challenge tabs
+    if (levelConfig.learnContent && levelConfig.learnContent.length > 0) {
+      const lcWrapper = createElement("div", "learn-challenge-wrapper");
+      container.appendChild(lcWrapper);
+
+      return new Promise((resolve) => {
+        LearnPanel.render(
+          lcWrapper,
+          levelConfig.learnContent,
+          (challengeArea) => {
+            // When challenge tab is clicked, load the game
+            this._runGame(challengeArea, levelConfig, resolve);
+          },
+        );
+      });
+    }
+
+    // No learnContent — original behavior
     // Typewriter context
     if (levelConfig.context) {
       const tw = createElement("div", "typewriter-container");
@@ -1104,6 +1783,105 @@ const LevelRunner = {
       if (GameClass) new GameClass().init(gameArea, gameConfig);
     });
   },
+
+  _runGame(gameArea, levelConfig, resolve) {
+    // Context
+    if (levelConfig.context) {
+      const tw = createElement("div", "typewriter-container");
+      tw.textContent = levelConfig.context;
+      gameArea.appendChild(tw);
+    }
+
+    const gameEl = createElement("div", "game-area");
+    gameArea.appendChild(gameEl);
+
+    const container = gameArea.closest(".game-panel") || gameArea;
+
+    const baseXP = {
+      ArchitectureBattle: 110,
+      SpeedQuiz: 100,
+      ConceptMatcher: 80,
+      ParameterTuner: 120,
+      CodeDebugger: 130,
+      PipelineBuilder: 150,
+      DiagnosisLab: 140,
+      CostOptimizer: 120,
+    };
+
+    const gameConfig = {
+      ...levelConfig.gameConfig,
+      onComplete: (result) => {
+        const base = baseXP[levelConfig.gameType] || 100;
+        const earned = GameState.addXP(
+          Math.round(base * (result.score / Math.max(1, result.total))),
+        );
+        if (result.score === result.total) {
+          GameState.incrementCombo();
+          if (GameState.combo > 1) SoundFX.play("comboUp");
+        } else {
+          GameState.resetCombo();
+        }
+        if (result.passed) GameState.completeLevel(levelConfig.id);
+        GameState.save();
+        HUD.refresh();
+
+        if (result.passed && Particles.canvas) {
+          const rect = container.getBoundingClientRect();
+          const accentColors = {
+            1: "#3b82f6",
+            2: "#8b5cf6",
+            3: "#10b981",
+            4: "#f59e0b",
+            5: "#ef4444",
+            6: "#ec4899",
+          };
+          const ch = parseInt(levelConfig.id);
+          Particles.burst(
+            rect.left + rect.width / 2,
+            rect.top + 100,
+            accentColors[ch] || "#3b82f6",
+          );
+        }
+
+        const resultDiv = createElement("div", "result-summary");
+        resultDiv.innerHTML = `
+          <div class="result-score">${result.score}/${result.total}</div>
+          <div class="result-label">${result.passed ? "Level Complete!" : "Keep Practicing"}</div>
+          <div class="result-xp">+${earned} XP${GameState.combo > 1 ? ` (${GameState.combo}x combo!)` : ""}</div>
+          ${levelConfig.keyInsight ? `<div class="key-insight" style="text-align:left;"><strong>Key Insight</strong><p>${levelConfig.keyInsight}</p></div>` : ""}
+          <div style="margin-top:1.5rem;display:flex;gap:0.75rem;justify-content:center;">
+            <button class="btn btn-secondary" id="lr-hub">Back to Hub</button>
+            <button class="btn btn-primary" id="lr-next">${result.passed ? "Next Level →" : "Retry"}</button>
+          </div>
+        `;
+        gameArea.appendChild(resultDiv);
+
+        gameArea.querySelector("#lr-hub")?.addEventListener("click", () => {
+          window.location.href = "index.html";
+        });
+        gameArea.querySelector("#lr-next")?.addEventListener("click", () => {
+          resolve({
+            ...result,
+            xp: earned,
+            action: result.passed ? "next" : "retry",
+          });
+        });
+      },
+    };
+
+    const GameClasses = {
+      ArchitectureBattle,
+      SpeedQuiz,
+      ConceptMatcher,
+      ParameterTuner,
+      CodeDebugger,
+      PipelineBuilder,
+      DiagnosisLab,
+      CostOptimizer,
+    };
+    const GameClass = GameClasses[levelConfig.gameType];
+    if (GameClass) new GameClass().init(gameEl, gameConfig);
+  },
 };
 
 // ============================================================
@@ -1170,11 +1948,22 @@ const Hub = {
         "chapter-card" + (unlocked ? "" : " locked"),
       );
       card.dataset.ch = ch.id;
+      // Build dependency info for locked chapters
+      let lockInfo = "";
+      if (!unlocked) {
+        const deps = CHAPTER_DEPS[ch.id] || [];
+        if (deps.length > 0) {
+          const depTexts = deps.map((d) => `Chapter ${d.ch}, Level ${d.level}`);
+          lockInfo = `<div class="card-lock-info">Complete ${depTexts.join(" and ")} to unlock</div>`;
+        }
+      }
+
       card.innerHTML = `
         ${!unlocked ? '<div class="card-lock-icon">🔒</div>' : ""}
         <div class="card-chapter-num">Chapter ${ch.id}</div>
         <div class="card-title">${ch.title}</div>
         <div class="card-subtitle">${ch.subtitle}</div>
+        ${lockInfo}
         <div class="card-meta">
           <span>${completed}/${ch.levels} levels</span>
           <span>${progress}%</span>

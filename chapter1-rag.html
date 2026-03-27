@@ -46,6 +46,141 @@
           subtitle: "RAG vs Fine-tuning — know when to use each",
           context:
             "LLMs hallucinate because they rely on training data frozen at a point in time. RAG externalizes knowledge into a retrievable index — updates in minutes, provides citations, and is fully auditable. Fine-tuning changes model weights and is best for teaching style or classification. Knowing which to reach for is the first skill of a production AI engineer.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## What is Retrieval-Augmented Generation?
+
+Large Language Models are powerful, but they have a fundamental flaw: **hallucination**. They generate plausible-sounding answers that are factually wrong because their knowledge is frozen at training time. If your company's product documentation changed last week, the LLM has no way to know.
+
+RAG solves this by adding a retrieval step before generation. Instead of relying solely on the model's memory, RAG **fetches relevant documents** from an external knowledge base and feeds them to the LLM as context. The model then generates answers grounded in real, up-to-date data — with citations pointing back to the source.
+
+The key insight: RAG separates **what the model knows** (general language ability) from **what it can access** (your specific documents). You update the knowledge base, not the model. This means updates happen in minutes, not days of retraining.
+
+When to use RAG vs Fine-tuning is the first decision every AI engineer makes. RAG excels at dynamic knowledge, factual lookups, and citation-heavy workflows. Fine-tuning excels at teaching the model a new style, tone, or classification scheme. The production sweet spot is often both: a fine-tuned small model sitting behind a RAG pipeline.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  {
+                    id: "query",
+                    label: "User Query",
+                    icon: "💬",
+                    dataPreview:
+                      "What is our refund policy for enterprise plans?",
+                  },
+                  {
+                    id: "embed",
+                    label: "Embed Query",
+                    icon: "🔢",
+                    dataPreview: "[0.023, -0.41, 0.87, ...] (768 dimensions)",
+                  },
+                  {
+                    id: "search",
+                    label: "Vector Search",
+                    icon: "🔍",
+                    dataPreview:
+                      "Top-5 chunks from 50K documents, scored by cosine similarity",
+                  },
+                  {
+                    id: "context",
+                    label: "Top-K Chunks",
+                    icon: "📋",
+                    dataPreview:
+                      "3 relevant chunks about refund policy, each ~512 tokens",
+                  },
+                  {
+                    id: "llm",
+                    label: "LLM + Context",
+                    icon: "🤖",
+                    dataPreview:
+                      "System prompt + retrieved chunks + user question",
+                  },
+                  {
+                    id: "response",
+                    label: "Cited Response",
+                    icon: "✅",
+                    dataPreview:
+                      "Answer with [Source: refund-policy.pdf, page 3]",
+                  },
+                ],
+                edges: [
+                  ["query", "embed"],
+                  ["embed", "search"],
+                  ["search", "context"],
+                  ["context", "llm"],
+                  ["llm", "response"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "Minimal RAG Pipeline (LangChain)",
+              code: `from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import PGVector
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain.chains import RetrievalQA
+
+# 1. Split documents into chunks
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=64,   # ~12% overlap
+    separators=["\\n\\n", "\\n", ". ", " "]
+)
+chunks = splitter.split_documents(documents)
+
+# 2. Embed and store in pgvector
+vectorstore = PGVector.from_documents(
+    chunks,
+    embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
+    connection_string=DATABASE_URL
+)
+
+# 3. Build RAG chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(model="gpt-4o-mini", temperature=0),
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
+    return_source_documents=True  # citations!
+)
+
+# 4. Query with automatic retrieval + citation
+result = qa_chain.invoke("What is our refund policy?")
+print(result["result"])
+print(result["source_documents"])`,
+              annotations: [
+                {
+                  lines: [7, 8, 9],
+                  text: "Recursive splitting tries paragraph breaks first, then sentences, then words. 512 tokens is the proven production default (FloTorch 2026).",
+                },
+                {
+                  lines: [14, 15, 16],
+                  text: "pgvector stores vectors directly in PostgreSQL. No separate vector DB needed if you already run Postgres.",
+                },
+                {
+                  lines: [21, 22, 23],
+                  text: "temperature=0 ensures deterministic, faithful answers. Higher temperature increases creativity but also hallucination risk.",
+                },
+                {
+                  lines: [25],
+                  text: "return_source_documents=True is what gives you citations. Without it, you cannot prove where the answer came from.",
+                },
+              ],
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "RAG",
+                content: `<table style="width:100%;font-size:0.85rem;border-collapse:collapse;"><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Update Speed</td><td style="padding:0.4rem;">Minutes (re-index docs)</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Cost</td><td style="padding:0.4rem;">Ongoing per-query (embedding + LLM)</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Citations</td><td style="padding:0.4rem;">Native — answers trace to source docs</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Style Control</td><td style="padding:0.4rem;">Limited — system prompt only</td></tr><tr><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Data Privacy</td><td style="padding:0.4rem;">Data stays in your infra (vector DB)</td></tr></table>`,
+              },
+              after: {
+                label: "Fine-Tuning",
+                content: `<table style="width:100%;font-size:0.85rem;border-collapse:collapse;"><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Update Speed</td><td style="padding:0.4rem;">Hours/days (retrain model)</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Cost</td><td style="padding:0.4rem;">One-time training + cheap inference</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Citations</td><td style="padding:0.4rem;">None — model generates from memory</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Style Control</td><td style="padding:0.4rem;">Excellent — tone baked into weights</td></tr><tr><td style="padding:0.4rem;color:var(--accent);font-weight:600;">Data Privacy</td><td style="padding:0.4rem;">Data baked into model (can leak)</td></tr></table>`,
+              },
+            },
+          ],
           gameType: "SpeedQuiz",
           gameConfig: {
             timePerQuestion: 35,
@@ -140,6 +275,92 @@
           subtitle: "Build the correct enterprise document processing pipeline",
           context:
             "Chunking quality constrains RAG accuracy MORE than embedding model choice. FloTorch 2026 benchmark: recursive 512-token chunks achieved 69% accuracy vs semantic chunking at just 54%. Semantic chunking sounds smart but collapses to tiny fragments on dense technical prose, destroying retrieval precision. The order of your pipeline matters — parse before split, tag before store.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## Why Chunking Matters More Than Your Embedding Model
+
+The biggest surprise in production RAG: **chunk quality matters more than embedding model choice**. The FloTorch 2026 benchmark proved it — recursive character splitting at 512 tokens achieved 69% retrieval accuracy, while semantic chunking managed only 54%.
+
+Why does semantic chunking underperform? On dense technical prose, semantic boundaries are ambiguous. The splitter creates tiny fragments (50-100 tokens) that lose context, or huge chunks that dilute relevance.
+
+- **Parse before split**: Raw HTML tags and PDF artifacts corrupt chunk content
+- **Split before tag**: Metadata is attached per-chunk, not per-document
+- **Tag before store**: Without metadata, you cannot filter at query time
+- **Overlap prevents lost context**: 10-15% overlap keeps boundary sentences in both adjacent chunks`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "doc", label: "Document", icon: "📄" },
+                  { id: "parse", label: "Parser", icon: "🔧" },
+                  { id: "split", label: "Recursive Splitter", icon: "✂️" },
+                  { id: "overlap", label: "Overlap Handler", icon: "🔗" },
+                  { id: "tag", label: "Metadata Tagger", icon: "🏷️" },
+                  { id: "store", label: "Vector Store", icon: "🗄️" },
+                ],
+                edges: [
+                  ["doc", "parse"],
+                  ["parse", "split"],
+                  ["split", "overlap"],
+                  ["overlap", "tag"],
+                  ["tag", "store"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "RecursiveCharacterTextSplitter",
+              code: `from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=64,
+    separators=["\\n\\n", "\\n", ". ", " ", ""]
+)
+chunks = splitter.split_documents(documents)`,
+              annotations: [
+                {
+                  lines: [4, 5],
+                  text: "512 tokens with 12% overlap (64 tokens) is the FloTorch 2026 proven default.",
+                },
+                {
+                  lines: [6],
+                  text: "Tries paragraph breaks first, then line breaks, then sentences, then words.",
+                },
+              ],
+            },
+            {
+              type: "playground",
+              title: "Chunk Size Explorer",
+              sliders: [
+                {
+                  name: "chunk_size",
+                  label: "Chunk Size (chars)",
+                  min: 128,
+                  max: 2048,
+                  default: 512,
+                  step: 64,
+                  unit: " chars",
+                },
+                {
+                  name: "overlap",
+                  label: "Overlap",
+                  min: 0,
+                  max: 30,
+                  default: 12,
+                  step: 1,
+                  unit: "%",
+                },
+              ],
+              previewText:
+                "Retrieval-Augmented Generation (RAG) is a technique that combines information retrieval with language model generation. The key idea is to retrieve relevant documents from a knowledge base and provide them as context to the LLM. This grounds the model's responses in factual information, reducing hallucinations. The pipeline involves several stages: document ingestion, chunking, embedding, indexing, retrieval, and generation. Each stage has its own optimization opportunities and failure modes. Chunk size is particularly critical because it determines how much context each vector represents.",
+              render: "chunkPreview",
+            },
+          ],
           gameType: "PipelineBuilder",
           gameConfig: {
             description:
@@ -174,6 +395,83 @@
             "Hit the cost target with the right model + quantization combo",
           context:
             "Open-source embedding models now rival proprietary ones. Qwen3-Embedding and NV-Embed-v2 top MTEB 2026. Matryoshka Representation Learning (MRL) trains embeddings so the first N dimensions retain semantic meaning — enabling truncation from 1536 to 256 dimensions with 98% quality retention at 75% less storage. At scale, model choice is a cost engineering problem.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## How Embeddings Capture Meaning
+
+Embeddings convert text into **high-dimensional vectors** (arrays of numbers) where similar meanings cluster together in vector space. The sentence "How do I return a product?" and "What is the refund process?" produce vectors that are close together, even though they share few words.
+
+**Matryoshka Representation Learning (MRL)** is a game-changing technique: the model is trained so that the first N dimensions of the vector retain semantic meaning when truncated. You can shrink a 1536-dim vector to 256 dims and keep 98% of the quality — at 75% less storage cost. Models like \`text-embedding-3-small\` natively support MRL truncation.
+
+At scale, embedding model choice is a **cost engineering problem**. Open-source models (Qwen3-Embedding, NV-Embed-v2) now rival proprietary ones on MTEB benchmarks. Self-hosting on a single GPU costs ~$20/month vs $0.02-0.13/MTok for API calls.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "text", label: "Input Text", icon: "📝" },
+                  { id: "tok", label: "Tokenizer", icon: "🔤" },
+                  { id: "enc", label: "Transformer", icon: "⚡" },
+                  { id: "vec", label: "Dense Vector", icon: "🔢" },
+                  { id: "sim", label: "Cosine Search", icon: "🎯" },
+                ],
+                edges: [
+                  ["text", "tok"],
+                  ["tok", "enc"],
+                  ["enc", "vec"],
+                  ["vec", "sim"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "Embedding + Cosine Similarity",
+              code: `from openai import OpenAI
+import numpy as np
+
+client = OpenAI()
+
+def get_embedding(text, model="text-embedding-3-small", dims=256):
+    response = client.embeddings.create(
+        input=text,
+        model=model,
+        dimensions=dims  # MRL truncation
+    )
+    return response.data[0].embedding
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Compare semantic similarity
+q = get_embedding("How do I return a product?")
+d = get_embedding("Our refund policy allows returns within 30 days.")
+print(f"Similarity: {cosine_similarity(q, d):.3f}")  # ~0.82`,
+              annotations: [
+                {
+                  lines: [10],
+                  text: "MRL truncation: 256 dims retains 98% quality at 75% less storage. Only works with MRL-trained models.",
+                },
+                {
+                  lines: [14],
+                  text: "Cosine similarity ranges from -1 to 1. Scores above 0.7 are strong semantic matches in practice.",
+                },
+              ],
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "Model Comparison",
+                content: `<table style="width:100%;font-size:0.82rem;border-collapse:collapse;"><tr style="border-bottom:1px solid rgba(255,255,255,0.1);font-weight:600;color:var(--accent);"><td style="padding:0.4rem;">Model</td><td style="padding:0.4rem;">Dims</td><td style="padding:0.4rem;">Cost</td><td style="padding:0.4rem;">MTEB</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:0.4rem;">text-embedding-3-small</td><td style="padding:0.4rem;">1536</td><td style="padding:0.4rem;">$0.02/MTok</td><td style="padding:0.4rem;">62.3</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:0.4rem;">Cohere embed-v3</td><td style="padding:0.4rem;">1024</td><td style="padding:0.4rem;">$0.10/MTok</td><td style="padding:0.4rem;">64.5</td></tr><tr><td style="padding:0.4rem;">Qwen3-Embedding</td><td style="padding:0.4rem;">1024</td><td style="padding:0.4rem;">Self-host ~$20/mo</td><td style="padding:0.4rem;">66.1</td></tr></table>`,
+              },
+              after: {
+                label: "MRL Truncation Impact",
+                content: `<table style="width:100%;font-size:0.82rem;border-collapse:collapse;"><tr style="border-bottom:1px solid rgba(255,255,255,0.1);font-weight:600;color:var(--accent);"><td style="padding:0.4rem;">Dimensions</td><td style="padding:0.4rem;">Storage/1M</td><td style="padding:0.4rem;">Quality</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:0.4rem;">1536 (full)</td><td style="padding:0.4rem;">5.9 GB</td><td style="padding:0.4rem;">100%</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:0.4rem;">512 (MRL)</td><td style="padding:0.4rem;">2.0 GB</td><td style="padding:0.4rem;">99%</td></tr><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:0.4rem;">256 (MRL)</td><td style="padding:0.4rem;">1.0 GB</td><td style="padding:0.4rem;">98%</td></tr><tr><td style="padding:0.4rem;">128 (MRL)</td><td style="padding:0.4rem;">0.5 GB</td><td style="padding:0.4rem;">93%</td></tr></table>`,
+              },
+            },
+          ],
           gameType: "CostOptimizer",
           gameConfig: {
             scenario:
@@ -225,6 +523,88 @@
           subtitle: "Match the workload to the right vector database",
           context:
             "pgvector with pgvectorscale achieves 471 QPS at 50M vectors with 99% recall — that's 11x Qdrant's 41 QPS on the same hardware. If you're already running PostgreSQL, pgvector is your default vector DB. But each workload has a best-fit tool: scale, ops budget, metadata filtering needs, and existing infrastructure all matter.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## Why Regular Databases Cannot Do Similarity Search
+
+A traditional SQL \`WHERE\` clause finds exact matches. But RAG needs **approximate nearest neighbor (ANN)** search — finding the K vectors closest to a query vector in high-dimensional space. Brute-force comparison against millions of vectors would take seconds per query, far too slow.
+
+**HNSW (Hierarchical Navigable Small World)** graphs solve this. Think of it like "six degrees of separation" for vectors: the algorithm builds layers of connections between vectors, where higher layers connect distant neighbors and lower layers connect close neighbors. Query time is O(log n) with >99% recall.
+
+If you already run PostgreSQL, **pgvector** is your default. With pgvectorscale, it achieves 471 QPS at 50M vectors — 11x faster than Qdrant on the same hardware. No extra infrastructure, no new ops burden, no data synchronization headaches.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "query", label: "Query Vector", icon: "🔍" },
+                  { id: "top", label: "HNSW Top Layer", icon: "🌐" },
+                  { id: "mid", label: "Mid Layer", icon: "🔗" },
+                  { id: "bottom", label: "Bottom Layer", icon: "📊" },
+                  { id: "results", label: "Top-K Results", icon: "🎯" },
+                ],
+                edges: [
+                  ["query", "top"],
+                  ["top", "mid"],
+                  ["mid", "bottom"],
+                  ["bottom", "results"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "pgvector Setup + Query",
+              code: `-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create table with vector column
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    metadata JSONB,
+    embedding vector(256)  -- MRL-truncated dimensions
+);
+
+-- Create HNSW index for fast ANN search
+CREATE INDEX ON documents
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 200);
+
+-- Query: find 5 most similar documents
+SELECT id, content, 1 - (embedding <=> $1) AS similarity
+FROM documents
+ORDER BY embedding <=> $1
+LIMIT 5;`,
+              annotations: [
+                {
+                  lines: [9],
+                  text: "Use 256 dims with MRL truncation. Full 1536 dims wastes storage with minimal quality gain.",
+                },
+                {
+                  lines: [14],
+                  text: "HNSW with m=16 (connections per node) and ef_construction=200 (build quality) balances speed and recall.",
+                },
+                {
+                  lines: [19],
+                  text: "<=> is cosine distance. Use for normalized text embeddings. <-> is L2 distance (wrong for text).",
+                },
+              ],
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "pgvector (Self-hosted)",
+                content: `<div style="font-size:0.85rem;line-height:1.65;"><strong style="color:var(--success);">Best for: teams already on PostgreSQL, < 100M vectors</strong><br><br>471 QPS at 50M vectors, 99% recall with HNSW. Zero additional infrastructure — it is just a PostgreSQL extension. DiskANN index via pgvectorscale for billion-scale. Your EF Core + SQL Server experience transfers directly.</div>`,
+              },
+              after: {
+                label: "Pinecone / Qdrant / Weaviate",
+                content: `<div style="font-size:0.85rem;line-height:1.65;"><strong style="color:var(--accent);">Each has a sweet spot:</strong><br><br><strong>Pinecone:</strong> Fully managed, serverless, zero ops. Best for billion-scale without infrastructure teams.<br><br><strong>Qdrant:</strong> Best metadata filtering, open-source. Excellent for complex WHERE clauses alongside vector search.<br><br><strong>Weaviate:</strong> Multi-tenant SaaS, enterprise compliance features. Best for B2B platforms.</div>`,
+              },
+            },
+          ],
           gameType: "ConceptMatcher",
           gameConfig: {
             pairs: [
@@ -264,6 +644,79 @@
           subtitle: "Find the 3 bugs in this hybrid search SQL query",
           context:
             "Pure vector search achieves ~62% precision on production queries. Hybrid search with Reciprocal Rank Fusion (RRF) combines vector similarity with BM25 keyword search, pushing precision to ~84%. HyDE (Hypothetical Document Embeddings) boosts nDCG@10 from 44.5 to 61.3 — but fails for fact-bound queries where the hypothesis drifts. The devil is in the implementation details.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## Why Dense Search Alone Is Not Enough
+
+Pure vector (dense) search captures semantic meaning but misses exact keyword matches. Search "error code ERR_429" and dense search might return documents about "rate limiting" (semantically similar) but miss the document that literally contains "ERR_429" (keyword match). BM25 lexical search catches exact matches but misses paraphrases.
+
+**Hybrid search** runs both in parallel and merges results using **Reciprocal Rank Fusion (RRF)**. The formula: \`score = sum(1 / (k + rank_i))\` where k=60 is a smoothing constant. A document ranked #2 in both lists scores higher than one ranked #1 in only one list.
+
+This pushes precision from ~62% (dense only) to ~84% (hybrid with RRF).`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "query", label: "User Query", icon: "💬" },
+                  { id: "bm25", label: "BM25 Lexical", icon: "🔤" },
+                  { id: "dense", label: "Dense Vector", icon: "🔢" },
+                  { id: "rrf", label: "RRF Merge", icon: "🔀" },
+                  { id: "results", label: "Re-ranked", icon: "🎯" },
+                ],
+                edges: [
+                  ["query", "bm25"],
+                  ["query", "dense"],
+                  ["bm25", "rrf"],
+                  ["dense", "rrf"],
+                  ["rrf", "results"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "Hybrid Search with RRF",
+              code: `def reciprocal_rank_fusion(results_lists, k=60):
+    scores = {}
+    for results in results_lists:
+        for rank, doc_id in enumerate(results):
+            if doc_id not in scores:
+                scores[doc_id] = 0
+            scores[doc_id] += 1.0 / (k + rank + 1)
+    return sorted(scores.items(), key=lambda x: -x[1])
+
+# Run both searches in parallel
+dense_results = vector_search(query_embedding, top_k=20)
+bm25_results = bm25_search(query_text, top_k=20)
+
+# Merge with RRF
+hybrid = reciprocal_rank_fusion([dense_results, bm25_results])`,
+              annotations: [
+                {
+                  lines: [1],
+                  text: "k=60 is the empirically-tuned constant from the original RRF paper. It smooths the ranking so no single source dominates.",
+                },
+                {
+                  lines: [7],
+                  text: "rank+1 because ranks are 0-indexed. Higher score = better combined relevance.",
+                },
+              ],
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "Dense Only (~62% precision)",
+                content: `<div style="font-size:0.85rem;line-height:1.65;">Captures semantic meaning ("refund" matches "return policy"). Misses exact keywords (error codes, product IDs, names). Best for conceptual queries.</div>`,
+              },
+              after: {
+                label: "Hybrid + RRF (~84% precision)",
+                content: `<div style="font-size:0.85rem;line-height:1.65;">Combines semantic understanding with keyword precision. Catches both paraphrases and exact matches. +22% precision improvement for <10ms additional latency.</div>`,
+              },
+            },
+          ],
           gameType: "CodeDebugger",
           gameConfig: {
             code: `-- Hybrid search with Reciprocal Rank Fusion (RRF)
@@ -315,6 +768,95 @@ ORDER BY rrf_score`,
           subtitle: "Diagnose the p95 latency problem in this RAG system",
           context:
             "Cross-encoder re-ranking adds +33-40% accuracy improvements but costs +100-200ms per query. Running it on ALL queries is wasteful — simple factual lookups don't need it. Jina Reranker v3 scores 61.94 BEIR nDCG@10. ColBERT (late interaction) pre-computes document token embeddings for 2-5x speedup over full cross-encoder at similar quality. The key is conditional application.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## Bi-Encoder vs Cross-Encoder: The Speed-Accuracy Tradeoff
+
+**Bi-encoders** (like text-embedding-3-small) encode query and document independently. Fast (encode once, compare via cosine) but imprecise — they never see the query and document together.
+
+**Cross-encoders** (like Cohere Rerank, Jina Reranker v3) take the query and document as a single concatenated input and produce a relevance score. They are 100-1000x slower but +33-40% more accurate because they can model fine-grained interactions between query and document tokens.
+
+The production pattern: use the bi-encoder for fast initial retrieval (top-100), then the cross-encoder to re-rank just the top candidates (top-10). This gives you cross-encoder accuracy at near bi-encoder speed.
+
+**ColBERT** (late interaction) is the middle ground: pre-compute per-token document embeddings offline, then score via MaxSim at query time. 2-5x faster than full cross-encoder at similar quality.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "query", label: "Query", icon: "💬" },
+                  { id: "retrieval", label: "Bi-Encoder", icon: "⚡" },
+                  { id: "top100", label: "Top-100", icon: "📋" },
+                  { id: "rerank", label: "Cross-Encoder", icon: "🎯" },
+                  { id: "top10", label: "Top-10", icon: "✅" },
+                ],
+                edges: [
+                  ["query", "retrieval"],
+                  ["retrieval", "top100"],
+                  ["top100", "rerank"],
+                  ["rerank", "top10"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "steps",
+              steps: [
+                {
+                  title: "1. Bi-Encoder Retrieval (5-10ms)",
+                  content:
+                    "Query is embedded independently. Cosine similarity against the full index returns top-100 candidate documents. This is fast because document embeddings are pre-computed.",
+                },
+                {
+                  title: "2. Candidate Filtering (optional, <1ms)",
+                  content:
+                    "Apply metadata filters (date range, document type, permissions) to narrow the candidate pool.",
+                },
+                {
+                  title: "3. Cross-Encoder Re-ranking (100-200ms)",
+                  content:
+                    "Each candidate is concatenated with the query: [query] [SEP] [document]. The cross-encoder scores the pair holistically. This is the bottleneck — but it only runs on 10-100 candidates, not millions.",
+                },
+                {
+                  title: "4. Conditional Skip (saves 60%+ latency)",
+                  content:
+                    "If the bi-encoder's top result has confidence > 0.85, skip re-ranking entirely. ~63% of production queries are simple enough to skip. This is the key insight for meeting latency SLAs.",
+                },
+              ],
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "Cohere Rerank API",
+              code: `import cohere
+
+co = cohere.Client(api_key="...")
+
+# Re-rank top-100 retrieval results
+reranked = co.rerank(
+    model="rerank-v3.5",
+    query="What causes memory leaks in Python?",
+    documents=retrieved_chunks,  # list of text strings
+    top_n=10,
+    return_documents=True
+)
+
+for result in reranked.results:
+    print(f"Score: {result.relevance_score:.3f}")
+    print(f"Text: {result.document.text[:100]}...")`,
+              annotations: [
+                {
+                  lines: [6],
+                  text: "rerank-v3.5 scores 61.94 BEIR nDCG@10. Cost: ~$0.002 per 1000 documents re-ranked.",
+                },
+                {
+                  lines: [10],
+                  text: "top_n=10 returns only the best 10 results. The cross-encoder re-scores all input documents but only returns the top.",
+                },
+              ],
+            },
+          ],
           gameType: "DiagnosisLab",
           gameConfig: {
             scenario:
@@ -360,6 +902,91 @@ ORDER BY rrf_score`,
           subtitle: "Fix the 3 critical bugs in this RAG quality gate pipeline",
           context:
             "Faithfulness is THE most critical RAG metric — low faithfulness means the model is hallucinating beyond retrieved context. DeepEval and RAGAS integrate with pytest for automated CI/CD quality gates. Start with 50-100 golden examples (question + expected answer + source) and grow from production failures. A failing quality gate should block the merge, not just warn.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## RAGAS: The 4 Metrics That Matter
+
+The RAGAS framework defines four core metrics for RAG evaluation:
+
+- **Faithfulness**: Does the answer only contain claims supported by the retrieved context? A score of 0.6 means 40% of the answer is fabricated. This is the hallucination detector.
+- **Answer Relevancy**: Does the answer actually address the user's question? High relevancy means the response is on-topic.
+- **Context Precision**: Of the chunks retrieved, what fraction are relevant? Low precision means the LLM is confused by irrelevant noise.
+- **Context Recall**: Of all chunks that contain the answer, how many did we retrieve? Low recall means we are missing key evidence.
+
+Faithfulness should always be the primary gate. An answer can be relevant and well-written but completely fabricated — that is worse than no answer at all.
+
+**Never use the same model family as both judge and generator.** Judge-generator bias inflates scores by 15-25%. If GPT-4o-mini generates answers, use Claude or a different GPT family as the judge.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "push", label: "Code Push", icon: "📤" },
+                  { id: "test", label: "RAGAS Suite", icon: "🧪" },
+                  { id: "compare", label: "vs Baseline", icon: "📊" },
+                  { id: "pass", label: "Deploy", icon: "✅" },
+                  { id: "fail", label: "Block + Alert", icon: "🚫" },
+                ],
+                edges: [
+                  ["push", "test"],
+                  ["test", "compare"],
+                  ["compare", "pass"],
+                  ["compare", "fail"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "RAGAS Evaluation Example",
+              code: `from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy
+from ragas.metrics import context_precision, context_recall
+from datasets import Dataset
+
+# Golden test set (grow from production failures)
+eval_data = Dataset.from_dict({
+    "question": ["What is the refund policy?"],
+    "answer": [rag_chain.invoke("What is the refund policy?")],
+    "contexts": [retrieved_chunks],
+    "ground_truth": ["30-day full refund for all plans."]
+})
+
+result = evaluate(
+    eval_data,
+    metrics=[faithfulness, answer_relevancy,
+             context_precision, context_recall],
+    llm=ChatOpenAI(model="gpt-4o"),  # different from generator!
+)
+
+print(result)
+# {'faithfulness': 0.87, 'answer_relevancy': 0.91,
+#  'context_precision': 0.80, 'context_recall': 0.85}`,
+              annotations: [
+                {
+                  lines: [18],
+                  text: "Use a DIFFERENT model family as judge. Same-family bias inflates scores 15-25%.",
+                },
+                {
+                  lines: [7, 8, 9, 10, 11],
+                  text: "Start with 50-100 golden examples. Grow the set from production failures flagged by users.",
+                },
+              ],
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "Manual QA",
+                content: `<div style="font-size:0.85rem;line-height:1.65;">Humans review answers manually. Covers ~5% of queries. Takes days. Inconsistent scoring between reviewers. Cannot block a PR merge.</div>`,
+              },
+              after: {
+                label: "Automated RAGAS",
+                content: `<div style="font-size:0.85rem;line-height:1.65;">Runs on every PR in CI/CD. Covers 100% of golden set. Takes minutes. Consistent metric-based scoring. Blocks merges when faithfulness drops below threshold.</div>`,
+              },
+            },
+          ],
           gameType: "CodeDebugger",
           gameConfig: {
             code: `# RAG Quality CI Pipeline
@@ -410,6 +1037,108 @@ jobs:
           subtitle: "Match each query type to the correct RAG architecture",
           context:
             "GraphRAG (Microsoft, 2024) indexes documents as a knowledge graph with entity relationships — it costs 10-100x more for indexing but solves theme-level synthesis queries that standard RAG cannot. Agentic RAG uses LLM-driven tool calls to retrieve from multiple sources, verify, and reason across steps. Most production systems are 80% Standard RAG + 20% Agentic, with GraphRAG reserved for analytics use cases.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## Beyond Standard RAG: When Simple Retrieval Is Not Enough
+
+Standard RAG retrieves top-K chunks and generates an answer. It handles ~80% of production queries well. But some questions require more sophisticated approaches:
+
+**GraphRAG** (Microsoft, 2024) extracts entities and relationships from documents to build a knowledge graph. When a user asks "What are the recurring themes across all 500 vendor contracts?", standard RAG only sees 20-40 chunks — missing the big picture. GraphRAG traverses entity relationships to synthesize across the entire corpus. Trade-off: indexing costs 10-100x more.
+
+**Agentic RAG** gives the LLM tool-calling capabilities. Instead of a single retrieval step, the LLM decides what to search, evaluates results, and iterates. "Compare pricing in Contract A, check the SLA in Contract B, then calculate total cost" requires sequential reasoning that standard RAG cannot do.
+
+**RAPTOR** builds a recursive summarization tree — leaves are raw chunks, higher levels are summaries of summaries. Queries against the tree find the right abstraction level automatically.
+
+Most production systems: **80% Standard RAG + 20% Agentic**, with GraphRAG reserved for analytics dashboards.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "docs", label: "Documents", icon: "📚" },
+                  { id: "extract", label: "Entity Extract", icon: "🔍" },
+                  { id: "graph", label: "Knowledge Graph", icon: "🕸️" },
+                  { id: "traverse", label: "Graph + Vector", icon: "🔀" },
+                  { id: "llm", label: "LLM Synthesis", icon: "🤖" },
+                ],
+                edges: [
+                  ["docs", "extract"],
+                  ["extract", "graph"],
+                  ["graph", "traverse"],
+                  ["traverse", "llm"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "steps",
+              steps: [
+                {
+                  title: "1. Analyze Query Complexity",
+                  content:
+                    "Simple factual lookup? Standard RAG. Theme synthesis across corpus? GraphRAG. Multi-step reasoning? Agentic RAG. Most production systems use a router that classifies queries.",
+                },
+                {
+                  title: "2. Standard RAG (80% of queries)",
+                  content:
+                    "Embed query, retrieve top-K chunks, generate answer. Fast (~800ms), cheap, reliable. Handles point lookups, filtered retrieval, and single-document questions.",
+                },
+                {
+                  title: "3. Agentic RAG (15% of queries)",
+                  content:
+                    "LLM plans a search strategy, executes multiple retrieval steps, verifies results, and iterates if needed. Slower (2-5s) but handles multi-hop reasoning and cross-document comparison.",
+                },
+                {
+                  title: "4. GraphRAG (5% of queries)",
+                  content:
+                    "Entity extraction builds a knowledge graph at index time (expensive). At query time, graph traversal reveals themes, trends, and relationships across the entire corpus that no single chunk contains.",
+                },
+                {
+                  title: "5. Self-RAG and RAPTOR",
+                  content:
+                    "Self-RAG: the LLM critiques its own retrieval (did I get enough context?) and iterates. RAPTOR: recursive summarization tree provides multi-level abstraction. Both are research-stage patterns gaining production adoption.",
+                },
+              ],
+            },
+            {
+              type: "code",
+              language: "python",
+              title: "Simple Entity Extraction for GraphRAG",
+              code: `from openai import OpenAI
+
+client = OpenAI()
+
+def extract_entities(text):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role": "system",
+            "content": "Extract entities and relationships as JSON. "
+                       "Format: {entities: [{name, type}], "
+                       "relationships: [{source, target, relation}]}"
+        }, {
+            "role": "user",
+            "content": text
+        }],
+        response_format={"type": "json_object"}
+    )
+    return json.loads(response.choices[0].message.content)
+
+# Index: extract entities from every document chunk
+# Query: traverse graph + vector search together`,
+              annotations: [
+                {
+                  lines: [7],
+                  text: "gpt-4o-mini is cost-effective for entity extraction. The LLM identifies people, organizations, concepts, and their relationships.",
+                },
+                {
+                  lines: [17],
+                  text: "JSON mode ensures structured output. This feeds directly into a graph database (Neo4j, NetworkX).",
+                },
+              ],
+            },
+          ],
           gameType: "SpeedQuiz",
           gameConfig: {
             timePerQuestion: 40,
@@ -491,6 +1220,65 @@ jobs:
           subtitle: "Cut the naive $2.50/request pipeline to under $0.30",
           context:
             "A naive RAG pipeline costs $2.50/request: embedding ($0.30) + vector search ($0.10) + re-ranker ($0.40) + GPT-4o generation ($1.80). With semantic caching, batch embeddings, and model routing, production teams routinely achieve 90%+ cost reduction. The order of optimizations matters — highest-impact first. Target: under $0.30 per request.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## The Real Cost of Production RAG
+
+A naive RAG pipeline costs **$2.50 per request**: embedding ($0.30) + vector search ($0.10) + re-ranker ($0.40) + GPT-4o generation ($1.80). At 100K queries/month, that is $250,000/year. Production teams routinely achieve 90%+ cost reduction.
+
+The three biggest levers, in order of impact:
+- **Semantic caching** (30-70% hit rate): Cache similar queries and their answers. If "What is the refund policy?" was already answered, "How can I get a refund?" gets the cached answer. Eliminates the LLM call entirely. This alone cuts costs 30-70%.
+- **Model routing** (60-80% of queries): Route simple factual queries to GPT-4o-mini ($0.15/MTok) instead of GPT-4o ($2.50/MTok). Only complex multi-hop queries need the expensive model.
+- **Batch embeddings**: Embedding in batches of 100+ gets 50% API discounts, or self-host for $20/mo fixed cost.
+
+The latency waterfall: query embedding (5ms) + vector search (10ms) + re-ranking (50ms) + LLM generation (500ms) = ~565ms total. Semantic cache hits return in <100ms.`,
+            },
+            {
+              type: "diagram",
+              config: {
+                nodes: [
+                  { id: "embed", label: "Embed $0.01", icon: "🔢" },
+                  { id: "search", label: "Search $0.05", icon: "🔍" },
+                  { id: "rerank", label: "Rerank $0.02", icon: "🎯" },
+                  { id: "llm", label: "LLM $0.03", icon: "🤖" },
+                ],
+                edges: [
+                  ["embed", "search"],
+                  ["search", "rerank"],
+                  ["rerank", "llm"],
+                ],
+                animate: true,
+              },
+            },
+            {
+              type: "playground",
+              title: "Monthly Cost Calculator",
+              sliders: [
+                {
+                  name: "queries_per_month",
+                  label: "Queries/Month",
+                  min: 10000,
+                  max: 1000000,
+                  default: 100000,
+                  step: 10000,
+                  unit: "",
+                },
+              ],
+              render: "costCalculator",
+            },
+            {
+              type: "comparison",
+              before: {
+                label: "Self-Hosted (pgvector + Ollama)",
+                content: `<div style="font-size:0.85rem;line-height:1.65;"><strong>At 100K queries/mo:</strong><br>Embedding: $0 (self-hosted)<br>Vector DB: $0 (pgvector on existing Postgres)<br>Re-ranking: $200 (API calls)<br>LLM: $0 (Ollama local)<br><strong style="color:var(--success);">Total: ~$200/mo</strong></div>`,
+              },
+              after: {
+                label: "Managed (OpenAI + Pinecone)",
+                content: `<div style="font-size:0.85rem;line-height:1.65;"><strong>At 100K queries/mo:</strong><br>Embedding: $100 (API calls)<br>Vector DB: $70 (Pinecone)<br>Re-ranking: $200 (Cohere API)<br>LLM: $3,000 (GPT-4o)<br><strong style="color:var(--error);">Total: ~$3,370/mo</strong><br><br>With model routing + caching: ~$500/mo</div>`,
+              },
+            },
+          ],
           gameType: "CostOptimizer",
           gameConfig: {
             scenario:
@@ -552,6 +1340,69 @@ jobs:
             "20 expert-level RAG questions — score 80%+ to unlock Chapter 2",
           context:
             "Final challenge: 20 expert-level RAG interview questions drawn from real senior AI engineer interviews at top tech companies. These questions test production reasoning, not tutorial recall. Score 80% (16/20) or higher to demonstrate mastery and unlock Chapter 2. You have 45 seconds per question.",
+          learnContent: [
+            {
+              type: "text",
+              content: `## You Have Learned the Full Production RAG Pipeline
+
+This gauntlet tests mastery across all 9 previous topics. Before diving in, here is a rapid recap of the most important fact from each level — these are the answers interviewers are looking for.`,
+            },
+            {
+              type: "steps",
+              steps: [
+                {
+                  title: "1. RAG vs Fine-tuning",
+                  content:
+                    "RAG for dynamic knowledge + citations. Fine-tuning for style + classification. The production sweet spot is often both: RAG pipeline over a fine-tuned small model.",
+                },
+                {
+                  title: "2. Chunking",
+                  content:
+                    "Recursive text splitting, 512 tokens, 10-15% overlap. FloTorch 2026: recursive = 69% accuracy, semantic = 54%. Always parse before split.",
+                },
+                {
+                  title: "3. Embeddings",
+                  content:
+                    "MRL truncation: 1536 dims to 256 dims with 98% quality retention at 75% less storage. text-embedding-3-small is the best quality-per-dollar API option.",
+                },
+                {
+                  title: "4. Vector Databases",
+                  content:
+                    "pgvector with HNSW for < 100M vectors (471 QPS, 99% recall). No extra infrastructure needed if you already run PostgreSQL.",
+                },
+                {
+                  title: "5. Hybrid Search",
+                  content:
+                    "RRF combines dense + BM25 search. Precision jumps from ~62% to ~84%. Use cosine distance (<=>) not L2 (<->) for text embeddings.",
+                },
+                {
+                  title: "6. Re-ranking",
+                  content:
+                    "Cross-encoder adds +33-40% accuracy for +100-200ms. The key pattern: conditional re-ranking — skip when bi-encoder confidence > 0.85.",
+                },
+                {
+                  title: "7. Evaluation",
+                  content:
+                    "Faithfulness is the #1 metric (hallucination detector). Never use same model family as judge. Start with 50-100 golden examples, grow from production failures.",
+                },
+                {
+                  title: "8. Advanced Patterns",
+                  content:
+                    "Standard RAG (80%) + Agentic RAG (15%) + GraphRAG (5%). GraphRAG for theme synthesis across entire corpora. Agentic for multi-step reasoning.",
+                },
+                {
+                  title: "9. Cost & Latency",
+                  content:
+                    "Semantic caching is the #1 cost lever (30-70% hit rate). Model routing is #2 (GPT-4o-mini = 17x cheaper). Production target: p50 ~800ms, p95 ~1.5s.",
+                },
+                {
+                  title: "10. The Gauntlet",
+                  content:
+                    "You are ready. 20 expert questions, 45 seconds each, 80% to pass. These test production reasoning — not tutorial recall. Good luck.",
+                },
+              ],
+            },
+          ],
           gameType: "SpeedQuiz",
           gameConfig: {
             timePerQuestion: 45,
