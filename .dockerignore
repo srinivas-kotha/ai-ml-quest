@@ -1,0 +1,7 @@
+.git
+.gitignore
+.claude
+.improvement-state.json
+README.md
+Dockerfile
+.dockerignore
