@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 3: ML Monitoring &amp; Observability — AI/ML Quest</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-page="chapter" data-chapter="3">
+    <canvas id="particle-canvas"></canvas>
+    <nav class="hud">
+      <div class="hud-logo">
+        <a href="index.html" style="color: inherit; text-decoration: none"
+          >AI<span>/ML</span> Quest</a
+        >
+      </div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+    <div class="toast-container" id="toast-container"></div>
+    <div class="page-content">
+      <div class="container">
+        <div class="chapter-layout">
+          <nav class="level-nav" id="level-nav"></nav>
+          <div id="game-panel"></div>
+        </div>
+      </div>
+    </div>
+    <script src="shared.js"></script>
+    <script>
+      const levels = [
+        // ── L3.1 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Why Monitoring Matters",
+          subtitle: "The 70% Rule — What Nobody Shows in Their Portfolio",
+          context:
+            "Most AI portfolios show model building. NOBODY shows monitoring. It's 70% of real production work — and your career differentiator. Think Azure Monitor for ML: infra metrics get you to the door, model metrics win you the role.",
+          gameType: "DiagnosisLab",
+          gameConfig: {
+            scenario:
+              "Your production RAG system's user satisfaction dropped from 4.2 to 2.8 stars this week. No infrastructure alerts fired. Examine the dashboards below to identify the root cause.",
+            metrics: [
+              { name: "Latency p95", value: "1.2s", status: "ok" },
+              { name: "Feature Drift PSI", value: "0.38", status: "alert" },
+              { name: "LLM Cost / Day", value: "$42", status: "ok" },
+              { name: "Retrieval@10", value: "0.51", status: "alert" },
+              { name: "Error Rate", value: "0.3%", status: "ok" },
+              { name: "User Satisfaction", value: "2.8 / 5", status: "alert" },
+            ],
+            options: [
+              {
+                id: "drift",
+                label:
+                  "Data drift in input features caused retrieval quality to degrade silently",
+              },
+              {
+                id: "llm",
+                label:
+                  "LLM provider degraded output quality without changing the API response code",
+              },
+              {
+                id: "latency",
+                label:
+                  "1.2 s p95 latency is too high — users are timing out before reading answers",
+              },
+              {
+                id: "cost",
+                label:
+                  "A cost-optimisation change reduced context window size and answer quality",
+              },
+            ],
+            correctId: "drift",
+            explanation:
+              "PSI 0.38 far exceeds the 0.2 alert threshold — the input distribution shifted. That degraded retrieval quality (Retrieval@10 fell from ~0.80 to 0.51), producing worse answers. Latency and cost look healthy; the LLM itself is fine. Azure Monitor catches infra issues — ML monitoring catches model degradation, which looks perfectly healthy to infrastructure tooling.",
+          },
+          keyInsight:
+            "Data drift (PSI 0.38 &gt; 0.2 threshold) degraded retrieval quality (0.51 vs 0.80 target). Azure Monitor catches infra issues — ML monitoring catches <em>model</em> degradation. That's the career differentiator.",
+        },
+
+        // ── L3.2 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Data Drift Detection",
+          subtitle: "Statistical Methods — KS, PSI, and Wasserstein",
+          context:
+            "KS test detects 0.5% drift at 100K observations — dangerously oversensitive in production! PSI misses subtle but real drift on small windows. Wasserstein distance is the production compromise: stable across sample sizes, measures actual magnitude of shift.",
+          gameType: "ParameterTuner",
+          gameConfig: {
+            description:
+              "Tune the three detection parameters to land all four gauges in their green zones simultaneously. Aim for low false-positive risk while still catching real drift.",
+            sliders: [
+              {
+                name: "Sample Size",
+                min: 1000,
+                max: 500000,
+                step: 1000,
+                default: 10000,
+                unit: "",
+              },
+              {
+                name: "True Drift Magnitude %",
+                min: 0,
+                max: 20,
+                step: 0.5,
+                default: 5,
+                unit: "%",
+              },
+              {
+                name: "Significance Level α",
+                min: 0.001,
+                max: 0.1,
+                step: 0.001,
+                default: 0.05,
+                unit: "",
+              },
+            ],
+            gauges: [
+              {
+                name: "KS Test p-value",
+                decimals: 4,
+                unit: "",
+                // KS statistic ≈ drift/100, p-value shrinks with √N — simplified model
+                compute: (v) => {
+                  const n = v["Sample Size"];
+                  const drift = v["True Drift Magnitude %"] / 100;
+                  const stat = drift + 0.02;
+                  // Kolmogorov distribution approximation: p ≈ 2*exp(-2*n*stat^2)
+                  const p = Math.min(1, 2 * Math.exp(-2 * n * stat * stat));
+                  return Math.max(0.0001, p);
+                },
+                good: [0.01, 0.05],
+              },
+              {
+                name: "PSI Score",
+                decimals: 3,
+                unit: "",
+                compute: (v) => {
+                  const drift = v["True Drift Magnitude %"] / 100;
+                  // PSI ≈ proportional to squared drift magnitude, scaled
+                  return Math.min(1.5, drift * drift * 8 + 0.01);
+                },
+                good: [0.1, 0.25],
+              },
+              {
+                name: "False Positive Rate %",
+                decimals: 1,
+                unit: "%",
+                compute: (v) => {
+                  const n = v["Sample Size"];
+                  const alpha = v["Significance Level α"];
+                  // FPR explodes at large N because noise becomes "significant"
+                  const noiseFactor = Math.min(5, Math.log10(n / 1000) * 0.8);
+                  return Math.min(30, alpha * 100 * (1 + noiseFactor));
+                },
+                good: [0, 5],
+              },
+              {
+                name: "Wasserstein Distance",
+                decimals: 3,
+                unit: "",
+                compute: (v) => {
+                  const drift = v["True Drift Magnitude %"] / 100;
+                  // Wasserstein is stable across N — pure drift magnitude proxy
+                  return Math.min(1.0, drift * 0.9 + 0.01);
+                },
+                good: [0.05, 0.15],
+              },
+            ],
+          },
+          keyInsight:
+            "KS test is dangerously sensitive at large N — it detects statistically significant but operationally irrelevant noise. Production standard: <strong>Wasserstein distance</strong> for numerical features (threshold 0.1), <strong>Jensen-Shannon divergence</strong> for categorical (threshold 0.1). PSI (threshold 0.2) works well for business-familiar reporting.",
+        },
+
+        // ── L3.3 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Types of Drift",
+          subtitle: "Taxonomy — Know the Difference to Fix the Right Thing",
+          context:
+            "Different drift types need completely different remedies. Data drift → retrain on recent data. Concept drift → re-label and rethink features entirely. Feature drift → fix your pipeline bug. Misdiagnose and you'll spend weeks retraining a model that didn't need it.",
+          gameType: "ConceptMatcher",
+          gameConfig: {
+            pairs: [
+              {
+                left: "New marketing campaign changes shopper demographics",
+                right: "Data Drift",
+              },
+              {
+                left: "Competitor launches discounts, purchase behaviour shifts",
+                right: "Concept Drift",
+              },
+              {
+                left: "Pipeline silently casts float to int in preprocessing",
+                right: "Feature Drift",
+              },
+              {
+                left: "Model confidence scores shift without any input change",
+                right: "Prediction Drift",
+              },
+              {
+                left: "Summer → Winter season transition changes user queries",
+                right: "Data Drift (Gradual)",
+              },
+              {
+                left: "Annotation guidelines updated mid-project by new labellers",
+                right: "Label Drift",
+              },
+              {
+                left: "COVID lockdown changes all behaviour patterns overnight",
+                right: "Concept Drift (Sudden)",
+              },
+              {
+                left: "Holiday traffic spike every December — same pattern yearly",
+                right: "Data Drift (Recurring)",
+              },
+            ],
+          },
+          keyInsight:
+            "<strong>Data drift</strong>: inputs changed, P(X) shifted — retrain on recent data. <strong>Concept drift</strong>: the X→Y relationship itself changed — re-label and rethink features. <strong>Feature drift</strong>: preprocessing bug — fix the pipeline first before assuming distribution shift.",
+        },
+
+        // ── L3.4 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Evidently AI in CI/CD",
+          subtitle: "Test Suites as Quality Gates — The pytest Trick",
+          context:
+            "Evidently AI test suites inside CI/CD = automated drift quality gates. Fail the PR if drift is detected in the staging data snapshot. Same pattern as your Azure DevOps test gates — just for model data health instead of unit tests.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Build the Evidently monitoring pipeline in the correct order. Click components to add them to the pipeline, click a slot to remove it.",
+            components: [
+              { id: "data_source", label: "Load Production Data" },
+              { id: "reference_dataset", label: "Load Reference Dataset" },
+              { id: "data_drift_preset", label: "Run DataDriftPreset" },
+              { id: "data_quality_preset", label: "Run DataQualityPreset" },
+              { id: "threshold_check", label: "Assert Thresholds (pytest)" },
+              { id: "slack_alert", label: "Send Slack Alert" },
+              { id: "grafana_dashboard", label: "Push to Grafana" },
+              { id: "ci_cd_gate", label: "Fail PR if Tests Fail" },
+              { id: "evidently_report", label: "Generate HTML Report" },
+            ],
+            correctOrder: [
+              "data_source",
+              "reference_dataset",
+              "data_drift_preset",
+              "threshold_check",
+              "ci_cd_gate",
+              "slack_alert",
+            ],
+          },
+          keyInsight:
+            "Evidently's killer feature: <code>assert test_suite.as_dict()['summary']['all_passed']</code> inside a pytest test that runs in CI. Fail the PR before bad data reaches production. Exactly like your .NET quality gates — same mental model, different layer.",
+        },
+
+        // ── L3.5 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Model Explainability",
+          subtitle: "SHAP, LIME, and EU AI Act Legal Requirements",
+          context:
+            "TreeSHAP runs in milliseconds per prediction on tree models — production-ready. KernelSHAP is O(2^M) and too slow for real-time inference beyond ~30 features. EU AI Act Article 86 mandates explanations for high-risk automated decisions in credit, hiring, and healthcare.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 30,
+            questions: [
+              {
+                question:
+                  "Which SHAP variant is production-ready for tree-based models like XGBoost/LightGBM?",
+                options: [
+                  "KernelSHAP (model-agnostic)",
+                  "TreeSHAP (exact, polynomial time)",
+                  "DeepSHAP (neural nets)",
+                  "GradientSHAP (backprop)",
+                ],
+                correct: 1,
+                explanation:
+                  "TreeSHAP computes exact Shapley values in O(TLD²) time — milliseconds per prediction on gradient-boosted trees. KernelSHAP is O(2^M) and impractical for real-time use.",
+              },
+              {
+                question:
+                  "SHAP vs LIME — which produces more consistent explanations across repeated runs on the same input?",
+                options: [
+                  "LIME (local approximations are more stable)",
+                  "SHAP (mathematically grounded in Shapley values)",
+                  "Both are equally consistent",
+                  "Depends on the model type",
+                ],
+                correct: 1,
+                explanation:
+                  "SHAP values satisfy mathematical axioms (efficiency, symmetry, dummy, linearity) derived from coalitional game theory. LIME perturbs inputs randomly — explanations vary between runs for the same data point.",
+              },
+              {
+                question:
+                  "EU AI Act Article 86 requires explanations for automated decisions in which domains?",
+                options: [
+                  "Only financial services",
+                  "High-risk: credit, hiring, healthcare, law enforcement, education",
+                  "Any ML model used by >1M users",
+                  "Only models from non-EU companies",
+                ],
+                correct: 1,
+                explanation:
+                  "EU AI Act Annex III designates high-risk AI systems. Article 86 grants individuals the right to explanations for decisions that 'significantly affect' them — credit scoring, recruitment, medical diagnosis, law enforcement.",
+              },
+              {
+                question: "What does a negative SHAP value for a feature mean?",
+                options: [
+                  "The feature is unimportant for this prediction",
+                  "The feature pushed the prediction AWAY from the positive class",
+                  "A data quality issue — negative values are invalid",
+                  "The model is confused about this feature",
+                ],
+                correct: 1,
+                explanation:
+                  "SHAP values are additive contributions to the model output. Negative SHAP value = this feature's presence lowered the prediction score relative to the baseline (expected) output.",
+              },
+              {
+                question:
+                  "What's the difference between a global and a local explanation?",
+                options: [
+                  "Global uses all data; local uses a subset",
+                  "Global: overall feature importance across all predictions. Local: why THIS specific prediction was made",
+                  "Global is for regulators; local is for developers",
+                  "They are the same thing computed at different resolutions",
+                ],
+                correct: 1,
+                explanation:
+                  "Global explanations (e.g., mean |SHAP|) show which features matter most to the model on average. Local explanations show why the model made one specific prediction — essential for user-facing loan denial reasons.",
+              },
+              {
+                question:
+                  "A model denied a user a loan. Which law most directly requires an explanation?",
+                options: [
+                  "GDPR Article 17 (right to erasure)",
+                  "ECOA + GDPR Article 22 + EU AI Act for credit decisions",
+                  "CCPA (California Consumer Privacy Act)",
+                  "SOX compliance for financial reporting",
+                ],
+                correct: 1,
+                explanation:
+                  "ECOA (Equal Credit Opportunity Act) requires adverse action notices in the US. GDPR Article 22 restricts solely automated decisions with legal effects. EU AI Act Article 86 adds the right to explanation for high-risk AI outputs including credit scoring.",
+              },
+              {
+                question: "DeepSHAP is optimised for which model architecture?",
+                options: [
+                  "Gradient-boosted trees (XGBoost, LightGBM)",
+                  "Deep neural networks (uses backpropagation for efficiency)",
+                  "Random forests with >500 estimators",
+                  "Linear models and SVMs",
+                ],
+                correct: 1,
+                explanation:
+                  "DeepSHAP combines DeepLIFT with SHAP theory — it backpropagates SHAP values through layers using the chain rule, making it tractable for deep neural networks where TreeSHAP and KernelSHAP cannot be applied.",
+              },
+              {
+                question:
+                  "What is the 'baseline' (expected value) in a SHAP explanation?",
+                options: [
+                  "The training set mean prediction across all samples",
+                  "Always 0.5 for binary classifiers",
+                  "The prediction if all feature values are missing (null)",
+                  "The most recent prediction the model made",
+                ],
+                correct: 0,
+                explanation:
+                  "The SHAP baseline E[f(x)] is the model's average prediction across the background dataset (typically a representative training subset). Each feature's SHAP value is its contribution above or below this baseline.",
+              },
+            ],
+          },
+          keyInsight:
+            "<strong>TreeSHAP</strong> = production standard for tabular ML (millisecond latency). For LLMs, attention visualisation + token attribution replace SHAP. EU AI Act makes explainability a <em>legal</em> requirement for high-risk decisions — this is now a compliance topic, not just a nice-to-have.",
+        },
+
+        // ── L3.6 ─────────────────────────────────────────────────────────────────
+        {
+          title: "LLM-Specific Monitoring",
+          subtitle:
+            "Tokens, Hallucinations, Latency — The New Monitoring Frontier",
+          context:
+            "LLM monitoring is completely different from traditional ML monitoring. Token costs, latency percentiles, hallucination detection, prompt injection, and semantic drift — none of this exists in scikit-learn land. Optimise the budget below without sacrificing quality.",
+          gameType: "CostOptimizer",
+          gameConfig: {
+            scenario:
+              "Your LLM-powered support bot processes 10,000 queries/day. Current daily LLM spend: $620. Budget cap: $500/day. Tune the four levers to hit the budget while keeping service quality high.",
+            budget: 500,
+            sliders: [
+              {
+                name: "Max Prompt Tokens",
+                min: 500,
+                max: 8000,
+                step: 100,
+                default: 4000,
+                unit: " tok",
+                // GPT-4o: ~$0.005/1K input tokens, 10K queries/day
+                costImpact: (v) => (v / 1000) * 0.005 * 10000,
+              },
+              {
+                name: "Semantic Cache TTL (hrs)",
+                min: 0,
+                max: 72,
+                step: 1,
+                default: 0,
+                unit: " hr",
+                // Cache hit rate ≈ 1 - exp(-TTL/12); each hit saves ~$0.03 average
+                costImpact: (v) => {
+                  const hitRate = v === 0 ? 0 : 1 - Math.exp(-v / 12);
+                  return -(hitRate * 0.3 * 10000); // savings (negative cost)
+                },
+              },
+              {
+                name: "Route to Small Model %",
+                min: 0,
+                max: 80,
+                step: 5,
+                default: 0,
+                unit: "%",
+                // Small model (GPT-4o-mini) costs 20x less; saved on routed fraction
+                costImpact: (v) => {
+                  const routed = v / 100;
+                  const savedPerQuery = 0.03 * (1 - 1 / 20); // ~$0.0285 saved
+                  return -(routed * savedPerQuery * 10000);
+                },
+              },
+              {
+                name: "Hallucination Check %",
+                min: 0,
+                max: 100,
+                step: 5,
+                default: 0,
+                unit: "%",
+                // Each faithfulness check = extra LLM call ~$0.008
+                costImpact: (v) => (v / 100) * 0.008 * 10000,
+              },
+            ],
+          },
+          keyInsight:
+            "LLM latency SLOs: p50 &lt; 500 ms, p95 &lt; 2 s, p99 &lt; 5 s for interactive use. Hallucination detection stack: <strong>semantic entropy</strong> (cheapest, no extra API call), <strong>faithfulness scoring</strong> (most accurate, one extra LLM call), <strong>self-consistency</strong> (sample 3–5 outputs, check agreement). Semantic caching on similar queries (cosine &gt; 0.95) is usually the highest-ROI optimisation.",
+        },
+
+        // ── L3.7 ─────────────────────────────────────────────────────────────────
+        {
+          title: "Tracing & Observability Tools",
+          subtitle:
+            "Langfuse + OpenTelemetry — Distributed Tracing for LLM Apps",
+          context:
+            "Langfuse (open-source, self-hosted on PostgreSQL) is the best fit for your existing stack — zero extra infrastructure cost. OpenTelemetry gen_ai semantic conventions standardise LLM tracing just like distributed tracing spans. Your distributed systems experience transfers 1:1.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Build the correct OpenTelemetry trace span order for a production RAG request. Each stage should be a child span of the root request span.",
+            components: [
+              { id: "query_processing", label: "Query Processing & Intent" },
+              { id: "embedding_generation", label: "Embedding Generation" },
+              { id: "vector_search", label: "Vector DB Search" },
+              { id: "reranking", label: "Cross-Encoder Reranking" },
+              { id: "safety_check", label: "Input Safety Check" },
+              { id: "llm_generation", label: "LLM Generation" },
+              { id: "response_formatting", label: "Response Formatting" },
+              { id: "token_counter", label: "Token Usage Aggregator" },
+            ],
+            correctOrder: [
+              "query_processing",
+              "embedding_generation",
+              "vector_search",
+              "reranking",
+              "safety_check",
+              "llm_generation",
+              "response_formatting",
+            ],
+          },
+          keyInsight:
+            "<strong>Langfuse self-hosted</strong> on your existing PostgreSQL = zero extra infrastructure. Key OTel gen_ai span attributes: <code>gen_ai.system</code>, <code>gen_ai.request.model</code>, <code>gen_ai.usage.input_tokens</code>, <code>gen_ai.usage.output_tokens</code>. Safety check runs before LLM generation to prevent prompt injection costs.",
+        },
+
+        // ── L3.8 ─────────────────────────────────────────────────────────────────
+        {
+          title: "CI/CD for ML — Regression Gating",
+          subtitle: "Shadow Mode, Canary Deployments, and Golden Datasets",
+          context:
+            "LinkedIn's shadow mode deployment caught 91% of model issues before users saw them. Amazon's canary deployments prevented 73 production failures in one year. Monitoring without runbooks is theater — every alert needs a documented response.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 30,
+            questions: [
+              {
+                question: "What does 'shadow mode' model testing mean?",
+                options: [
+                  "Testing on a shadow copy of the production database",
+                  "Running the new model alongside production, comparing outputs WITHOUT serving them to real users",
+                  "A/B testing with 1% traffic to the new model",
+                  "Running the model in a secure sandboxed environment",
+                ],
+                correct: 1,
+                explanation:
+                  "Shadow mode: the new model receives identical production traffic and generates predictions, but only the existing model's predictions are served. Outputs are compared offline. Zero user impact, catches systematic failures before real exposure.",
+              },
+              {
+                question:
+                  "When should you use canary deployment vs shadow mode?",
+                options: [
+                  "Canary: no user impact. Shadow: gradual rollout with real consequences",
+                  "Canary: gradual rollout to real users (accept some risk). Shadow: zero user impact, fully offline comparison",
+                  "They are the same pattern with different names",
+                  "Canary is for models; shadow is for APIs",
+                ],
+                correct: 1,
+                explanation:
+                  "Shadow mode: completely offline, no user sees new model output. Canary: X% of real users get the new model — real traffic, real impact, but limited blast radius. Use shadow first, then canary, then full rollout.",
+              },
+              {
+                question: "What should trigger automated model retraining?",
+                options: [
+                  "A scheduled weekly cron job regardless of performance",
+                  "PSI drift > threshold AND performance drop below SLA threshold simultaneously",
+                  "Any change in input distribution, however small",
+                  "When the model has been running for >30 days",
+                ],
+                correct: 1,
+                explanation:
+                  "Drift alone doesn't always degrade performance — wait for evidence of actual quality degradation. Gate retraining on BOTH drift signal AND performance drop to avoid unnecessary (expensive) retraining cycles.",
+              },
+              {
+                question:
+                  "What are feature flags used for in ML model deployments?",
+                options: [
+                  "Flagging features that need engineering attention",
+                  "Routing X% of traffic to a new model for gradual rollout with instant rollback capability",
+                  "Marking deprecated model versions for deletion",
+                  "Tracking which features are used by each model version",
+                ],
+                correct: 1,
+                explanation:
+                  "Feature flags (e.g. LaunchDarkly, Unleash) let you route traffic percentages to different model versions. Roll back by flipping the flag — no redeployment needed. Sub-second rollback vs 5-minute redeployment rollback.",
+              },
+              {
+                question:
+                  "What is a 'golden dataset' in ML regression testing?",
+                options: [
+                  "The highest-quality subset of training data used for fine-tuning",
+                  "A curated test set with known correct answers used to verify model behaviour hasn't regressed",
+                  "A dataset generated by the best-performing model version",
+                  "Synthetic data created to cover edge cases",
+                ],
+                correct: 1,
+                explanation:
+                  "Golden datasets are the ML equivalent of regression test suites. Run them on every model candidate before promotion. Grow them from real production failures — each incident adds new test cases.",
+              },
+              {
+                question: "Why NOT just A/B test every model change?",
+                options: [
+                  "A/B testing is too expensive to run",
+                  "A/B tests require statistical significance which takes days/weeks; shadow mode catches critical issues in hours with zero user exposure",
+                  "A/B tests are not allowed under GDPR",
+                  "A/B testing requires a control group which is unethical",
+                ],
+                correct: 1,
+                explanation:
+                  "A/B tests at 50/50 split need ~15K users per variant for 80% power detecting a 5% improvement. That's days of traffic. Shadow mode gives you full comparison data immediately, with zero user exposure to potentially bad predictions.",
+              },
+              {
+                question:
+                  "What's the recommended minimum size for a golden regression dataset?",
+                options: [
+                  "At least 10,000 examples to be statistically valid",
+                  "Start with 50–100 carefully curated examples; grow organically from production failures",
+                  "Exactly 1% of the training dataset",
+                  "Equal to the validation set used during model training",
+                ],
+                correct: 1,
+                explanation:
+                  "50–100 well-chosen examples catch the majority of regressions. Focus on: edge cases, known failure modes, representative distribution. Quality > quantity. Add one new case per production incident — golden datasets should grow organically.",
+              },
+              {
+                question: "What should a model rollback procedure include?",
+                options: [
+                  "Revert only the model weights file",
+                  "Revert model artifact + config + prompts as one atomic deployment unit, with automated canary health check",
+                  "Delete the new model and retrain from scratch",
+                  "Manually patch the production database to reverse predictions",
+                ],
+                correct: 1,
+                explanation:
+                  "Model, config, prompts, and feature preprocessing are co-versioned. Rolling back only weights while leaving a new prompt or config can produce worse results than the bug you're rolling back from. Atomic deployment units are essential.",
+              },
+            ],
+          },
+          keyInsight:
+            "'Monitoring without runbooks is theater.' Every alert needs: (1) rollback procedure, (2) escalation path, (3) root-cause investigation template. This is SRE incident response applied to ML — the same discipline, a different failure domain.",
+        },
+
+        // ── L3.9 ─────────────────────────────────────────────────────────────────
+        {
+          title: "A/B Testing for ML",
+          subtitle: "Sample Sizes, Guardrail Metrics, and Thompson Sampling",
+          context:
+            "Thompson Sampling (multi-armed bandit) automatically allocates more traffic to the winning variant — no waiting for a fixed test to end. But guardrail metrics (latency, cost, error rate) must NEVER degrade — auto-rollback fires if ANY guardrail breaches, regardless of primary metric improvement.",
+          gameType: "ParameterTuner",
+          gameConfig: {
+            description:
+              "Design an A/B test for your model upgrade. Find the parameter combination that keeps required sample size practical, test duration short, and false positive risk acceptable.",
+            sliders: [
+              {
+                name: "Min Detectable Effect %",
+                min: 1,
+                max: 10,
+                step: 0.5,
+                default: 5,
+                unit: "%",
+              },
+              {
+                name: "Statistical Power %",
+                min: 70,
+                max: 99,
+                step: 1,
+                default: 80,
+                unit: "%",
+              },
+              {
+                name: "Significance Level α",
+                min: 0.01,
+                max: 0.1,
+                step: 0.005,
+                default: 0.05,
+                unit: "",
+              },
+              {
+                name: "Daily Traffic (users)",
+                min: 1000,
+                max: 100000,
+                step: 1000,
+                default: 10000,
+                unit: "",
+              },
+            ],
+            gauges: [
+              {
+                name: "Required Sample Size",
+                decimals: 0,
+                unit: "",
+                // Two-proportion z-test approximation: n = 2 * (z_α/2 + z_β)² * p(1-p) / δ²
+                compute: (v) => {
+                  const delta = v["Min Detectable Effect %"] / 100;
+                  const alpha = v["Significance Level α"];
+                  const power = v["Statistical Power %"] / 100;
+                  // z values (approximated)
+                  const zAlpha = -Math.log(alpha) * 1.3;
+                  const zBeta = -Math.log(1 - power) * 1.0;
+                  const p = 0.5;
+                  const n =
+                    (2 * Math.pow(zAlpha + zBeta, 2) * p * (1 - p)) /
+                    (delta * delta);
+                  return Math.round(Math.max(100, n));
+                },
+                good: [100, 50000],
+              },
+              {
+                name: "Test Duration (days)",
+                decimals: 1,
+                unit: " d",
+                compute: (v) => {
+                  const delta = v["Min Detectable Effect %"] / 100;
+                  const alpha = v["Significance Level α"];
+                  const power = v["Statistical Power %"] / 100;
+                  const daily = v["Daily Traffic (users)"];
+                  const zAlpha = -Math.log(alpha) * 1.3;
+                  const zBeta = -Math.log(1 - power) * 1.0;
+                  const p = 0.5;
+                  const n =
+                    (2 * Math.pow(zAlpha + zBeta, 2) * p * (1 - p)) /
+                    (delta * delta);
+                  return Math.max(0.1, n / daily);
+                },
+                good: [3, 30],
+              },
+              {
+                name: "False Positive Risk %",
+                decimals: 1,
+                unit: "%",
+                compute: (v) => v["Significance Level α"] * 100,
+                good: [0, 5],
+              },
+            ],
+          },
+          keyInsight:
+            "<strong>Interleaving for ranking</strong> is 10–100× more efficient than standard A/B (both models answer the same query, user clicks reveal preference). Guardrail metrics: latency p95, cost per query, and error rate must NOT degrade. If ANY guardrail breaches, auto-rollback fires — even if the primary conversion metric improved.",
+        },
+
+        // ── L3.10 ────────────────────────────────────────────────────────────────
+        {
+          title: "Chapter Boss: Interview Gauntlet",
+          subtitle:
+            "20 Expert Monitoring Questions — Score 80% to Unlock Chapter 4",
+          context:
+            "20 expert-level monitoring questions across drift detection, explainability, LLM observability, CI/CD, and A/B testing. This chapter alone separates you from 95% of AI portfolio projects. Nobody shows monitoring — now you can speak to ALL of it.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 45,
+            questions: [
+              {
+                question:
+                  "What PSI thresholds indicate slight vs. significant data drift?",
+                options: [
+                  "0.05 slight, 0.10 significant",
+                  "0.1 slight, 0.2–0.25 significant",
+                  "0.5 slight, 1.0 significant",
+                  "Any PSI > 0 is significant",
+                ],
+                correct: 1,
+                explanation:
+                  "PSI < 0.1: no significant drift. PSI 0.1–0.2: slight drift, monitor closely. PSI > 0.2: significant drift, investigate retraining. PSI > 0.25: major drift, immediate action required.",
+              },
+              {
+                question:
+                  "Why is the KS test problematic for production drift monitoring at large sample sizes?",
+                options: [
+                  "It only works for normal distributions",
+                  "At large N, it detects statistically significant but practically irrelevant drift — every tiny noise becomes 'significant'",
+                  "It requires labelled data to compute",
+                  "It is too slow to run on production data",
+                ],
+                correct: 1,
+                explanation:
+                  "KS statistical power scales with √N. At 1M samples, a 0.1% distribution shift (operationally meaningless) reaches p < 0.0001. You'd be paged constantly for noise. Wasserstein distance is sample-size-stable.",
+              },
+              {
+                question:
+                  "Why prefer Wasserstein distance over KS test for production numerical feature monitoring?",
+                options: [
+                  "Wasserstein is faster to compute",
+                  "Wasserstein measures actual magnitude of distribution shift and remains stable across sample sizes; KS p-value collapses at large N",
+                  "Wasserstein works for categorical features; KS does not",
+                  "KS is deprecated in Python's scipy library",
+                ],
+                correct: 1,
+                explanation:
+                  "Wasserstein (Earth Mover's Distance) measures how much 'earth' you'd need to move to transform one distribution into another — a physically interpretable magnitude. It doesn't suffer from the KS test's sample-size sensitivity problem.",
+              },
+              {
+                question:
+                  "How does Evidently AI integrate drift detection into a CI/CD pipeline?",
+                options: [
+                  "By running a Docker container that polls S3 for new data",
+                  "Test suites expose an as_dict() result that can be assert-checked in pytest — failing CI if drift is detected in staging data",
+                  "Through a proprietary webhook that notifies GitHub Actions",
+                  "By generating a PDF report that a human must manually review before merge",
+                ],
+                correct: 1,
+                explanation:
+                  "Evidently TestSuite.as_dict()['summary']['all_passed'] is a boolean. Wrap it in a pytest assertion and add it to your CI job. The PR fails automatically if your staged data snapshot shows drift above your thresholds — no human review step required.",
+              },
+              {
+                question:
+                  "SHAP vs LIME — what is the fundamental mathematical difference?",
+                options: [
+                  "SHAP uses game theory (Shapley values — satisfy 4 axioms). LIME fits a local linear approximation with random perturbations",
+                  "LIME is model-agnostic; SHAP only works for tree models",
+                  "SHAP requires access to training data; LIME does not",
+                  "They are mathematically identical — just different implementations",
+                ],
+                correct: 0,
+                explanation:
+                  "SHAP values are the unique solution satisfying efficiency, symmetry, dummy, and linearity axioms from coalitional game theory. LIME samples perturbed inputs and fits a local linear model — explanations vary between runs for identical inputs.",
+              },
+              {
+                question:
+                  "What is the precise distinction between concept drift and data drift?",
+                options: [
+                  "Concept drift is slow; data drift is sudden",
+                  "Data drift: P(X) changed — input distribution shifted. Concept drift: P(Y|X) changed — the true relationship between inputs and outputs has changed",
+                  "Concept drift affects labels; data drift affects features only",
+                  "Data drift is detectable; concept drift is not",
+                ],
+                correct: 1,
+                explanation:
+                  "Data drift: inputs look different (demographics shifted, new product launches). Concept drift: same inputs now map to different correct outputs (competitor changed market dynamics). Concept drift is harder to detect — you need fresh ground-truth labels to confirm it.",
+              },
+              {
+                question:
+                  "Which hallucination detection method is cheapest to run at inference time?",
+                options: [
+                  "Faithfulness scoring with a separate LLM judge",
+                  "Semantic entropy — computed from token probabilities, no extra API call",
+                  "Self-consistency — sample 5 outputs and compare",
+                  "Retrieval-grounding check — verify every claim against source documents",
+                ],
+                correct: 1,
+                explanation:
+                  "Semantic entropy uses the model's own token log-probabilities to estimate uncertainty — completely free, no extra API call. Faithfulness scoring and self-consistency require additional LLM calls (~$0.008–0.02 each). Use semantic entropy as a cheap first filter.",
+              },
+              {
+                question:
+                  "What do OpenTelemetry gen_ai semantic convention span attributes standardise?",
+                options: [
+                  "The format of LLM prompt templates",
+                  "Span attributes like gen_ai.system, gen_ai.request.model, gen_ai.usage.input_tokens — making LLM traces comparable across providers and tools",
+                  "The way LLM providers structure their API responses",
+                  "GPU utilisation metrics for model inference",
+                ],
+                correct: 1,
+                explanation:
+                  "OTel gen_ai conventions (CNCF standard) define standard attribute names for LLM spans: gen_ai.system (e.g. 'openai'), gen_ai.request.model, gen_ai.usage.input_tokens, gen_ai.usage.output_tokens, gen_ai.response.finish_reason. Langfuse, Arize, and W&B all speak this format.",
+              },
+              {
+                question:
+                  "What is the key operational difference between shadow mode and canary deployment?",
+                options: [
+                  "Shadow mode uses 50% traffic; canary uses 1%",
+                  "Shadow mode: zero users see new model outputs (pure offline comparison). Canary: real users receive new model outputs (limited blast radius)",
+                  "Shadow mode requires a second production cluster; canary does not",
+                  "Canary is for latency testing; shadow is for accuracy testing",
+                ],
+                correct: 1,
+                explanation:
+                  "Shadow mode is completely invisible to users — the new model processes traffic but its outputs are discarded. Canary exposes real users to the new model (typically 1–5% initially). Use shadow first for risk-free validation, then canary to validate real-world behaviour.",
+              },
+              {
+                question:
+                  "What are golden dataset best practices for ML regression testing?",
+                options: [
+                  "Minimum 10,000 examples; generate synthetically for full coverage",
+                  "Start with 50–100 carefully curated examples; grow organically from production failures; stratify by query type; update quarterly",
+                  "Use the same validation set from model training for consistency",
+                  "Randomly sample 1% of production data monthly",
+                ],
+                correct: 1,
+                explanation:
+                  "Golden datasets should be: small enough to run in CI (<5 min), carefully curated (each example tests a specific behaviour), grown from production failures (each incident adds a test case), and stratified across query types. Quality over quantity.",
+              },
+              {
+                question:
+                  "What is Thompson Sampling's advantage over fixed-split A/B testing for model evaluation?",
+                options: [
+                  "Thompson Sampling requires less compute",
+                  "Thompson Sampling (multi-armed bandit) automatically allocates more traffic to the better-performing variant in real-time, reducing cumulative regret during the test",
+                  "Thompson Sampling doesn't require a control group",
+                  "Thompson Sampling provides stronger statistical guarantees",
+                ],
+                correct: 1,
+                explanation:
+                  "Fixed A/B tests waste traffic on the inferior variant for the entire test duration. Thompson Sampling starts routing more traffic to the winning variant immediately as evidence accumulates — minimising the cost of the experiment itself while maintaining statistical validity.",
+              },
+              {
+                question: "What is a guardrail metric in A/B testing for ML?",
+                options: [
+                  "A metric that must IMPROVE for the test to pass",
+                  "A metric that must NOT degrade — if it breaches its threshold (e.g. p95 latency, error rate, cost), the test auto-rolls back regardless of primary metric improvement",
+                  "A secondary metric that provides context for the primary metric",
+                  "The minimum baseline metric value required to start a test",
+                ],
+                correct: 1,
+                explanation:
+                  "Primary metrics measure the goal (e.g. NDCG, click-through rate). Guardrail metrics protect against harm (p95 latency, error rate, LLM cost per query, toxicity rate). A new model that improves relevance but doubles latency is still a regression — guardrails catch this automatically.",
+              },
+              {
+                question:
+                  "What causes feature drift vs. data drift, and how do you fix each?",
+                options: [
+                  "Feature drift = more features added; data drift = fewer features. Fix: synchronise schemas",
+                  "Feature drift = preprocessing/pipeline bug changes feature values. Fix: debug the code. Data drift = actual input distribution changed. Fix: retrain on recent data",
+                  "Feature drift and data drift are different names for the same phenomenon",
+                  "Feature drift = model architecture change; data drift = training data change",
+                ],
+                correct: 1,
+                explanation:
+                  "Critical distinction: always check your pipeline for bugs BEFORE assuming the world changed. A silent int cast, a new null-handling branch, or a schema change can cause feature drift that looks identical to real data drift — and retraining won't fix a code bug.",
+              },
+              {
+                question:
+                  "Langfuse vs LangSmith — what are the key architectural differences?",
+                options: [
+                  "Langfuse supports more LLM providers; LangSmith is OpenAI-only",
+                  "Langfuse: open-source, self-hosted on PostgreSQL, OTel-native, framework-agnostic. LangSmith: managed SaaS, tightly integrated with LangChain ecosystem",
+                  "LangSmith is cheaper; Langfuse requires GPU infrastructure",
+                  "They are functionally identical — only the UI differs",
+                ],
+                correct: 1,
+                explanation:
+                  "Langfuse self-hosted = zero SaaS cost, data stays on your infrastructure, OTel-compliant (works with any framework). LangSmith = managed service, excellent LangChain integration, BYOK on enterprise tier. If you already run PostgreSQL (you do), Langfuse is the natural choice.",
+              },
+              {
+                question:
+                  "How do you monitor retrieval quality in a production RAG system?",
+                options: [
+                  "Monitor only final user satisfaction ratings",
+                  "Track Retrieval@K and MRR on sampled production queries using LLM-as-judge for faithfulness scoring on sampled outputs",
+                  "Use the vector similarity score from the database as the quality proxy",
+                  "Count the number of retrieved documents per query",
+                ],
+                correct: 1,
+                explanation:
+                  "RAG-specific monitoring: Retrieval@K (are the right documents retrieved?), MRR (are relevant docs ranked first?), faithfulness score (does the answer stick to the retrieved context?), and answer relevance. Sample 1–5% of production queries for LLM-as-judge evaluation — cost-effective quality signal.",
+              },
+              {
+                question:
+                  "Why does label drift require a different response than data drift?",
+                options: [
+                  "Label drift can be fixed by data augmentation; data drift cannot",
+                  "Label drift means the ground truth definition changed — you need re-labelling of historical data and model retraining. Retraining on old labels makes it worse",
+                  "Label drift is always caused by data drift occurring first",
+                  "Label drift only affects classification models, not regression",
+                ],
+                correct: 1,
+                explanation:
+                  "If labelling guidelines changed (e.g., 'toxic' now includes new categories), retraining on old labels would make the model learn the old, wrong definition. You must: (1) re-label affected historical data, (2) audit model outputs against new criteria, (3) retrain. Simply 'more data' won't help.",
+              },
+              {
+                question:
+                  "For a 1% minimum detectable effect with 80% power and α=0.05, approximately how many users per variant are needed?",
+                options: [
+                  "~500 per variant",
+                  "~15,000 per variant",
+                  "~150,000 per variant",
+                  "~1.5M per variant",
+                ],
+                correct: 2,
+                explanation:
+                  "Two-proportion z-test: n = 2(z₀.₀₂₅ + z₀.₂)² × p(1-p) / δ² ≈ 2(1.96+0.84)² × 0.25 / 0.0001 ≈ 156,800 per variant. Detecting 1% improvement requires massive traffic. In practice, target 5%+ MDE or use interleaving/bandit methods to reduce requirements.",
+              },
+              {
+                question:
+                  "How do you handle alert fatigue in an ML monitoring system with many metrics?",
+                options: [
+                  "Disable all automated alerts and rely on user-reported issues",
+                  "Tiered alerts (P1-P4), actionable runbooks per alert, suppress known-noisy metrics with override windows, weekly noise review to tune thresholds",
+                  "Alert only on cost metrics — they are the most reliable signal",
+                  "Send all alerts to a dedicated Slack channel that nobody monitors",
+                ],
+                correct: 1,
+                explanation:
+                  "Alert fatigue is a solved problem in SRE — same solutions apply to ML: P1 pages on-call (model completely broken), P2 Slack (performance degraded), P3 email (drift detected), P4 dashboard-only (informational). Every alert must have a documented response action or it gets deleted.",
+              },
+              {
+                question:
+                  "What is the recommended observability stack for a production LLM application?",
+                options: [
+                  "Just logs in CloudWatch — LLMs don't need special monitoring",
+                  "Langfuse (LLM tracing) + Evidently (drift detection) + Prometheus/Grafana (infrastructure) + custom LLM eval pipeline (quality)",
+                  "New Relic with the LLM plugin — it handles everything",
+                  "Only monitor cost — it's the most actionable LLM metric",
+                ],
+                correct: 1,
+                explanation:
+                  "Three layers: (1) Infrastructure: Prometheus/Grafana for latency, throughput, error rates. (2) LLM tracing: Langfuse for token counts, costs, prompt/response logging, span trees. (3) Quality evaluation: custom pipeline sampling 1-5% of outputs for faithfulness, hallucination, and relevance scores.",
+              },
+              {
+                question:
+                  "Why is monitoring described as '70% of production AI work'?",
+                options: [
+                  "Because 70% of AI projects fail and need constant fixing",
+                  "Models degrade silently, data shifts constantly, costs drift without alerts, and users don't report subtly wrong answers — continuous vigilance is required post-deployment",
+                  "Because monitoring code takes 70% longer to write than model code",
+                  "It's an industry estimate for the proportion of AI budget spent on cloud costs",
+                ],
+                correct: 1,
+                explanation:
+                  "Training a model is a one-time event. Running it in production is indefinite. Every new user cohort slightly shifts the distribution. Every business event can cause concept drift. Every provider update can change latency. Silent failures are the norm — users stop using the product rather than reporting bad answers. Monitoring is what keeps the model working after deployment.",
+              },
+            ],
+          },
+          keyInsight:
+            "You've mastered ML Monitoring & Observability — the chapter that makes your portfolio unique. Drift detection + explainability + LLM tracing + CI/CD gating + A/B testing: this is a complete production ML monitoring story. <em>Nobody else shows this.</em> Chapter 4 is now unlocked.",
+        },
+      ];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        ChapterRunner.start(
+          3,
+          levels,
+          document.getElementById("game-panel"),
+          document.getElementById("level-nav"),
+        );
+      });
+    </script>
+  </body>
+</html>

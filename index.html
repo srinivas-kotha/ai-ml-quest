@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI/ML Quest — Master AI Engineering Through Gameplay</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-page="hub">
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- HUD -->
+    <nav class="hud">
+      <div class="hud-logo">AI<span>/ML</span> Quest</div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="page-content">
+      <div class="container">
+        <!-- Hero -->
+        <header style="text-align: center; padding: 3rem 0 2rem">
+          <h1 style="font-size: 2.5rem; letter-spacing: -0.03em">
+            AI/ML Quest
+          </h1>
+          <p
+            class="text-secondary"
+            style="
+              max-width: 620px;
+              margin: 0.75rem auto 0;
+              font-size: 0.95rem;
+              line-height: 1.6;
+            "
+          >
+            Master AI Engineering through interactive gameplay. 53 levels across
+            5 domains. Real benchmarks. Real interview prep. Zero boring
+            lectures.
+          </p>
+          <div
+            style="
+              display: flex;
+              gap: 2rem;
+              justify-content: center;
+              margin-top: 1.75rem;
+            "
+          >
+            <div style="text-align: center">
+              <div
+                class="mono"
+                style="
+                  font-size: 1.6rem;
+                  font-weight: 700;
+                  color: var(--text-primary);
+                "
+                id="hub-total-progress"
+              >
+                0%
+              </div>
+              <div
+                class="text-muted"
+                style="
+                  font-size: 0.65rem;
+                  text-transform: uppercase;
+                  letter-spacing: 0.08em;
+                "
+              >
+                Complete
+              </div>
+            </div>
+            <div style="text-align: center">
+              <div
+                class="mono"
+                style="
+                  font-size: 1.6rem;
+                  font-weight: 700;
+                  color: var(--text-primary);
+                "
+                id="hub-levels-done"
+              >
+                0/53
+              </div>
+              <div
+                class="text-muted"
+                style="
+                  font-size: 0.65rem;
+                  text-transform: uppercase;
+                  letter-spacing: 0.08em;
+                "
+              >
+                Levels
+              </div>
+            </div>
+            <div style="text-align: center">
+              <div
+                class="mono"
+                style="
+                  font-size: 1.6rem;
+                  font-weight: 700;
+                  color: var(--text-primary);
+                "
+                id="hub-total-xp"
+              >
+                0
+              </div>
+              <div
+                class="text-muted"
+                style="
+                  font-size: 0.65rem;
+                  text-transform: uppercase;
+                  letter-spacing: 0.08em;
+                "
+              >
+                Total XP
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Chapter Grid -->
+        <div id="main-content" class="bento-grid"></div>
+
+        <!-- Enterprise Skills Bridge -->
+        <section style="margin-top: 3rem; padding: 2rem 0">
+          <h2 style="text-align: center; margin-bottom: 0.4rem">
+            Enterprise Skills Bridge
+          </h2>
+          <p
+            class="text-secondary"
+            style="
+              text-align: center;
+              font-size: 0.85rem;
+              max-width: 580px;
+              margin: 0 auto 1.5rem;
+            "
+          >
+            Your .NET / Azure / Kubernetes experience maps directly to AI
+            engineering. Every level connects what you know to what you're
+            learning.
+          </p>
+          <div
+            class="bento-grid"
+            style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))"
+          >
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                Azure Monitor + App Insights
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--monitoring);
+                  margin-top: 0.5rem;
+                "
+              >
+                → ML Monitoring (Evidently, Langfuse)
+              </div>
+            </div>
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                EF Core + SQL Server
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--rag);
+                  margin-top: 0.5rem;
+                "
+              >
+                → Vector DB + pgvector + Embeddings
+              </div>
+            </div>
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                Azure DevOps CI/CD
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--finetuning);
+                  margin-top: 0.5rem;
+                "
+              >
+                → ML CI/CD Regression Gating
+              </div>
+            </div>
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                Docker + AKS (Kubernetes)
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--multimodal);
+                  margin-top: 0.5rem;
+                "
+              >
+                → GPU Containers + Model Serving
+              </div>
+            </div>
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                ASP.NET Web API + REST
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--slm);
+                  margin-top: 0.5rem;
+                "
+              >
+                → Model Serving APIs (vLLM, Ollama)
+              </div>
+            </div>
+            <div class="chapter-card" style="cursor: default; padding: 1.25rem">
+              <div
+                style="
+                  font-size: 0.65rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                "
+              >
+                You Know
+              </div>
+              <div style="font-weight: 600; margin: 0.3rem 0">
+                Microservices + Clean Architecture
+              </div>
+              <div
+                style="
+                  font-size: 0.75rem;
+                  color: var(--capstone);
+                  margin-top: 0.5rem;
+                "
+              >
+                → Modular RAG + ML Pipelines
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer
+          style="
+            text-align: center;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+          "
+        >
+          <p class="text-muted" style="font-size: 0.75rem">
+            AI/ML Quest — Interactive Learning for Enterprise Engineers
+            Transitioning to AI Engineering
+          </p>
+        </footer>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => {
+          const done = GameState.completedLevels
+            ? GameState.completedLevels.length
+            : 0;
+          document.getElementById("hub-total-progress").textContent =
+            Math.round((done / 53) * 100) + "%";
+          document.getElementById("hub-levels-done").textContent = done + "/53";
+          document.getElementById("hub-total-xp").textContent = (
+            GameState.xp || 0
+          ).toLocaleString();
+        }, 150);
+      });
+    </script>
+  </body>
+</html>

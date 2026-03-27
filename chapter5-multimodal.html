@@ -1,0 +1,1358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 5: Real-Time Multimodal AI — AI/ML Quest</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-page="chapter" data-chapter="5">
+    <canvas id="particle-canvas"></canvas>
+
+    <nav class="hud">
+      <div class="hud-logo">
+        <a href="index.html" style="color: inherit; text-decoration: none"
+          >AI<span>/ML</span> Quest</a
+        >
+      </div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="page-content">
+      <div class="container">
+        <div class="chapter-layout">
+          <nav class="level-nav" id="level-nav"></nav>
+          <div id="game-panel"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+      const levels = [
+        // ── Level 5.1 — Multimodal Landscape ────────────────────────────────────
+        {
+          title: "Multimodal Landscape",
+          subtitle: "Map the VLM ecosystem — know which model fits which job",
+          context:
+            "LLaVA's simplicity (3 components: vision encoder + projection layer + LLM) spawned an entire VLM family. Native multimodal (Gemini) captures cross-modal interactions but costs vastly more to train. Open-source has closed the gap — Qwen-VL series dominates benchmarks while remaining self-hostable.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 35,
+            questions: [
+              {
+                question:
+                  "Which open-source VLM offers 256K context with native tool calling?",
+                options: [
+                  "Qwen3-VL (longest context VLM with native tool use)",
+                  "LLaVA-1.6 (context capped at 32K)",
+                  "InternVL3.5 (128K context only)",
+                  "MiniCPM-o (optimized for edge, short context)",
+                ],
+                correct: 0,
+                explanation:
+                  "Qwen3-VL supports 256K context with native tool-use integration, making it the top choice for long-document multimodal tasks. LLaVA caps out around 32K and lacks native tool support.",
+              },
+              {
+                question:
+                  "Best open-source VLM for on-device speech + vision on mobile?",
+                options: [
+                  "Qwen2.5-VL (too large for mobile)",
+                  "MiniCPM-o (designed for on-device multimodal including speech)",
+                  "LLaVA-1.6 (no speech support)",
+                  "InternVL3.5 (20B params, too heavy)",
+                ],
+                correct: 1,
+                explanation:
+                  "MiniCPM-o is designed specifically for on-device deployment, supporting vision, speech, and language in a compact model that runs on consumer hardware.",
+              },
+              {
+                question:
+                  "Which VLM achieves the best document parsing and OCR benchmarks in 2026?",
+                options: [
+                  "GPT-4V (strong but closed-source)",
+                  "LLaVA-1.6 (weak on dense text)",
+                  "Qwen2.5-VL (best document understanding, DocVQA/ChartQA leader)",
+                  "MiniCPM-o (optimized for speed, not accuracy)",
+                ],
+                correct: 2,
+                explanation:
+                  "Qwen2.5-VL leads on DocVQA, ChartQA, and OCRBench. Its architecture handles high-resolution document images with dynamic resolution, critical for real-world document parsing.",
+              },
+              {
+                question:
+                  "What are the 3 components of the LLaVA architecture?",
+                options: [
+                  "Text tokenizer + attention head + output layer",
+                  "Vision encoder (CLIP ViT) + MLP projection layer + language model (LLM)",
+                  "Image CNN + cross-attention + decoder",
+                  "CLIP encoder + LoRA adapter + base LLM",
+                ],
+                correct: 1,
+                explanation:
+                  "LLaVA uses: (1) a CLIP ViT vision encoder to extract visual features, (2) a simple MLP projection layer to map vision features into the LLM's embedding space, and (3) a language model (originally Vicuna/LLaMA). The MLP projection is trained while vision encoder and LLM can be frozen.",
+              },
+              {
+                question:
+                  "Glue multimodal vs native multimodal — what's the key difference?",
+                options: [
+                  "Glue is faster; native is more accurate",
+                  "Glue uses separate encoders + projection layer; native uses a single unified backbone trained end-to-end",
+                  "Glue requires more VRAM; native can run on CPU",
+                  "Glue is open-source; native is always closed-source",
+                ],
+                correct: 1,
+                explanation:
+                  "Glue architecture (LLaVA-style): separate pretrained vision encoder + projection + LLM. Native multimodal (Gemini, GPT-4V): single backbone trained on all modalities simultaneously, enabling deeper cross-modal interactions but requiring massive compute to train.",
+              },
+              {
+                question:
+                  "Cheapest path to production multimodal inference at scale?",
+                options: [
+                  "GPT-4V API (easiest integration)",
+                  "Claude 3.5 Sonnet (best quality/price ratio closed-source)",
+                  "Self-hosted Pixtral-12B or MiniCPM-o (open-source, no per-token cost)",
+                  "Gemini 2.5 Flash (cheapest frontier model)",
+                ],
+                correct: 2,
+                explanation:
+                  "Self-hosted Pixtral-12B or MiniCPM-o eliminates per-token costs entirely. At scale (millions of requests), self-hosting on GPU breaks even vs API within days. Pixtral-12B from Mistral offers excellent vision capabilities at 12B parameters.",
+              },
+              {
+                question: "Best open-source VLM for video understanding tasks?",
+                options: [
+                  "CLIP (image-only, no video)",
+                  "Whisper (audio-only)",
+                  "InternVL3.5 or Qwen3-VL (strong temporal video understanding)",
+                  "LLaVA-1.6 (single-frame only)",
+                ],
+                correct: 2,
+                explanation:
+                  "InternVL3.5 and Qwen3-VL both support multi-frame video understanding with temporal reasoning. LLaVA-style models typically process single frames, missing temporal context critical for video tasks.",
+              },
+              {
+                question:
+                  "When should you choose a frontier closed model (GPT-5/Gemini 2.5) over open-source?",
+                options: [
+                  "Always — closed models are always better",
+                  "When maximum accuracy is required, budget is unlimited, and data privacy is not a concern",
+                  "Only for text tasks, not vision",
+                  "When latency is the top priority",
+                ],
+                correct: 1,
+                explanation:
+                  "Closed frontier models (GPT-5, Gemini 2.5 Ultra) lead benchmarks but cost 10-100x more and require sending data to third parties. Choose them when: accuracy is non-negotiable, budget allows, and data privacy requirements permit external processing.",
+              },
+            ],
+          },
+          keyInsight:
+            "LLaVA-style (encoder + projection + LLM) dominates open-source. Native multimodal (Gemini) is better but requires massive training compute. For production: Qwen-VL series is the best open-source multimodal family — Qwen2.5-VL for documents, Qwen3-VL for long context + tools, MiniCPM-o for edge.",
+        },
+
+        // ── Level 5.2 — CLIP Deep Dive ───────────────────────────────────────────
+        {
+          title: "CLIP Deep Dive",
+          subtitle: "Match contrastive learning variants to their strengths",
+          context:
+            "CLIP enables zero-shot anything — image search, content moderation, similarity scoring — without task-specific training. Trained on 400M image-text pairs using InfoNCE contrastive loss: pull correct image-text pairs together, push wrong pairs apart in a shared embedding space.",
+          gameType: "ConceptMatcher",
+          gameConfig: {
+            pairs: [
+              {
+                left: "Zero-shot image classification without labels",
+                right:
+                  "CLIP (400M pairs, InfoNCE loss, shared embedding space)",
+              },
+              {
+                left: "Efficient training on small batches, no global normalization",
+                right:
+                  "SigLIP (sigmoid loss per pair, scales to any batch size)",
+              },
+              {
+                left: "Highest ImageNet zero-shot accuracy (82%+)",
+                right: "EVA-CLIP-E/14+ (scaling + improved training recipe)",
+              },
+              {
+                left: "Fine-tune CLIP on a custom domain (medical, satellite)",
+                right:
+                  "OpenCLIP (open-source CLIP reimplementation, trainable)",
+              },
+              {
+                left: "Semantic image search — find images matching text queries",
+                right: "CLIP embeddings (joint image-text vector space)",
+              },
+              {
+                left: "Text-guided zero-shot image segmentation",
+                right:
+                  "CLIP + SAM (CLIP finds region, SAM segments it precisely)",
+              },
+            ],
+          },
+          keyInsight:
+            "CLIP's magic: joint embedding space where image and text similarities are directly comparable. SigLIP replaces softmax with sigmoid loss — better for small batches, no need to normalize across the entire batch. OpenCLIP for custom domain training. CLIP + SAM = zero-shot segmentation of anything described in text.",
+        },
+
+        // ── Level 5.3 — Whisper Mastery ─────────────────────────────────────────
+        {
+          title: "Whisper Mastery",
+          subtitle: "Configure a production streaming speech-to-text pipeline",
+          context:
+            "Distil-Whisper is the production standard: 6.3x faster than Whisper large-v3, 49% smaller, with fewer hallucinated repeating phrases. For real-time streaming: chunk audio with 2-second overlap to prevent word-boundary cuts, and use Silero VAD to skip silent segments entirely.",
+          gameType: "ParameterTuner",
+          gameConfig: {
+            description:
+              "Configure a streaming Whisper deployment. Hit all 4 gauges in the green zone simultaneously.",
+            sliders: [
+              {
+                name: "Chunk Size (seconds)",
+                min: 5,
+                max: 30,
+                step: 1,
+                default: 20,
+                unit: "s",
+              },
+              {
+                name: "Overlap (seconds)",
+                min: 0,
+                max: 5,
+                step: 0.5,
+                default: 0,
+                unit: "s",
+              },
+              {
+                name: "VAD Threshold",
+                min: 0.1,
+                max: 0.9,
+                step: 0.05,
+                default: 0.3,
+                unit: "",
+              },
+              {
+                name: "Model Size",
+                min: 1,
+                max: 5,
+                step: 1,
+                default: 5,
+                unit: " (1=tiny 5=large)",
+              },
+            ],
+            gauges: [
+              {
+                name: "Latency (ms)",
+                unit: "ms",
+                decimals: 0,
+                compute: (v) => {
+                  const chunkMs = v["Chunk Size (seconds)"] * 100;
+                  const modelMs = v["Model Size"] * 200;
+                  return Math.round(chunkMs + modelMs);
+                },
+                good: [200, 2000],
+              },
+              {
+                name: "Word Error Rate (%)",
+                unit: "%",
+                decimals: 1,
+                compute: (v) => {
+                  // Large model (5) = ~3% WER, tiny (1) = ~15% WER
+                  const base = 20 - v["Model Size"] * 3.4;
+                  return Math.max(1.5, parseFloat(base.toFixed(1)));
+                },
+                good: [2, 8],
+              },
+              {
+                name: "Missed Words (%)",
+                unit: "%",
+                decimals: 1,
+                compute: (v) => {
+                  // Low overlap + high VAD threshold = more missed words
+                  const overlapFactor = Math.max(0, 3 - v["Overlap (seconds)"]);
+                  const vadFactor = (v["VAD Threshold"] - 0.5) * 4;
+                  return Math.max(
+                    0,
+                    parseFloat(
+                      (overlapFactor * 0.5 + Math.max(0, vadFactor)).toFixed(1),
+                    ),
+                  );
+                },
+                good: [0, 3],
+              },
+              {
+                name: "VRAM (GB)",
+                unit: "GB",
+                decimals: 1,
+                compute: (v) => {
+                  const vramMap = [0.5, 1.0, 2.0, 4.0, 10.0];
+                  return vramMap[Math.round(v["Model Size"]) - 1];
+                },
+                good: [0.5, 6],
+              },
+            ],
+          },
+          keyInsight:
+            "Streaming recipe: 10s chunks, 2s overlap, Silero VAD threshold 0.5, Distil-Whisper large-v3. WER ~3% at 6x real-time speed. The overlap window prevents word-boundary cuts that create transcription errors at chunk boundaries. VAD threshold 0.5 balances missed words vs processing empty audio.",
+        },
+
+        // ── Level 5.4 — Streaming Protocols ─────────────────────────────────────
+        {
+          title: "Streaming Protocols",
+          subtitle: "Pick the right transport for every real-time AI use case",
+          context:
+            "WebRTC handles packet loss, echo cancellation, and jitter automatically — essential for voice AI. SSE is HTTP-native, perfect for LLM token streaming. gRPC dominates internal ML microservices with binary protocol and typed interfaces. Choose transport based on latency requirements, direction, and who's talking to whom.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 30,
+            questions: [
+              {
+                question:
+                  "Building a voice assistant with <200ms end-to-end latency. Which transport?",
+                options: [
+                  "WebSocket — bidirectional, low latency",
+                  "WebRTC — UDP-based, 5-20ms, built-in echo cancellation and jitter buffer",
+                  "SSE — server-sent events, HTTP/1.1",
+                  "HTTP polling — simple, universal",
+                ],
+                correct: 1,
+                explanation:
+                  "WebRTC uses UDP with built-in jitter buffering, echo cancellation (AEC), and noise suppression — all critical for voice quality. Latency: 5-20ms vs WebSocket's 10-50ms TCP overhead. WebSocket works but lacks AEC, requiring separate audio processing.",
+              },
+              {
+                question:
+                  "Streaming LLM tokens to a browser chat interface. Simplest correct choice?",
+                options: [
+                  "WebRTC (overkill for text tokens)",
+                  "gRPC (requires proxy for browsers)",
+                  "SSE (Server-Sent Events) — HTTP-native, auto-reconnect, no library needed",
+                  "Long polling — maximum compatibility",
+                ],
+                correct: 2,
+                explanation:
+                  "SSE is perfect for LLM streaming: one-way server→client, HTTP/1.1 native (no upgrade), auto-reconnects on disconnect, built-in browser support via EventSource API. OpenAI, Anthropic, and most LLM APIs use SSE for streaming. WebSocket also works but adds bidirectional complexity.",
+              },
+              {
+                question:
+                  "Real-time dashboard showing live model performance metrics. Best choice?",
+                options: [
+                  "REST polling every 1 second",
+                  "SSE — server pushes updates one-way, HTTP-native, auto-reconnect",
+                  "WebRTC (designed for audio/video, not data)",
+                  "WebSocket (works but SSE is simpler for one-way)",
+                ],
+                correct: 1,
+                explanation:
+                  "SSE is ideal for one-way server→client streams like dashboards, notifications, and live feeds. It's simpler than WebSocket (no bidirectional protocol overhead), auto-reconnects, and works behind standard HTTP infrastructure (load balancers, CDNs, proxies).",
+              },
+              {
+                question:
+                  "High-throughput communication between internal ML microservices (embedding service → reranker → LLM)?",
+                options: [
+                  "REST JSON — universally understood",
+                  "WebSocket — bidirectional",
+                  "gRPC streaming — Protobuf binary, typed, bidirectional, 5-10x faster than REST",
+                  "SSE — HTTP-native",
+                ],
+                correct: 2,
+                explanation:
+                  "gRPC with Protobuf is the standard for internal ML services: binary serialization (5-10x smaller than JSON), strongly typed contracts, bidirectional streaming support, and native load balancing in Kubernetes. REST adds serialization overhead that compounds across microservice chains.",
+              },
+              {
+                question:
+                  "Which transport does the OpenAI Realtime API use for voice conversations?",
+                options: [
+                  "WebSocket only",
+                  "SSE only",
+                  "WebRTC (added 2024, achieves 150-250ms first response)",
+                  "gRPC",
+                ],
+                correct: 2,
+                explanation:
+                  "OpenAI added WebRTC support to the Realtime API in late 2024. WebRTC achieves 150-250ms first text response vs ~300ms with WebSocket, primarily due to UDP transport and browser-native audio handling. The API supports both WebSocket and WebRTC — WebRTC preferred for voice UX.",
+              },
+              {
+                question:
+                  "Browser-to-browser video call for an AI interview coaching app?",
+                options: [
+                  "WebSocket relay server (high latency, server bandwidth cost)",
+                  "WebRTC peer-to-peer (NAT traversal via STUN/TURN, direct browser connection)",
+                  "gRPC (requires HTTP/2, not supported browser-to-browser)",
+                  "SSE (one-way only, cannot do bidirectional video)",
+                ],
+                correct: 1,
+                explanation:
+                  "WebRTC is the only browser API that supports peer-to-peer media (audio/video/data). STUN servers handle NAT traversal for direct connections. TURN servers relay when P2P fails. MediaStream API + RTCPeerConnection = full video call without a media relay server.",
+              },
+              {
+                question:
+                  "Lightweight notification system: alert users when their model training job finishes?",
+                options: [
+                  "WebSocket — too heavy for infrequent events",
+                  "WebRTC — designed for media, not text events",
+                  "SSE — HTTP-native, EventSource API, one line of browser code",
+                  "gRPC — requires client library, overkill for notifications",
+                ],
+                correct: 2,
+                explanation:
+                  "SSE requires just `new EventSource('/notifications')` in the browser. It auto-reconnects, works behind standard HTTP infrastructure, and is perfect for low-frequency, one-way notifications. No WebSocket upgrade handshake, no library, no connection management.",
+              },
+              {
+                question:
+                  "Which protocol is 5-10x faster than REST for inter-service ML inference?",
+                options: [
+                  "MQTT (IoT messaging, not ML serving)",
+                  "GraphQL subscriptions (higher overhead than REST)",
+                  "gRPC (Protobuf binary + HTTP/2 multiplexing + typed streaming)",
+                  "SSE (HTTP/1.1, text-based)",
+                ],
+                correct: 2,
+                explanation:
+                  "gRPC with Protobuf achieves 5-10x throughput vs REST/JSON due to: binary serialization (~3-10x smaller payloads), HTTP/2 multiplexing (multiple streams over one connection), and zero JSON parsing overhead. TensorFlow Serving, Triton Inference Server, and Ray Serve all expose gRPC endpoints.",
+              },
+            ],
+          },
+          keyInsight:
+            "Decision matrix: Voice/real-time media → WebRTC (UDP, echo cancellation, jitter buffer). LLM token streaming → SSE (simplest, HTTP-native). Dashboards/notifications → SSE. Internal ML services → gRPC (binary, typed, 5-10x faster). Browser-to-browser → WebRTC only.",
+        },
+
+        // ── Level 5.5 — Voice Assistant Architecture ────────────────────────────
+        {
+          title: "Voice Assistant Architecture",
+          subtitle: "Build the correct real-time voice AI pipeline in order",
+          context:
+            "Voice assistant latency budget: VAD 10ms → STT 100-200ms → LLM 200-500ms → TTS 90-200ms → network 50-100ms = 450-1010ms total. Pipecat is the standard open-source framework. The hardest UX problem is barge-in: detecting user interruption while TTS is still playing.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Arrange the correct components for a real-time voice assistant pipeline. Click components in the right order.",
+            components: [
+              { id: "microphone_input", label: "Microphone Input" },
+              { id: "vad_detector", label: "VAD Detector" },
+              { id: "stt_whisper", label: "STT (Whisper)" },
+              { id: "noise_reduction", label: "Noise Reduction" },
+              { id: "llm_inference", label: "LLM Inference" },
+              { id: "tts_synthesis", label: "TTS Synthesis" },
+              { id: "audio_output", label: "Audio Output" },
+              { id: "webrtc_transport", label: "WebRTC Transport" },
+              { id: "interrupt_handler", label: "Interrupt Handler" },
+            ],
+            correctOrder: [
+              "microphone_input",
+              "vad_detector",
+              "stt_whisper",
+              "llm_inference",
+              "tts_synthesis",
+              "webrtc_transport",
+              "audio_output",
+            ],
+          },
+          keyInsight:
+            "PersonaPlex achieves 205ms end-to-end latency with 100% interruption success. Pipecat is the standard open-source framework. Cost: $0.15-0.50/min (STT + LLM + TTS combined). VAD runs first to avoid transcribing silence. WebRTC transport handles jitter and echo cancellation before audio output reaches the speaker.",
+        },
+
+        // ── Level 5.6 — Edge Deployment ──────────────────────────────────────────
+        {
+          title: "Edge Deployment",
+          subtitle:
+            "Optimize vision model deployment cost across cloud vs edge vs browser",
+          context:
+            "WebGPU achieved full browser support in early 2026 — running SLMs in-browser is now practical with zero inference cost. TensorRT consistently delivers 2-5x speedup over unoptimized PyTorch through kernel fusion and quantization. ONNX Runtime provides the best cross-platform compatibility.",
+          gameType: "CostOptimizer",
+          gameConfig: {
+            scenario:
+              "Deploy a vision classification model (100M params) that handles product defect detection. You receive 5,000 requests/day. Minimize monthly cost while staying under the $200 budget.",
+            budget: 200,
+            sliders: [
+              {
+                name: "Cloud GPU Hours/Day",
+                min: 0,
+                max: 24,
+                step: 1,
+                default: 24,
+                unit: "h",
+                costImpact: (v) => {
+                  // A10G GPU at $0.75/hr
+                  return parseFloat((v * 0.75 * 30).toFixed(2));
+                },
+              },
+              {
+                name: "Edge Jetson Devices",
+                min: 0,
+                max: 3,
+                step: 1,
+                default: 0,
+                unit: " device(s)",
+                costImpact: (v) => {
+                  // Jetson Orin: $300 one-time, amortize over 12 months = $25/mo
+                  return parseFloat((v * 25).toFixed(2));
+                },
+              },
+              {
+                name: "Browser WebGPU Offload (%)",
+                min: 0,
+                max: 100,
+                step: 10,
+                default: 0,
+                unit: "%",
+                costImpact: (v) => {
+                  // Offloading to browser = free inference, slight quality loss at 100%
+                  const cloudReduction = (v / 100) * 0.75 * 30 * 8;
+                  return parseFloat((0 - cloudReduction).toFixed(2));
+                },
+              },
+              {
+                name: "TensorRT Optimization",
+                min: 0,
+                max: 1,
+                step: 1,
+                default: 0,
+                unit: " (0=off, 1=on)",
+                costImpact: (v) => {
+                  // TensorRT 2-5x speedup → can cut GPU hours by ~60%
+                  return v === 1 ? -90 : 0;
+                },
+              },
+            ],
+          },
+          keyInsight:
+            "TensorRT = 2-5x over PyTorch on NVIDIA GPUs (kernel fusion, quantization, graph optimization). ONNX Runtime = best cross-platform (CPU/GPU/mobile/browser). WebGPU = free inference in browser (full browser support 2026). Edge Jetson breaks even vs cloud GPU at ~3,000-5,000 requests/day. Hybrid: WebGPU for non-critical + cloud for precision-critical.",
+        },
+
+        // ── Level 5.7 — Real-Time Video Analysis ─────────────────────────────────
+        {
+          title: "Real-Time Video Analysis",
+          subtitle: "Build the correct camera-to-insight inference pipeline",
+          context:
+            "YOLO detects objects in <10ms per frame, SAM 2 segments anything at 44 FPS, Video-LLMs understand temporal context. Combined pipeline: detect what's there, segment precisely where it is, then describe what's happening — all in real-time video with natural language interfaces.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Build a warehouse safety monitoring system. Arrange the pipeline components in the correct order.",
+            components: [
+              { id: "camera_feed", label: "Camera Feed" },
+              { id: "frame_buffer", label: "Frame Buffer" },
+              { id: "motion_detector", label: "Motion Detector" },
+              { id: "yolo_detector", label: "YOLO Detector" },
+              { id: "sam2_segmenter", label: "SAM 2 Segmenter" },
+              { id: "object_tracker", label: "Object Tracker" },
+              { id: "video_llm", label: "Video-LLM" },
+              { id: "alert_system", label: "Alert System" },
+              { id: "storage", label: "Storage" },
+            ],
+            correctOrder: [
+              "camera_feed",
+              "frame_buffer",
+              "motion_detector",
+              "yolo_detector",
+              "sam2_segmenter",
+              "video_llm",
+              "alert_system",
+            ],
+          },
+          keyInsight:
+            "YOLO26 detects in <10ms per frame (100+ FPS). SAM 2 segments at 44 FPS with video object tracking across frames. Grounded SAM 2 + DINO enables text-guided detection ('find all safety violations'). Video-LLMs (Qwen3-VL, InternVL) understand temporal context across frame sequences. Motion detection as early filter prevents YOLO from running on static frames — major GPU savings.",
+        },
+
+        // ── Level 5.8 — GPU Multiplexing ─────────────────────────────────────────
+        {
+          title: "GPU Multiplexing",
+          subtitle:
+            "Match GPU sharing strategies to the right production scenario",
+          context:
+            "MIG (Multi-Instance GPU) partitions the GPU in hardware — up to 7 isolated instances on an A100, each with guaranteed memory and compute. Time-slicing shares GPU in software — up to 90% cost savings but no memory isolation. MPS enables concurrent CUDA kernels for lightweight embedding jobs.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 35,
+            questions: [
+              {
+                question:
+                  "Running 3 production inference models that each have strict p99 SLA requirements (<100ms)?",
+                options: [
+                  "Time-slicing (GPU shared in software, no SLA guarantees)",
+                  "MPS (concurrent CUDA contexts, shared memory, no isolation)",
+                  "MIG (hardware partition, guaranteed memory + compute per instance)",
+                  "Separate GPU per model (expensive, underutilized)",
+                ],
+                correct: 2,
+                explanation:
+                  "MIG (Multi-Instance GPU) on A100/H100 provides hardware-level isolation: each instance gets guaranteed VRAM, SM count, and cache. Time-slicing can cause latency spikes when other jobs compete. Only MIG can guarantee SLA compliance with multiple concurrent production models.",
+              },
+              {
+                question:
+                  "A/B testing 5 versions of an experimental model — maximize GPU density?",
+                options: [
+                  "MIG (only 7 instances max, hardware overhead)",
+                  "Time-slicing (software sharing, 10+ jobs on 1 GPU, up to 90% savings)",
+                  "Separate GPUs for each version (cost prohibitive for experiments)",
+                  "MPS (better for inference than training, complex setup)",
+                ],
+                correct: 1,
+                explanation:
+                  "Time-slicing is ideal for experimental workloads where SLAs don't matter. You can run 10+ model versions on a single GPU with up to 90% cost savings vs dedicated GPUs. Latency may spike but experiments tolerate that. MIG is limited to 7 instances on A100.",
+              },
+              {
+                question:
+                  "10 lightweight embedding jobs that each run for <1 second — minimize overhead?",
+                options: [
+                  "MIG (hardware partitioning overhead too high for lightweight jobs)",
+                  "Time-slicing (context switching overhead between jobs)",
+                  "MPS (Multi-Process Service — concurrent CUDA contexts, lowest overhead for light jobs)",
+                  "Separate processes with exclusive GPU access",
+                ],
+                correct: 2,
+                explanation:
+                  "MPS (Multi-Process Service) enables multiple processes to submit CUDA kernels concurrently to the same GPU without context-switching overhead. Ideal for many lightweight jobs: embedding generation, small inference requests, batch preprocessing — all running simultaneously.",
+              },
+              {
+                question:
+                  "Mix production serving (strict SLA) + ML experiments (flexible) on one A100?",
+                options: [
+                  "Time-slicing for everything (SLA at risk)",
+                  "MIG for production partitions + time-slicing within the experimental partition",
+                  "MPS for everything (no memory isolation)",
+                  "Separate A100s for production and experiments",
+                ],
+                correct: 1,
+                explanation:
+                  "Hybrid approach: use MIG to carve out isolated partitions for production workloads (guaranteed resources), then run time-sliced experiments within a separate MIG partition. A100 80GB supports up to 7 MIG instances. Each production model gets hardware isolation; experiments share the remaining capacity.",
+              },
+              {
+                question: "Which GPUs support MIG (Multi-Instance GPU)?",
+                options: [
+                  "RTX 4090 and RTX 3090 (consumer GPUs)",
+                  "A100, H100, A30, A10 (datacenter GPUs only)",
+                  "Any NVIDIA GPU with 16GB+ VRAM",
+                  "All NVIDIA GPUs since Ampere architecture",
+                ],
+                correct: 1,
+                explanation:
+                  "MIG is only available on select NVIDIA datacenter GPUs: A100, H100, A30, and A10. Consumer GPUs (RTX series) do NOT support MIG — they only support time-slicing and MPS. This is an intentional market segmentation by NVIDIA.",
+              },
+              {
+                question:
+                  "What's the maximum GPU cost savings from time-slicing vs dedicated GPU per model?",
+                options: [
+                  "~30% savings",
+                  "~50% savings",
+                  "~70% savings",
+                  "Up to 90% savings (10 models on 1 GPU vs 10 dedicated GPUs)",
+                ],
+                correct: 3,
+                explanation:
+                  "Time-slicing can run 10+ models on a single GPU, reducing GPU cost by up to 90% vs 1 GPU per model. The trade-off: shared memory (OOM risk if all models spike simultaneously), latency variability, no SLA guarantees. Perfect for batch/async workloads and experimental models.",
+              },
+              {
+                question: "How does Kubernetes handle GPU resource scheduling?",
+                options: [
+                  "GPU type is handled automatically, no configuration needed",
+                  "Use nvidia.com/gpu resource requests in pod spec + nodeSelector for GPU type",
+                  "GPUs are scheduled using CPU millicores equivalent",
+                  "Special K8s GPU operator required, no native support",
+                ],
+                correct: 1,
+                explanation:
+                  "K8s GPU scheduling: (1) install NVIDIA GPU Operator, (2) request GPUs via `resources.limits: nvidia.com/gpu: 1` in pod spec, (3) use nodeSelector or nodeAffinity to target specific GPU types (A100 vs T4). For MIG, use `nvidia.com/mig-3g.20gb: 1` style resource names.",
+              },
+              {
+                question:
+                  "Which GPU sharing method provides hardware memory isolation between tenants?",
+                options: [
+                  "Time-slicing (software only, shared memory address space)",
+                  "MPS (shared CUDA context, no memory isolation)",
+                  "MIG (hardware partition, dedicated VRAM per instance, true isolation)",
+                  "None of the above — GPU memory is always shared",
+                ],
+                correct: 2,
+                explanation:
+                  "Only MIG provides hardware-level memory isolation. Each MIG instance gets a dedicated slice of VRAM with hardware barriers — one instance cannot access another's memory even if it misbehaves or crashes. Critical for multi-tenant deployments or when mixing sensitive workloads.",
+              },
+            ],
+          },
+          keyInsight:
+            "MIG = guaranteed SLA (hardware partition, memory isolation) — production models on A100/H100. Time-slicing = maximum density (90% savings, shared memory) — experiments and batch. MPS = lightweight sharing (concurrent CUDA kernels) — many small jobs. Your K8s knowledge transfers directly: nvidia.com/gpu resource requests, nodeSelector for GPU type, GPU Operator for MIG resource names.",
+        },
+
+        // ── Level 5.9 — Graceful Degradation & Production ────────────────────────
+        {
+          title: "Graceful Degradation",
+          subtitle:
+            "Diagnose a cascading production failure in a live voice assistant",
+          context:
+            "Production AI systems MUST handle failures gracefully. Circuit breakers, fallback models, queue depth alerting — the same patterns as your microservices experience apply directly. The most common production failure mode: GPU saturation causes queue buildup, which causes timeouts, which trips circuit breakers.",
+          gameType: "DiagnosisLab",
+          gameConfig: {
+            scenario:
+              "Your production voice assistant is experiencing cascading failures during peak traffic (Monday 9 AM, 3x normal load). Users are receiving 'Service unavailable' errors. Identify the root cause.",
+            metrics: [
+              { name: "TTS Service", value: "503 errors", status: "alert" },
+              { name: "GPU Utilization", value: "98%", status: "alert" },
+              { name: "Queue Depth", value: "847 requests", status: "alert" },
+              { name: "Whisper Latency", value: "340ms", status: "ok" },
+              { name: "Error Rate", value: "23%", status: "alert" },
+              { name: "Circuit Breaker", value: "OPEN", status: "warn" },
+            ],
+            options: [
+              {
+                id: "tts",
+                label:
+                  "TTS service is down — circuit breaker tripped, need to restart TTS pod and clear fallback to text-only responses",
+              },
+              {
+                id: "gpu",
+                label:
+                  "GPU saturated at 98% — queue depth exceeded threshold, causing timeout cascade that tripped circuit breakers on TTS and other downstream services",
+              },
+              {
+                id: "whisper",
+                label:
+                  "Whisper latency spike to 340ms — STT bottleneck causing backup into TTS queue",
+              },
+              {
+                id: "cascade",
+                label:
+                  "Network partition causing cascading timeout failures across all services simultaneously",
+              },
+            ],
+            correctId: "gpu",
+            explanation:
+              "GPU saturation (98%) is the root cause. At 3x normal load, GPU compute is exhausted. Requests queue up (847 pending). Queued requests exceed timeout thresholds → TTS starts returning 503s → circuit breaker opens → 23% error rate. Fix: (1) auto-scale GPU pool when utilization >80%, (2) alert on queue depth >100 before timeouts occur, (3) implement fallback to smaller model under load, (4) configure circuit breaker with fallback to text-only response — never fail silently.",
+          },
+          keyInsight:
+            "GPU saturation (98%) caused queue buildup (847), which caused timeouts, which tripped circuit breakers. Correct fix: auto-scale GPU at 80% threshold (not 100%), alert on queue depth early, fallback chain: full model → smaller model → cached response → text-only → graceful error. Never let GPU hit 100% in production — you've lost the ability to drain the queue.",
+        },
+
+        // ── Level 5.10 — Multimodal Interview Gauntlet ───────────────────────────
+        {
+          title: "Multimodal Interview Gauntlet",
+          subtitle:
+            "20 expert-level multimodal AI questions — score 80% to advance",
+          context:
+            "20 expert questions covering the full multimodal stack. This is the format you'll face in Senior AI Engineer interviews. Score 80% (16/20) to complete the multimodal chapter. 45 seconds per question.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 45,
+            questions: [
+              {
+                question: "LLaVA architecture: what are the 3 components?",
+                options: [
+                  "Text encoder + visual decoder + output head",
+                  "Vision encoder (CLIP ViT) + MLP projection layer + language model (LLM)",
+                  "Image CNN + cross-attention mechanism + text decoder",
+                  "DINO encoder + adapter + base LLM",
+                ],
+                correct: 1,
+                explanation:
+                  "LLaVA = CLIP ViT (vision encoder) + 2-layer MLP projection (maps vision features to LLM embedding space) + language model. The MLP projection is typically the only trained component — vision encoder and LLM can be frozen.",
+              },
+              {
+                question: "What is CLIP's training objective?",
+                options: [
+                  "Reconstruct masked image patches (MAE)",
+                  "Classify images into 1000 ImageNet categories",
+                  "Contrastive loss (InfoNCE): maximize similarity of correct image-text pairs, minimize incorrect pairs",
+                  "Predict the next token in an image caption",
+                ],
+                correct: 2,
+                explanation:
+                  "CLIP trains with InfoNCE (noise contrastive estimation) loss on 400M image-text pairs. For a batch of N pairs, the model must identify the N correct pairings from N² possibilities. This creates a shared embedding space where image and text representations are directly comparable.",
+              },
+              {
+                question:
+                  "Distil-Whisper vs Whisper large-v3: what are the key tradeoffs?",
+                options: [
+                  "Distil-Whisper is larger but faster due to hardware optimization",
+                  "6.3x faster, 49% smaller, ~1% WER increase, fewer hallucinated repeating phrases",
+                  "Same size but quantized to INT8, 3x faster",
+                  "Distil-Whisper only works for English; Whisper large-v3 is multilingual",
+                ],
+                correct: 1,
+                explanation:
+                  "Distil-Whisper (2023) achieves 6.3x real-time speedup and 49% size reduction via knowledge distillation. WER increases ~1% absolute (e.g., 2.7% → 3.7%). Critical improvement: significantly fewer hallucinated repeating phrases that plague Whisper large-v3 on silence or noise.",
+              },
+              {
+                question:
+                  "WebRTC vs WebSocket for voice AI — key technical difference?",
+                options: [
+                  "WebRTC is always faster due to binary protocol",
+                  "WebSocket uses HTTP/2; WebRTC uses HTTP/1.1",
+                  "WebRTC uses UDP + built-in echo cancellation/jitter buffer; WebSocket uses TCP, no media processing",
+                  "WebRTC only works peer-to-peer; WebSocket requires a relay server",
+                ],
+                correct: 2,
+                explanation:
+                  "WebRTC: UDP transport (tolerates packet loss), built-in AEC (acoustic echo cancellation), noise suppression, jitter buffering, DTLS encryption, SRTP media. Latency: 5-20ms. WebSocket: TCP (retransmits on loss), plain bytes, no audio processing, 10-50ms. For voice: WebRTC wins on quality. For text: WebSocket or SSE is simpler.",
+              },
+              {
+                question:
+                  "Total latency budget for a production voice assistant (VAD → STT → LLM → TTS)?",
+                options: [
+                  "VAD 10ms + STT 100-200ms + LLM 200-500ms + TTS 90-200ms + network 50-100ms = 450-1010ms",
+                  "VAD 50ms + STT 500ms + LLM 2000ms + TTS 1000ms = 3550ms",
+                  "STT 50ms + LLM 100ms + TTS 50ms = 200ms total",
+                  "50ms total with GPU acceleration",
+                ],
+                correct: 0,
+                explanation:
+                  "Real-world latency: VAD (10ms, CPU) + STT/Whisper (100-200ms, first chunk) + LLM TTFT (200-500ms) + TTS (90-200ms) + network (50-100ms) = 450ms-1010ms. Best-in-class systems (PersonaPlex) achieve ~205ms by optimizing each stage. Streaming TTS that starts playing before generation finishes is critical.",
+              },
+              {
+                question: "TensorRT speedup over unoptimized PyTorch?",
+                options: [
+                  "10-50% improvement (marginal)",
+                  "10-20x speedup consistently",
+                  "2-5x speedup through kernel fusion, quantization, and graph optimization",
+                  "TensorRT only helps for batch inference, not single requests",
+                ],
+                correct: 2,
+                explanation:
+                  "TensorRT consistently delivers 2-5x speedup: kernel fusion (eliminates memory round-trips between operations), INT8/FP16 quantization (2x fewer bytes = 2x throughput), layer fusion (combine BatchNorm + ReLU + Conv into one kernel), dynamic shape optimization. For YOLO: 8ms → 3ms. For ViT: 40ms → 12ms.",
+              },
+              {
+                question: "YOLO26 inference time on NVIDIA RTX 4090?",
+                options: [
+                  "~100ms per frame (max 10 FPS)",
+                  "~50ms per frame (20 FPS)",
+                  "<10ms per frame (100+ FPS, real-time detection)",
+                  "~200ms per frame for 1080p",
+                ],
+                correct: 2,
+                explanation:
+                  "YOLO26 achieves <10ms inference on RTX 4090, enabling 100+ FPS real-time detection. This includes detection, NMS (non-maximum suppression), and bounding box decoding. Multiple YOLO models can run simultaneously on a single GPU for multi-camera systems.",
+              },
+              {
+                question: "SAM 2 (Segment Anything Model 2) key capabilities?",
+                options: [
+                  "Image segmentation only, 5 FPS on GPU",
+                  "Text-to-segmentation only, no image input",
+                  "Segment anything in images AND video at 44 FPS, promptable with points/boxes/text/masks",
+                  "Object detection only, not segmentation",
+                ],
+                correct: 2,
+                explanation:
+                  "SAM 2 (2024) extends SAM to video: segment any object in images and video at 44 FPS. Accepts prompts as clicks, bounding boxes, text, or masks. Video capability: track segmented objects across frames with temporal consistency. Hiera backbone (hierarchical) enables real-time performance.",
+              },
+              {
+                question:
+                  "MIG vs time-slicing: when does MIG guarantee latency SLAs?",
+                options: [
+                  "Both guarantee latency — time-slicing is just cheaper",
+                  "Neither guarantees SLAs — use separate GPUs",
+                  "MIG provides hardware memory + compute isolation (SLA-capable); time-slicing is software (no SLA guarantee)",
+                  "Time-slicing guarantees SLAs if you set priority levels",
+                ],
+                correct: 2,
+                explanation:
+                  "MIG (A100/H100) partitions GPU in hardware: each instance gets dedicated VRAM, streaming multiprocessors, and cache — cannot be stolen by other instances. Time-slicing is software context-switching: a heavy job can delay your SLA-critical model. For p99 SLA guarantees: MIG. For cost efficiency with flexible workloads: time-slicing.",
+              },
+              {
+                question: "WebGPU browser support status in 2026?",
+                options: [
+                  "Chrome only, Safari and Firefox pending",
+                  "Available in Canary/beta channels only",
+                  "Full cross-browser support (Chrome, Firefox, Safari) — SLMs in-browser are now practical",
+                  "WebGPU was replaced by WebNN in 2025",
+                ],
+                correct: 2,
+                explanation:
+                  "WebGPU achieved full browser support in early 2026 (Chrome 113+ since 2023, Firefox and Safari followed). This enables running Small Language Models (SLMs like Phi-3-mini, Gemma-2B) directly in browser via WebLLM, llama.cpp.wasm, or transformers.js. Zero inference cost, full privacy.",
+              },
+              {
+                question:
+                  "Production streaming Whisper recipe — correct parameters?",
+                options: [
+                  "30s chunks, no overlap, threshold 0.9, Whisper large-v3",
+                  "5s chunks, 5s overlap, threshold 0.1, Whisper tiny",
+                  "10s chunks, 2s overlap, Silero VAD threshold 0.5, Distil-Whisper large-v3",
+                  "60s chunks, 0s overlap, threshold 0.5, Whisper base",
+                ],
+                correct: 2,
+                explanation:
+                  "Production recipe: 10s chunks (balance latency vs accuracy), 2s overlap (prevents word-boundary cuts), Silero VAD threshold 0.5 (balance silence detection vs missed words), Distil-Whisper large-v3 (6.3x faster, production-tested). Result: ~3% WER at 6x real-time speed, <200ms perceived latency.",
+              },
+              {
+                question:
+                  "gRPC vs REST for internal ML microservice communication?",
+                options: [
+                  "REST is always better — universally understood and debuggable",
+                  "gRPC: binary Protobuf, typed contracts, streaming, 5-10x faster than REST JSON",
+                  "GraphQL is preferred for ML services",
+                  "Both are equivalent — choose based on team familiarity",
+                ],
+                correct: 1,
+                explanation:
+                  "gRPC wins for internal ML services: Protobuf binary (3-10x smaller than JSON), HTTP/2 multiplexing, strongly typed (compile-time interface contracts), bidirectional streaming. TensorFlow Serving, Triton, and Ray Serve all offer gRPC endpoints. REST for external APIs where clients can't use gRPC libraries.",
+              },
+              {
+                question:
+                  "Circuit breaker pattern for AI services — correct implementation?",
+                options: [
+                  "Block all requests permanently after first failure",
+                  "Retry infinitely until service recovers",
+                  "Open after N failures, redirect to fallback (smaller model/cached response/text-only), half-open to probe recovery",
+                  "Circuit breakers are for databases only, not AI services",
+                ],
+                correct: 2,
+                explanation:
+                  "Circuit breaker for AI: CLOSED (normal) → OPEN after N failures in window (redirect to fallback) → HALF-OPEN after timeout (probe with limited traffic) → CLOSED on success. Fallback chain: full model → smaller model → semantic cache hit → text-only response → graceful error. Never let failures cascade to total unavailability.",
+              },
+              {
+                question:
+                  "SigLIP vs CLIP — what's the key algorithmic improvement?",
+                options: [
+                  "SigLIP uses a transformer decoder instead of encoder",
+                  "SigLIP uses sigmoid loss per image-text pair (no global softmax normalization), enabling efficient small-batch training",
+                  "SigLIP adds a speech encoder for audio",
+                  "SigLIP replaces CLIP ViT with CNN backbone",
+                ],
+                correct: 1,
+                explanation:
+                  "CLIP uses softmax cross-entropy requiring global normalization across all pairs in batch — expensive for large batches, unstable for small batches. SigLIP (2023) uses sigmoid binary cross-entropy per pair: each (image, text) pair is scored independently. Benefits: efficient small-batch training, no batch-size sensitivity, easier distributed training. Used in PaLI-3 and Gemini.",
+              },
+              {
+                question: "What is Pipecat?",
+                options: [
+                  "A Python library for fine-tuning speech models",
+                  "A vector database optimized for audio embeddings",
+                  "Open-source framework for building real-time voice and video AI pipelines (WebRTC, VAD, STT, LLM, TTS)",
+                  "A TTS model similar to ElevenLabs",
+                ],
+                correct: 2,
+                explanation:
+                  "Pipecat (Daily.co open-source) is the standard framework for voice AI pipelines: connects WebRTC transport + VAD (Silero) + STT (Whisper/Deepgram) + LLM (any) + TTS (ElevenLabs/Cartesia) with built-in barge-in, interruption handling, and streaming. Used by PersonaPlex (205ms latency) and others in production.",
+              },
+              {
+                question:
+                  "ONNX Runtime's key advantage for production ML deployment?",
+                options: [
+                  "Faster than TensorRT on NVIDIA GPUs",
+                  "Only works for transformer models",
+                  "Cross-platform (CPU/CUDA/DirectML/CoreML/WebGPU) — one model format, hardware-agnostic optimization",
+                  "Better accuracy than PyTorch models",
+                ],
+                correct: 2,
+                explanation:
+                  "ONNX Runtime's value: export once, run anywhere. Same ONNX model file runs on: CUDA (NVIDIA), ROCm (AMD), CoreML (Apple Silicon), DirectML (Windows GPU), WebGPU (browser), CPU (any). Execution providers auto-select the best backend. TensorRT is faster on NVIDIA specifically — ONNX Runtime is better for multi-platform deployment.",
+              },
+              {
+                question:
+                  "GPU memory budget for a combined video analysis system (detection + segmentation + understanding)?",
+                options: [
+                  "1GB total is sufficient for all three",
+                  "Detection (YOLO, <1GB) + Segmentation (SAM 2, 2-4GB) + Video understanding (VLM, 8-16GB) = 12-21GB",
+                  "32GB minimum, 80GB recommended",
+                  "Can run on CPU, no GPU needed",
+                ],
+                correct: 1,
+                explanation:
+                  "Real VRAM budgets: YOLO (<1GB, tiny detection model), SAM 2 Large (2.4GB fp16), Qwen3-VL 7B (8GB), Qwen3-VL 72B (40GB fp16). Practical full stack on RTX 4090 (24GB): YOLO + SAM 2 + 7B VLM fits with headroom. For 70B+ VLM: A100 80GB required. Plan your VRAM budget before architecture.",
+              },
+              {
+                question:
+                  "Graceful degradation strategy for production AI systems?",
+                options: [
+                  "Return 500 errors immediately on any failure",
+                  "Queue all requests indefinitely until service recovers",
+                  "Fallback chain: full model → smaller model → cached response → text-only → graceful error message",
+                  "Circuit breakers prevent all degradation strategies",
+                ],
+                correct: 2,
+                explanation:
+                  "Fallback chain: (1) full production model, (2) smaller/faster model (e.g., GPT-4o → GPT-4o-mini), (3) semantic cache hit from recent similar query, (4) text-only response (no images/audio), (5) pre-written graceful error message. Each level provides some value. The goal: NEVER fail completely. Define SLA at each degradation level.",
+              },
+              {
+                question:
+                  "Realistic cost for a production voice AI assistant per minute of conversation?",
+                options: [
+                  "$0.001/min (essentially free)",
+                  "$5-10/min (expensive)",
+                  "$0.15-0.50/min (STT + LLM + TTS combined at scale)",
+                  "$50/min (enterprise pricing only)",
+                ],
+                correct: 2,
+                explanation:
+                  "Production cost breakdown per minute: STT/Whisper ($0.006/min Deepgram) + LLM ($0.03-0.15/min GPT-4o) + TTS ($0.01-0.18/min ElevenLabs) = $0.046-0.336/min cloud APIs. Add infrastructure overhead → $0.15-0.50/min realistic. At scale (1M min/month): worth self-hosting STT + TTS, use API for LLM only.",
+              },
+              {
+                question:
+                  "Why is barge-in (interruption) detection the hardest UX problem in voice AI?",
+                options: [
+                  "It requires special hardware microphones",
+                  "Must detect user speech while TTS audio plays in the same acoustic space, cancel generation mid-stream, and restart STT immediately without losing context",
+                  "WebRTC doesn't support interruption detection",
+                  "LLMs can't be interrupted once they start generating",
+                ],
+                correct: 1,
+                explanation:
+                  "Barge-in is hard because: (1) VAD must distinguish user voice from TTS playback (echo) — requires AEC, (2) generation must cancel mid-stream (partial tokens discarded), (3) STT must restart immediately with fresh context, (4) conversation state must reset correctly. PersonaPlex achieved 100% interruption success through WebRTC AEC + Pipecat pipeline design.",
+              },
+            ],
+          },
+          keyInsight:
+            "You've mastered Multimodal AI. The differentiator: you understand the full stack from CLIP embeddings to WebRTC transport to GPU multiplexing to production failure patterns — not just 'I called the API'. That's the top 1% of AI engineers.",
+        },
+
+        // ── Level 5.11 — CAPSTONE: Systems Thinking ──────────────────────────────
+        {
+          title: "CAPSTONE: Systems Thinking",
+          subtitle:
+            "Design complete AI systems under real constraints — whiteboard style",
+          context:
+            "Top 1% AI engineers understand from GPU kernels to user experience. This capstone tests your ability to design complete AI systems under real constraints — not just individual components. Every answer represents a system-level tradeoff decision you'll face in senior interviews.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 60,
+            questions: [
+              {
+                question:
+                  "Design RAG for 10M docs, 1000 QPS, p95 <2s. What's your architecture?",
+                options: [
+                  "pgvector + basic cosine search, single server, no cache",
+                  "Pinecone serverless + OpenAI embeddings, auto-scaling",
+                  "pgvector + hybrid search (BM25 + semantic) + semantic cache (70% hit rate) + model routing by query complexity + Langfuse monitoring",
+                  "Elasticsearch full-text search with LLM reranking",
+                ],
+                correct: 2,
+                explanation:
+                  "Complete design: pgvector for semantic + pg_search BM25 for hybrid retrieval, semantic cache (Redis) for 70% cache hit rate at scale, model routing (GPT-4o-mini for simple queries, GPT-4o for complex), reranker (cross-encoder) for top-20 → top-3, Langfuse tracing, Evidently drift monitoring. Cache alone cuts GPU cost by ~70%.",
+              },
+              {
+                question:
+                  "Design a voice assistant for a 500-agent call center. SLA: <1s response, 99.9% uptime.",
+                options: [
+                  "OpenAI Realtime API with WebSocket, single datacenter",
+                  "WebRTC + Distil-Whisper + LLM (GPT-4o) + TTS pipeline, GPU auto-scaling, queue management, human fallback at 5% error rate, active-active multi-region",
+                  "Phone IVR system with GPT-4 backend",
+                  "Pre-scripted decision tree with ML intent classification",
+                ],
+                correct: 1,
+                explanation:
+                  "Call center voice AI: WebRTC transport (AEC, jitter), Distil-Whisper STT (6.3x faster, streaming), GPT-4o for understanding, Cartesia/ElevenLabs TTS, GPU pool auto-scale at 70% utilization, queue depth alert at 100 requests, fallback to human agent at 5%+ error rate, active-active multi-region for 99.9% uptime. Monitor: latency p50/p95/p99, interruption success rate, abandon rate.",
+              },
+              {
+                question:
+                  "Design an ML platform for a 50-person team (10 data scientists, 5 MLEs). What components?",
+                options: [
+                  "Jupyter notebooks + shared S3 bucket + manual deployment",
+                  "Feature store (Feast) + experiment tracking (MLflow) + model registry + CI/CD gates + A/B testing + monitoring (Evidently) + Kubernetes serving",
+                  "Single GPU server with shared access",
+                  "Vertex AI fully managed, no custom infrastructure",
+                ],
+                correct: 1,
+                explanation:
+                  "50-person ML platform essentials: Feature Store (Feast/Tecton) for reproducibility, MLflow for experiments (every run tracked), Model Registry for staging/production promotion, CI/CD quality gates (accuracy threshold, latency SLA, data drift check), A/B testing framework (feature flags + traffic split), Evidently for monitoring. Without this: experiments overwrite each other, models deploy without validation, no rollback capability.",
+              },
+              {
+                question:
+                  "RAG system costs $2.50/request. Target: $0.15/request. What's your optimization plan?",
+                options: [
+                  "Switch to a cheaper LLM only",
+                  "Reduce chunk size to use fewer tokens",
+                  "Semantic caching (70% hit rate) + batch embeddings + small model routing (80% queries) + Matryoshka embedding truncation (1536→256 dims, 98% quality, 6x less storage)",
+                  "Use BM25 full-text search instead of semantic search",
+                ],
+                correct: 2,
+                explanation:
+                  "Cost reduction math: semantic cache at 70% hit rate → 70% fewer LLM calls → $2.50 → $0.75. Small model routing (GPT-4o-mini for 80% simple queries, $0.15/MTok vs $5/MTok) → 0.75 → $0.35. Matryoshka truncation 1536→256 dims → embedding query cost -6x. Result: ~$0.12/request. Cache hit rate is the highest leverage intervention.",
+              },
+              {
+                question:
+                  "Design multi-model serving for a startup: 3 LLMs, 2 vision models, 1 embedding model on 2 GPUs.",
+                options: [
+                  "1 model per GPU, rotate models between requests",
+                  "vLLM with LoRA adapters for LLMs (shared base weights) + time-slicing for vision + dedicated thread for embedding, model routing by complexity",
+                  "All models on CPU to avoid GPU conflicts",
+                  "Separate Kubernetes pods per model, 6 GPUs total",
+                ],
+                correct: 1,
+                explanation:
+                  "Efficient multi-model on 2 GPUs: vLLM with LoRA serving (multiple LLMs share base model weights, only adapters swap) on GPU 1, time-sliced vision models on GPU 2 with priority queuing, embedding model on CPU (tiny, fast). Model routing: classify query complexity first (cheap), route to cheapest capable model. GPU 1 handles most traffic; GPU 2 vision when needed.",
+              },
+              {
+                question:
+                  "Your production model's accuracy degraded from 94% to 78% over 3 months. How do you respond?",
+                options: [
+                  "Immediately retrain on new data without investigation",
+                  "Roll back to the previous model version",
+                  "Evidently drift detection identifies input distribution shift → check feature correlation with labels → labeled sample shows data quality issue → root cause targeted → automated retraining pipeline with shadow mode → canary rollout → rollback trigger",
+                  "Accept degradation as normal model aging",
+                ],
+                correct: 2,
+                explanation:
+                  "Structured response: (1) Evidently detects distribution shift in inputs, (2) sample 100 recent predictions, label them, confirm 78% accuracy, (3) check data pipeline for upstream changes, (4) identify root cause (data quality issue, distribution shift, label drift), (5) fix root cause + trigger targeted retraining, (6) shadow mode (new model runs but doesn't serve), (7) canary (5% traffic) → monitor 48h → full rollout. Set auto-retrain trigger when faithfulness < threshold.",
+              },
+              {
+                question:
+                  "Design a document processing pipeline for 10,000 PDFs/day (contracts, invoices, reports).",
+                options: [
+                  "Extract text with pdftotext, store in PostgreSQL, keyword search",
+                  "OCR with Qwen2.5-VL → recursive chunking (512 tokens, 10% overlap) → text-embedding-3-small → pgvector → hybrid search → GPT-4o generation → Langfuse quality monitoring → HITL feedback loop for low-confidence extractions",
+                  "Send all PDFs to GPT-4V API with full text in prompt",
+                  "Fine-tune a document model on the corpus",
+                ],
+                correct: 1,
+                explanation:
+                  "Production document pipeline: Qwen2.5-VL for OCR/layout understanding (handles tables, charts, forms — pure text extraction misses 30% of structured data), recursive chunking preserves sentence boundaries, text-embedding-3-small (cost efficient), pgvector + BM25 hybrid, cross-encoder reranker, GPT-4o for generation, Langfuse traces every extraction, HITL review for confidence < 0.85. Monitor: extraction accuracy, hallucination rate per document type.",
+              },
+              {
+                question:
+                  "Scale a RAG application from 100 to 100,000 daily active users. Architecture evolution?",
+                options: [
+                  "Add more RAM to existing server",
+                  "Move everything to the cloud",
+                  "Semantic cache (Redis) + horizontal LLM serving (vLLM) + CDN for static assets + async queue for non-real-time + model distillation for high-volume query types + pgvector read replicas",
+                  "Reduce features to handle the load",
+                ],
+                correct: 2,
+                explanation:
+                  "1000x scale path: semantic cache (30-70% deflection), horizontal scaling (add vLLM replicas, stateless), async queue for non-real-time (report generation, batch analysis), model distillation (identify top 5 query types, fine-tune small model for each = 10x cheaper), pgvector read replicas (replication lag acceptable for reads), CDN for static assets, background pre-computation for predictable queries. Cost per user should DECREASE with scale through caching + routing efficiency.",
+              },
+            ],
+          },
+          keyInsight:
+            "Systems thinking = understanding tradeoffs across the ENTIRE stack simultaneously. Cost vs latency vs quality vs scalability. The best AI engineers optimize the system, not individual components. Every architectural decision has downstream consequences — semantic cache affects model choice, model choice affects GPU requirements, GPU requirements affect SLA.",
+        },
+
+        // ── Level 5.12 — CAPSTONE: Portfolio Differentiators ─────────────────────
+        {
+          title: "CAPSTONE: Portfolio Differentiators",
+          subtitle:
+            "Identify what actually makes an AI engineer portfolio stand out",
+          context:
+            "What hiring managers actually look for: production experience (monitoring, cost analysis, error handling), not tutorial completion. Most candidates have 10+ tutorial completions and zero production patterns. Your portfolio across these 5 chapters has ALL production patterns — most candidates have none.",
+          gameType: "DiagnosisLab",
+          gameConfig: {
+            scenario:
+              "You're the hiring manager reviewing 3 portfolios for a Senior AI Engineer role ($180K, fintech). Which candidate demonstrates true production readiness? Review the evidence.",
+            metrics: [
+              {
+                name: "Candidate A",
+                value: "5 Kaggle notebooks, fine-tuned GPT-2, 3 certifications",
+                status: "warn",
+              },
+              {
+                name: "Candidate B",
+                value:
+                  "RAG app + monitoring dashboard + cost analysis + before/after metrics",
+                status: "ok",
+              },
+              {
+                name: "Candidate C",
+                value:
+                  "12 LangChain tutorials, ChatGPT wrapper, 'AI enthusiast'",
+                status: "warn",
+              },
+              {
+                name: "Monitoring Coverage",
+                value:
+                  "Only Candidate B — Langfuse traces, drift detection, alerts",
+                status: "alert",
+              },
+              {
+                name: "Cost Awareness",
+                value:
+                  "Only Candidate B — $2.50 → $0.15/request with breakdown",
+                status: "alert",
+              },
+              {
+                name: "Error Handling",
+                value:
+                  "Only Candidate B — circuit breaker, fallback chain, graceful degradation",
+                status: "alert",
+              },
+            ],
+            options: [
+              {
+                id: "a",
+                label:
+                  "Candidate A — most diverse experience, Kaggle proves ML fundamentals, certifications validate knowledge",
+              },
+              {
+                id: "b",
+                label:
+                  "Candidate B — production RAG with monitoring, cost analysis, and measurable improvement metrics proves real engineering judgment",
+              },
+              {
+                id: "c",
+                label:
+                  "Candidate C — most recent experience, 12 projects shows high productivity and broad exposure to current tools",
+              },
+              {
+                id: "d",
+                label:
+                  "All are equally qualified — experience level matters more than project type",
+              },
+            ],
+            correctId: "b",
+            explanation:
+              "Candidate B wins because hiring managers care about: (1) monitoring — 70% of production AI engineering is observing and debugging running systems, not building, (2) cost analysis — proves business awareness, (3) before/after metrics — proves rigor and measurement culture, (4) error handling — proves production experience. Kaggle notebooks and certifications demonstrate knowledge acquisition, not engineering judgment. Tutorial completion proves you can follow instructions, not that you can build systems.",
+          },
+          keyInsight:
+            "Candidate B wins because: monitoring (70% of real work), cost analysis (business awareness), before/after metrics (rigor), error handling (production experience). YOUR portfolio has all of this across 5 chapters: chunking benchmarks, semantic caching cost analysis, RAGAS evaluation, circuit breakers, GPU multiplexing, graceful degradation. That's top 1% — most candidates have none of it.",
+        },
+
+        // ── Level 5.13 — CAPSTONE: System Design Interview ───────────────────────
+        {
+          title: "CAPSTONE: System Design Interview",
+          subtitle:
+            "Final challenge — whiteboard-style questions testing all 5 chapters",
+          context:
+            "Final challenge: 10 whiteboard-style system design questions that test everything you've learned across all 5 chapters. This is the real interview format at top AI companies. 60 seconds per question.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 60,
+            questions: [
+              {
+                question:
+                  "Design a document Q&A system: 10M docs, 1000 QPS, p95 <2s, with monitoring and auto-retraining. Name the key components.",
+                options: [
+                  "PostgreSQL + GPT-4o + Prometheus",
+                  "Pinecone + OpenAI API + basic logging",
+                  "Hybrid search (pgvector + BM25), semantic cache, cross-encoder reranker, model routing, Langfuse tracing, Evidently drift, golden dataset CI/CD eval, auto-retrain on faithfulness drop",
+                  "Elasticsearch + fine-tuned LLM + CloudWatch",
+                ],
+                correct: 2,
+                explanation:
+                  "Complete production design: pgvector (semantic) + BM25 (keyword) hybrid retrieval, Redis semantic cache (70% hit rate), cross-encoder reranker (top-20→top-3), model routing by complexity (GPT-4o-mini 80% / GPT-4o 20%), Langfuse for every trace, Evidently for embedding drift, golden dataset (500 Q&A pairs) runs in CI/CD, auto-retrain triggers when faithfulness <0.85.",
+              },
+              {
+                question:
+                  "Your RAG system's RAGAS faithfulness score dropped from 0.92 to 0.71. Walk through your diagnosis.",
+                options: [
+                  "Immediately retrain the LLM on domain data",
+                  "Check retrieval quality first (precision/recall), then LLM behavior on same contexts, check for data drift in queries, check embedding model version, review recent prompt changes — isolate each component",
+                  "Roll back to previous deployment",
+                  "Increase chunk size to provide more context",
+                ],
+                correct: 1,
+                explanation:
+                  "Systematic diagnosis: (1) Check retrieval first — run golden queries, measure context precision/recall (did retrieval degrade?), (2) Test LLM isolation — use same retrieved contexts, measure faithfulness in isolation (is LLM ignoring context?), (3) Query distribution shift (Evidently embedding drift), (4) Embedding model version change (breaking change?), (5) Prompt template change (recent commit?). Faithfulness drop usually means retrieval degraded or LLM upgraded. Never blindly retrain without isolating the failing component.",
+              },
+              {
+                question:
+                  "Design a local LLM deployment for HIPAA-compliant hospital (PHI cannot leave premises).",
+                options: [
+                  "OpenAI API with BAA agreement",
+                  "Air-gapped deployment: QLoRA fine-tuned Llama-3 on medical data, no external calls, PHI scrubbing in preprocessing, encrypted storage at rest, comprehensive audit trail, signed model checksums, prompt injection defense, role-based access controls",
+                  "Use ChatGPT Enterprise with data privacy settings",
+                  "On-premise GPU server with standard LLaMA deployment",
+                ],
+                correct: 1,
+                explanation:
+                  "HIPAA AI requirements: (1) Air-gapped (no external API calls, PHI never leaves network), (2) PHI scrubbing before model input (NER-based de-identification), (3) Encryption at rest + in transit (AES-256), (4) Full audit trail (every query logged with user/timestamp/anonymized query hash), (5) Signed model checksums (verify model wasn't tampered with), (6) Prompt injection defense (SQL injection equivalent for AI), (7) RBAC (physicians vs nurses vs admin have different query access). QLoRA fine-tuning adapts base Llama-3 to medical domain without full retraining.",
+              },
+              {
+                question:
+                  "How would you reduce LLM costs by 80% in a production RAG system without quality loss?",
+                options: [
+                  "Use a cheaper model for everything",
+                  "Reduce the number of retrieved documents",
+                  "Semantic caching (30-70% fewer LLM calls) + model routing (GPT-4o-mini for 80% simple queries) + batch embeddings (50x cheaper) + Matryoshka truncation 1536→256 dims (98% quality, 6x storage reduction)",
+                  "Cache all responses statically for 24 hours",
+                ],
+                correct: 2,
+                explanation:
+                  "Cost reduction stack: (1) Semantic cache: Redis + cosine similarity threshold 0.92, 30-70% hit rate → 30-70% fewer LLM calls, (2) Model routing: classify query complexity (tiny model, ~$0.001), route 80% simple queries to GPT-4o-mini ($0.15/MTok vs GPT-4o $5/MTok = 33x cheaper), (3) Batch embeddings: process documents in batches of 512 (50x cost reduction per token), (4) Matryoshka: truncate 1536→256 dims, 98% MTEB quality, 6x storage/query cost. Combined: ~85% cost reduction empirically.",
+              },
+              {
+                question:
+                  "Design comprehensive monitoring for a production LLM application. What metrics matter?",
+                options: [
+                  "Response time and error rate only",
+                  "Langfuse tracing + Evidently drift + Prometheus infra + custom eval pipeline (faithfulness/relevance) + cost/user/query-type + latency percentiles + hallucination rate + prompt injection detection",
+                  "GPU utilization and memory usage",
+                  "User satisfaction surveys only",
+                ],
+                correct: 1,
+                explanation:
+                  "Complete monitoring stack: (1) Langfuse: trace every LLM call (input/output/latency/cost/user), (2) RAGAS metrics in background eval pipeline (faithfulness, answer relevance, context precision), (3) Evidently: embedding drift (query distribution shift), (4) Prometheus: GPU util, queue depth, p50/p95/p99 latency, (5) Custom: cost per user per query type (optimize routing), hallucination rate by topic, prompt injection detection (adversarial input classifier). Set alert thresholds: faithfulness <0.80, latency p95 >3s, queue depth >100.",
+              },
+              {
+                question:
+                  "Fine-tune vs RAG vs both? Defend your choice for: enterprise compliance Q&A (regulations update monthly).",
+                options: [
+                  "Fine-tune only — bake all regulations into model weights",
+                  "RAG only — retrieve current regulations at query time",
+                  "Hybrid: RAG for knowledge (regulations change, re-index monthly), fine-tune for output format (compliance report structure stays constant), monitor accuracy drift as regulations update",
+                  "Use a large frontier model with a long system prompt",
+                ],
+                correct: 2,
+                explanation:
+                  "Hybrid reasoning: RAG for knowledge (regulations update monthly — can't retrain monthly, re-indexing takes minutes), fine-tuning for format (compliance reports have strict structure — citations, risk levels, remediation steps — teach format once, it doesn't change). Fine-tune on 500 example reports, fine-tune model reads regulatory chunks from RAG. Separate concerns: knowledge = RAG, behavior = fine-tuning. Monitor: accuracy drift as regulations update, hallucination rate for specific regulation citations.",
+              },
+              {
+                question:
+                  "Design real-time video analysis for warehouse safety monitoring. Components and tradeoffs?",
+                options: [
+                  "Single camera, cloud API for every frame, store everything",
+                  "YOLO26 detection (<10ms) + SAM 2 segmentation (44 FPS) + Video-LLM temporal understanding + edge deployment on Jetson (no cloud latency) + alert system + graceful degradation (YOLO-only mode when VLM queue full)",
+                  "Human operators watching screens with AI assistance",
+                  "Store all video, batch analyze overnight",
+                ],
+                correct: 1,
+                explanation:
+                  "Real-time safety pipeline: (1) YOLO26: detect people, forklifts, safety equipment in <10ms, (2) SAM 2: segment detected objects precisely (exact PPE coverage area), (3) Grounded DINO + text: 'forklift within 2m of worker' — text-guided detection, (4) Video-LLM (Qwen3-VL): temporal understanding for action recognition ('worker not wearing helmet for >3s'), (5) Edge Jetson Orin: eliminates cloud latency, works in connectivity-poor warehouses, (6) Alert system with severity levels, (7) Graceful degradation: YOLO-only mode when VLM queue depth >20.",
+              },
+              {
+                question:
+                  "Your fine-tuned model shows catastrophic forgetting on general tasks after domain fine-tuning. How to fix?",
+                options: [
+                  "Fine-tune for longer with more domain data",
+                  "Use a larger base model",
+                  "Increase general data mix to 20%+, lower learning rate (1e-5), check for data contamination, evaluate on MMLU + safety benchmarks alongside task, consider QLoRA (adapter-based, inherently reduces forgetting)",
+                  "Train multiple specialized models instead of one",
+                ],
+                correct: 2,
+                explanation:
+                  "Catastrophic forgetting fixes: (1) Data mix: include 20-30% general data (Dolly, OpenOrca) alongside domain data — prevents weight drift, (2) Learning rate: reduce to 1e-5 (smaller weight updates = less forgetting), (3) QLoRA: adapter parameters only, base weights frozen → zero forgetting by design, (4) Evaluation: always include MMLU + TruthfulQA + safety benchmarks in eval suite — domain accuracy alone hides forgetting, (5) Check for data contamination (domain data bleeding into instruction format). LoRA's parameter efficiency is a side benefit; forgetting prevention is the hidden main benefit for domain fine-tuning.",
+              },
+              {
+                question:
+                  "Design multi-tenant model serving for a SaaS AI product (500 customers, each needs custom behavior).",
+                options: [
+                  "500 separate fine-tuned models, one per customer",
+                  "One model with system prompt per customer",
+                  "vLLM with per-customer LoRA adapters on shared base model + API gateway rate limiting + per-tenant cost tracking + model versioning + A/B testing framework",
+                  "Separate GPU cluster per customer tier",
+                ],
+                correct: 2,
+                explanation:
+                  "Multi-tenant AI SaaS: (1) vLLM LoRA serving: one base model (e.g., Llama-3-70B) with per-customer LoRA adapters (50-500MB each vs 40GB base) — adapters hot-swap without reloading base, (2) API gateway: rate limiting per tier (free/pro/enterprise), request validation, API key auth, (3) Cost tracking: per-tenant per-model-call accounting (Langfuse + billing integration), (4) Model versioning: each tenant can pin to a model version, (5) A/B testing: controlled rollout of model updates per customer. Shared base = 40GB once; LoRA per customer = 200MB each → serve 500 customers on one A100.",
+              },
+              {
+                question:
+                  "Walk through a complete AI system: ingest → index → retrieve → generate → monitor → improve. Production-grade.",
+                options: [
+                  "Upload docs → pgvector → similarity search → GPT-4o → done",
+                  "S3 ingest → LangChain RAG → Pinecone → OpenAI API → CloudWatch logs",
+                  "Document ingestion → recursive chunking (512 tokens, 10% overlap) → text-embedding-3-small → pgvector hybrid → cross-encoder reranker → GPT-4o generation → Langfuse trace → Evidently drift → golden dataset CI/CD eval → auto-retrain trigger → canary deploy → rollback on metric regression",
+                  "Fine-tune LLM on documents → deploy → monitor with application logs",
+                ],
+                correct: 2,
+                explanation:
+                  "Complete production RAG: (1) Ingest: S3 → document parser (Qwen2.5-VL for PDFs, unstructured.io for HTML) → metadata extraction, (2) Chunk: recursive 512t/10% overlap → metadata tag (source, date, section), (3) Embed: text-embedding-3-small with Matryoshka 256 dims, batch 512, (4) Index: pgvector + pg_search BM25 index, (5) Retrieve: hybrid search → top-20, cross-encoder reranker → top-3, (6) Generate: GPT-4o with citations, (7) Trace: Langfuse (input/output/cost/user), (8) Monitor: Evidently drift weekly, RAGAS faithfulness daily, (9) Eval: golden dataset 500 Q&A in CI/CD, (10) Improve: auto-retrain trigger → shadow → canary 5% → full deploy → rollback if faithfulness drops >0.05.",
+              },
+            ],
+          },
+          keyInsight:
+            "Congratulations — you've completed AI/ML Quest. You can now design, build, deploy, monitor, optimize, and scale production AI systems across the full stack: RAG pipelines, fine-tuning, multimodal, voice AI, GPU infrastructure, and cost engineering. That's the top 1%. Go build your portfolio projects and ace those interviews.",
+        },
+      ];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        ChapterRunner.start(
+          5,
+          levels,
+          document.getElementById("game-panel"),
+          document.getElementById("level-nav"),
+        );
+      });
+    </script>
+  </body>
+</html>

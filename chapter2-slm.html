@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 2: Local SLM with Ollama — AI/ML Quest</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-page="chapter" data-chapter="2">
+    <canvas id="particle-canvas"></canvas>
+    <nav class="hud">
+      <div class="hud-logo">
+        <a href="index.html" style="color: inherit; text-decoration: none"
+          >AI<span>/ML</span> Quest</a
+        >
+      </div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+    <div class="toast-container" id="toast-container"></div>
+    <div class="page-content">
+      <div class="container">
+        <div class="chapter-layout">
+          <nav class="level-nav" id="level-nav"></nav>
+          <div id="game-panel"></div>
+        </div>
+      </div>
+    </div>
+    <script src="shared.js"></script>
+    <script>
+      const levels = [
+        // ── Level 1 (2.1) ── Why Local? Decision Framework ─────────────────────
+        {
+          title: "Why Local? Decision Framework",
+          subtitle: "When does self-hosting actually beat the cloud?",
+          context:
+            "At 10K requests/day, a self-hosted RTX 4090 ($1,500) pays for itself in ~2 months vs GPT-4o-mini API at $0.15/1M input tokens. Privacy (GDPR/HIPAA), sub-10ms latency, and air-gapped deployment are the other three drivers that APIs simply can't match.",
+          gameType: "CostOptimizer",
+          gameConfig: {
+            scenario:
+              "You're deciding whether to self-host Llama 3.1 8B or keep using a cloud API. Adjust the sliders to find the configuration where local hosting becomes cheaper than cloud.",
+            sliders: [
+              {
+                name: "Requests per Day",
+                min: 100,
+                max: 50000,
+                step: 100,
+                default: 5000,
+                unit: "",
+                costImpact(v) {
+                  // Monthly cloud API cost: assume avg 500 tokens/request at $0.15/1M input tokens
+                  const monthlyTokens = v * 30 * 500;
+                  return (monthlyTokens / 1_000_000) * 0.15;
+                },
+              },
+              {
+                name: "GPU Depreciation ($/mo)",
+                min: 50,
+                max: 200,
+                step: 10,
+                default: 83,
+                unit: "/mo",
+                costImpact(v) {
+                  // This is a fixed cost subtracted from cloud savings — represented as negative
+                  return -v;
+                },
+              },
+              {
+                name: "Electricity ($/mo)",
+                min: 30,
+                max: 100,
+                step: 5,
+                default: 50,
+                unit: "/mo",
+                costImpact(v) {
+                  return -v;
+                },
+              },
+            ],
+            // budget = net savings must be positive (local cheaper than cloud)
+            // CostOptimizer checks if total <= budget; here total = cloud_cost - fixed_costs
+            // We want total > 0, meaning cloud cost exceeds fixed costs.
+            // We'll invert: budget represents "maximum acceptable net cost".
+            // Net = cloudCost - gpu_depreciation - electricity
+            // If net > 0: cloud is more expensive → local wins.
+            // Pass condition: total (cloud cost - fixed overhead) under budget of 0 from above
+            // Rethinking: CostOptimizer computes sum of costImpact values and checks <= budget
+            // cloud cost is positive, fixed costs are negative → total = net cloud savings
+            // Set budget to 0: pass when net savings > 0 (cloud costs more than local)
+            budget: 0,
+          },
+          keyInsight:
+            "Local wins at >5K requests/day for most open-weight models. But factor in: GPU depreciation (~$83/mo for RTX 4090 over 18 months), electricity (~$50/mo at full load), maintenance time, and operator expertise. The true break-even for a team is typically 3–8K requests/day depending on average prompt length.",
+        },
+
+        // ── Level 2 (2.2) ── Quantization Formats (GGUF Deep Dive) ────────────
+        {
+          title: "Quantization Formats — GGUF Deep Dive",
+          subtitle: "Q4_K_M vs Q8_0 vs FP16 — find the production sweet spot",
+          context:
+            "GGUF Q4_K_M loses only ~0.15 perplexity points vs FP16 while using 4× less memory. Q2_K loses ~1.2 perplexity — usually unacceptable. Q8_0 is near-lossless at 0.02 perplexity loss. The 'K' suffix means K-means clustering improves weight distribution within each quantization block.",
+          gameType: "ParameterTuner",
+          gameConfig: {
+            description:
+              "Tune the quantization level for a Llama 3.1 7B model on a 24GB GPU. Find the configuration that maximizes speed while staying within VRAM limits and keeping quality acceptable.",
+            sliders: [
+              {
+                name: "Quant Bits",
+                min: 2,
+                max: 16,
+                step: 1,
+                default: 4,
+                unit: "-bit",
+                labels: {
+                  2: "Q2_K",
+                  3: "Q3_K_M",
+                  4: "Q4_K_M",
+                  5: "Q5_K_M",
+                  6: "Q6_K",
+                  8: "Q8_0",
+                  16: "FP16",
+                },
+              },
+              {
+                name: "Context Length (K)",
+                min: 2,
+                max: 128,
+                step: 2,
+                default: 8,
+                unit: "K tokens",
+              },
+            ],
+            gauges: [
+              {
+                name: "Perplexity Loss",
+                unit: " pts",
+                decimals: 2,
+                good: [0, 0.5],
+                compute(v) {
+                  // Empirical values: FP16=0, Q8=0.02, Q6=0.05, Q5=0.10, Q4=0.15, Q3=0.40, Q2=1.20
+                  const bits = v["Quant Bits"];
+                  const lossMap = {
+                    2: 1.2,
+                    3: 0.4,
+                    4: 0.15,
+                    5: 0.1,
+                    6: 0.05,
+                    7: 0.03,
+                    8: 0.02,
+                  };
+                  return bits >= 9 ? 0.0 : lossMap[bits] || 0.15;
+                },
+              },
+              {
+                name: "Tokens / sec",
+                unit: " t/s",
+                decimals: 0,
+                good: [25, 9999],
+                compute(v) {
+                  // Lower bits → more layers fit in GPU SRAM → faster. ~90 t/s at Q4, ~55 at FP16
+                  const bits = v["Quant Bits"];
+                  const speedMap = {
+                    2: 130,
+                    3: 115,
+                    4: 90,
+                    5: 78,
+                    6: 68,
+                    7: 60,
+                    8: 55,
+                  };
+                  return bits >= 9 ? 35 : speedMap[bits] || 90;
+                },
+              },
+              {
+                name: "VRAM (GB)",
+                unit: " GB",
+                decimals: 1,
+                good: [0, 23],
+                compute(v) {
+                  // 7B model weights + KV cache
+                  // weights: 7B × bits / 8 bytes = GB. Q4 ≈ 3.5GB model + context
+                  const bits = v["Quant Bits"];
+                  const ctx = v["Context Length (K)"];
+                  const modelGB = (7_000_000_000 * bits) / 8 / 1e9;
+                  // KV cache: 2 × layers × heads × head_dim × ctx × 2 bytes (FP16) ≈ 0.5 MB/K token for 7B
+                  const kvGB = (ctx * 0.5) / 1024;
+                  return modelGB + kvGB;
+                },
+              },
+            ],
+          },
+          keyInsight:
+            "Q4_K_M is the production sweet spot for 7B–13B models: 0.15 perplexity loss is imperceptible in human evaluation, 4× VRAM reduction enables larger context or smaller GPU. Use Q8_0 when output quality is critical (legal, medical, code generation). Never ship Q2_K in production — the quality degradation is visible in coherence and factual accuracy.",
+        },
+
+        // ── Level 3 (2.3) ── llama.cpp Internals ───────────────────────────────
+        {
+          title: "llama.cpp Internals",
+          subtitle: "Match the optimization technique to what it actually does",
+          context:
+            "llama.cpp's genius is running billion-parameter models on commodity hardware through aggressive memory optimization and hardware-specific kernels. It supports SIMD (x86 AVX-512, ARM NEON), CUDA, Metal, Vulkan, and SYCL backends — all in a single C/C++ codebase with zero external dependencies.",
+          gameType: "ConceptMatcher",
+          gameConfig: {
+            pairs: [
+              {
+                left: "KV Cache",
+                right:
+                  "Stores attention key/value states to avoid recomputing past tokens on each forward pass",
+              },
+              {
+                left: "Speculative Decoding",
+                right:
+                  "Small draft model generates N tokens; large model verifies them in a single parallel forward pass",
+              },
+              {
+                left: "Flash Attention",
+                right:
+                  "Computes attention in SRAM tiles, reducing memory from O(n²) to O(n) and enabling longer contexts",
+              },
+              {
+                left: "Continuous Batching",
+                right:
+                  "New requests join the inference batch as others finish, maximizing GPU utilization vs static batching",
+              },
+              {
+                left: "GGML Tensor Library",
+                right:
+                  "Lightweight C tensor library with CPU-first design; parent of GGUF, powers all llama.cpp computation",
+              },
+              {
+                left: "Metal Backend",
+                right:
+                  "GPU acceleration for Apple Silicon Macs via the Metal API, enabling 30–60 t/s on M2 Pro",
+              },
+              {
+                left: "Memory Mapping (mmap)",
+                right:
+                  "Maps the model GGUF file directly to virtual memory pages without loading the entire file into RAM",
+              },
+              {
+                left: "Grammar Constraints",
+                right:
+                  "Forces token sampling to follow a formal grammar (BNF/GBNF), guaranteeing valid JSON or regex output",
+              },
+            ],
+          },
+          keyInsight:
+            "KV cache is why context length drives VRAM requirements — every cached token costs memory (roughly 0.5 MB/K tokens for a 7B model). Speculative decoding gives 2–3× speed gains when the draft model (e.g., Phi-3.5-mini) agrees with the large model >70% of the time. Grammar constraints add ~15–30% latency but guarantee 100% schema compliance.",
+        },
+
+        // ── Level 4 (2.4) ── Model Selection 2025-2026 ─────────────────────────
+        {
+          title: "Model Selection 2025–2026",
+          subtitle: "Match use case to the right open-weight model",
+          context:
+            "The open-weight model landscape changes monthly. What matters: benchmark scores on YOUR task, context window, license constraints, and inference speed on YOUR hardware. Qwen 2.5 and DeepSeek-V3 dominated the 2025 open-weight rankings; Phi-4 leads for small-hardware reasoning.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 35,
+            questions: [
+              {
+                question:
+                  "Best model for RAG with tool calling on a 24 GB GPU (fits quantized)?",
+                options: [
+                  "Qwen 2.5 72B Q4_K_M — best tool use, fits 24 GB quantized at ~40 GB → needs Q3",
+                  "Llama 3.1 8B — strong tool calling, 128K context, easily fits at 5 GB Q4",
+                  "Phi-4 14B — excellent reasoning, fits comfortably at Q4 (~9 GB)",
+                  "Mixtral 8×7B — MoE, only 13B active params, strong at function calling",
+                ],
+                correct: 1,
+                explanation:
+                  "Llama 3.1 8B at Q4_K_M (~5 GB) is the sweet spot: native 128K context, best-in-class tool calling for its size, and leaves 18 GB headroom for large KV cache. Qwen 2.5 72B requires Q2_K to fit 24 GB, hurting quality significantly.",
+              },
+              {
+                question:
+                  "Best model for math and reasoning on a 16 GB consumer GPU?",
+                options: [
+                  "GPT-4o — state of the art but cloud-only, not local",
+                  "Phi-4 14B — Microsoft's strongest reasoning model, fits at Q4 (~9 GB) on 16 GB",
+                  "Mistral 7B — fast and small but weaker on multi-step math",
+                  "DeepSeek-R1-Distill-Qwen-14B — reasoning-tuned, fits 16 GB at Q4",
+                ],
+                correct: 3,
+                explanation:
+                  "DeepSeek-R1-Distill-Qwen-14B brings the reasoning capabilities of the full R1 model into a 14B package. Phi-4 is also excellent. Both beat Mistral 7B on MATH and AIME benchmarks. Phi-4 edges out on 8 GB GPUs; DeepSeek-R1-distill on 16 GB.",
+              },
+              {
+                question:
+                  "Best open-source coding assistant for a developer workstation?",
+                options: [
+                  "Qwen 2.5-Coder 32B — #1 open-source code model on HumanEval and SWE-bench",
+                  "CodeLlama 34B — Meta's original code model, now superseded",
+                  "DeepSeek-Coder-V2 236B MoE — best quality but requires multi-GPU",
+                  "StarCoder2 15B — strong at code completion, older architecture",
+                ],
+                correct: 0,
+                explanation:
+                  "Qwen 2.5-Coder 32B scores 92.7% on HumanEval and tops most SWE-bench leaderboards among open models. At Q4_K_M (~20 GB), it fits a 24 GB GPU. DeepSeek-Coder-V2 236B has higher ceiling but needs 4× GPUs.",
+              },
+              {
+                question:
+                  "You need a model with strong multilingual support across 50+ languages. Best choice?",
+                options: [
+                  "Phi-4 14B — English-focused, limited multilingual benchmarks",
+                  "Llama 3.1 8B — supports 8 languages officially, weak on others",
+                  "Qwen 2.5 7B — trained on 119 languages with dedicated multilingual SFT",
+                  "Mistral 7B v0.3 — primarily English + French",
+                ],
+                correct: 2,
+                explanation:
+                  "Qwen 2.5 was explicitly trained on 119 languages with dedicated multilingual data. It leads on MGSM (multilingual math) and XCOPA (cross-lingual reasoning). Llama 3.1 officially supports only 8 languages, with sharp quality degradation outside them.",
+              },
+              {
+                question:
+                  "Mixture-of-Experts architecture for high throughput. Which model uses it?",
+                options: [
+                  "Llama 3.1 70B — dense transformer, all 70B active per token",
+                  "Mixtral 8×22B — 141B total params, only 39B active per token",
+                  "Phi-4 14B — dense model, no MoE routing",
+                  "Qwen 2.5 72B — dense transformer",
+                ],
+                correct: 1,
+                explanation:
+                  "Mixtral 8×22B is the dominant open MoE. 141B total parameters but only 39B activate per token via sparse routing. This means 70B-quality outputs at ~40B inference cost. Requires ~90 GB total RAM but only ~45 GB peak compute VRAM with careful loading.",
+              },
+              {
+                question:
+                  "Edge deployment: IoT device with 4 GB RAM. Best fit?",
+                options: [
+                  "Llama 3.2 1B — Meta's smallest model, ~1 GB at Q4, usable quality",
+                  "Phi-3.5-mini 3.8B — Microsoft's best small model, ~2.4 GB at Q4",
+                  "Gemma 2 2B — Google's 2B, strong quality/size ratio at ~1.3 GB Q4",
+                  "TinyLlama 1.1B — early small model, largely superseded",
+                ],
+                correct: 1,
+                explanation:
+                  "Phi-3.5-mini 3.8B is the 2025 edge champion: scores above Llama 3 8B on several reasoning benchmarks despite being 2× smaller. At Q4_K_M it's ~2.4 GB leaving headroom for OS and KV cache. Llama 3.2 1B and Gemma 2 2B are viable for ultra-constrained devices.",
+              },
+              {
+                question:
+                  "Which model family offers the longest native context window in open-weight releases?",
+                options: [
+                  "Llama 3.1 — 128K native context window",
+                  "Qwen 2.5 — 128K for most sizes, 1M for specialized versions",
+                  "Mistral — 32K native, extensible with sliding window attention",
+                  "Phi-4 — 16K native context",
+                ],
+                correct: 1,
+                explanation:
+                  "Qwen 2.5 offers 128K for standard models and up to 1M tokens for the Qwen 2.5-1M specialized variants. Llama 3.1 offers 128K natively. For most production use-cases, 128K is sufficient — quality degrades at very long contexts for all models ('lost in the middle' phenomenon).",
+              },
+              {
+                question:
+                  "Best overall open-source model for general use in 2025–2026?",
+                options: [
+                  "Llama 3.1 8B — excellent baseline but outscored on most benchmarks",
+                  "Qwen 2.5 72B — consistently tops open-weight leaderboards across categories",
+                  "Mistral Large — strong but semi-closed licensing",
+                  "Gemma 2 27B — Google, solid quality but narrow benchmark coverage",
+                ],
+                correct: 1,
+                explanation:
+                  "Qwen 2.5 72B ranks #1 on MMLU, HumanEval, MATH, and multilingual benchmarks among open-weight models as of early 2026. At Q4_K_M (~45 GB) it fits dual 3090s or a single H100. For single-GPU (24 GB), Llama 3.1 8B or Phi-4 14B are the pragmatic picks.",
+              },
+            ],
+          },
+          keyInsight:
+            "No single model wins everything. Decision tree: <4 GB RAM → Llama 3.2 1B or Phi-3.5-mini. 8–16 GB GPU → Phi-4 14B or DeepSeek-R1-distill-14B. 24 GB → Qwen 2.5 32B or Llama 3.1 8B with long context. Coding → Qwen 2.5-Coder 32B. Multilingual → Qwen 2.5. Always benchmark on YOUR specific task and data distribution — leaderboard scores don't always translate.",
+        },
+
+        // ── Level 5 (2.5) ── Ollama Mastery ────────────────────────────────────
+        {
+          title: "Ollama Mastery",
+          subtitle: "Debug a broken Modelfile and API call — 4 bugs to find",
+          context:
+            "Ollama wraps llama.cpp with a REST API and model registry. Your ASP.NET Web API experience transfers directly — it's just HTTP endpoints: /api/generate (raw completion), /api/chat (message history), /api/embeddings. The Modelfile is a Dockerfile-like DSL for customizing model behavior.",
+          gameType: "CodeDebugger",
+          gameConfig: {
+            code: `FROM llama3.1:8b
+PARAMETER temperature 2.5
+PARAMETER num_ctx 4096
+SYSTEM You are a helpful assistant.
+TEMPLATE "{{ .System }}\\nUser: {{ .Prompt }}\\nAssistant:"
+
+# API Call to test the model
+curl http://localhost:11434/api/generate \\
+  -d '{"model": "my-assistant", "prompt": "Hello", "stream": true, "options": {"num_gpu": -1}}'`,
+            bugs: [
+              {
+                line: 2,
+                description:
+                  "temperature 2.5 is out of valid range. Ollama/llama.cpp accept 0.0–2.0. Values above 2.0 produce incoherent gibberish output.",
+                fix: "PARAMETER temperature 0.7 (or any value between 0.0 and 2.0)",
+              },
+              {
+                line: 5,
+                description:
+                  "TEMPLATE is missing {{ .Response }} — the model's output placeholder. Without it, generated tokens are discarded and the response is always empty.",
+                fix: 'TEMPLATE "{{ .System }}\\nUser: {{ .Prompt }}\\nAssistant: {{ .Response }}"',
+              },
+              {
+                line: 8,
+                description:
+                  "/api/generate is for raw single-turn completion. For a chat assistant with message history (SYSTEM prompt etc.), the correct endpoint is /api/chat with a 'messages' array.",
+                fix: 'Use http://localhost:11434/api/chat with body: {"model":"my-assistant", "messages":[{"role":"user","content":"Hello"}]}',
+              },
+              {
+                line: 9,
+                description:
+                  "num_gpu: -1 is not a valid value in the Ollama JSON API options. To offload all layers to GPU use num_gpu equal to the number of layers (e.g. 33 for 8B) or omit the field and let Ollama auto-detect.",
+                fix: "Remove num_gpu or set it to a positive layer count like 33 for llama3.1:8b",
+              },
+            ],
+          },
+          keyInsight:
+            "Inference server trade-offs: Ollama (simplest, built-in model registry, single-user) vs vLLM (24× higher throughput via PagedAttention + continuous batching, production multi-user) vs TGI/HuggingFace (native HF ecosystem) vs llama.cpp server (most control, lowest memory, exposes raw GGUF options). Choose based on your concurrency requirements.",
+        },
+
+        // ── Level 6 (2.6) ── Structured Output ─────────────────────────────────
+        {
+          title: "Structured Output Pipeline",
+          subtitle: "Order the steps for reliable JSON from a local LLM",
+          context:
+            "Grammar-constrained generation guarantees schema compliance but adds ~15–30% latency. Instructor + Pydantic is the production standard: fast path uses JSON mode (95% reliable), Pydantic catches the remaining schema violations, and a retry loop with error feedback resolves the last 5%. This layered approach gives both speed and reliability.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Arrange these components into the correct production-grade structured output pipeline. Click components to add them in order.",
+            components: [
+              { id: "user_query", label: "User Query" },
+              { id: "system_prompt", label: "System Prompt (JSON schema)" },
+              { id: "ollama_chat", label: "Ollama /api/chat" },
+              { id: "json_mode", label: "JSON Mode (format: json)" },
+              { id: "grammar_constraint", label: "Grammar Constraint (GBNF)" },
+              { id: "pydantic_validator", label: "Pydantic Validator" },
+              { id: "retry_handler", label: "Retry with Error Feedback" },
+              { id: "api_response", label: "API Response" },
+            ],
+            correctOrder: [
+              "user_query",
+              "system_prompt",
+              "ollama_chat",
+              "json_mode",
+              "pydantic_validator",
+              "retry_handler",
+              "api_response",
+            ],
+          },
+          keyInsight:
+            "Grammar constraints (GBNF in llama.cpp) give 100% schema validity but cost 15–30% latency and require writing a grammar per schema. The layered approach — JSON mode → Pydantic validation → retry with error in the next prompt — achieves >99.5% reliability with far less overhead. Grammar constraint is your fallback for zero-tolerance systems (medical, financial).",
+        },
+
+        // ── Level 7 (2.7) ── Benchmarking & Performance ─────────────────────────
+        {
+          title: "Benchmarking & Performance Tuning",
+          subtitle:
+            "Configure a 7B deployment for optimal TTFT, throughput, and VRAM",
+          context:
+            "TTFT (Time to First Token) is what users consciously feel — aim <200ms for interactive apps. TPS (Tokens per Second) determines throughput for document generation. For a 7B model on RTX 4090: optimal is all 33 layers on GPU, 8K context, threads equal to physical cores (not hyperthreaded).",
+          gameType: "ParameterTuner",
+          gameConfig: {
+            description:
+              "Configure Ollama/llama.cpp deployment for a Llama 3.1 7B model on a 24 GB RTX 4090. Get TTFT below 200ms, throughput above 30 t/s, and VRAM under 23 GB.",
+            sliders: [
+              {
+                name: "Context Length (K)",
+                min: 2,
+                max: 32,
+                step: 2,
+                default: 8,
+                unit: "K",
+              },
+              {
+                name: "Batch Size",
+                min: 1,
+                max: 32,
+                step: 1,
+                default: 1,
+                unit: "",
+              },
+              {
+                name: "GPU Layers",
+                min: 0,
+                max: 33,
+                step: 1,
+                default: 33,
+                unit: " layers",
+              },
+              {
+                name: "CPU Threads",
+                min: 1,
+                max: 16,
+                step: 1,
+                default: 8,
+                unit: "",
+              },
+            ],
+            gauges: [
+              {
+                name: "TTFT (ms)",
+                unit: " ms",
+                decimals: 0,
+                good: [0, 200],
+                compute(v) {
+                  // More GPU layers → lower TTFT; longer context → higher TTFT
+                  const gpuFraction = v["GPU Layers"] / 33;
+                  const ctxPenalty = v["Context Length (K)"] * 3;
+                  const base = 250 - gpuFraction * 200;
+                  return Math.max(20, Math.round(base + ctxPenalty));
+                },
+              },
+              {
+                name: "Tokens / sec",
+                unit: " t/s",
+                decimals: 0,
+                good: [30, 9999],
+                compute(v) {
+                  // Fully GPU offloaded 7B Q4 → ~90 t/s on 4090. CPU fallback is ~10 t/s.
+                  const gpuFraction = v["GPU Layers"] / 33;
+                  const batchBonus = Math.min(
+                    1.5,
+                    1 + (v["Batch Size"] - 1) * 0.02,
+                  );
+                  const base = 10 + gpuFraction * 80;
+                  return Math.round(base * batchBonus);
+                },
+              },
+              {
+                name: "VRAM (GB)",
+                unit: " GB",
+                decimals: 1,
+                good: [0, 23],
+                compute(v) {
+                  // 7B Q4 model weights ≈ 3.8 GB; each GPU layer ≈ 0.115 GB; KV cache ≈ 0.5 MB/K token
+                  const layerVRAM = (v["GPU Layers"] / 33) * 3.8;
+                  const kvVRAM = (v["Context Length (K)"] * 0.5) / 1024;
+                  const overhead = 0.4; // CUDA context
+                  return +(layerVRAM + kvVRAM + overhead).toFixed(1);
+                },
+              },
+            ],
+          },
+          keyInsight:
+            "Always offload all layers to GPU when VRAM allows — each CPU layer adds ~8ms latency penalty per generated token. Context length is the biggest VRAM consumer after model weights: 32K context on a 7B model costs ~16 MB of KV cache. Batch size >1 only helps throughput when handling concurrent requests; for single-user interactive use, keep it at 1 for lowest TTFT.",
+        },
+
+        // ── Level 8 (2.8) ── Deployment Patterns ───────────────────────────────
+        {
+          title: "Deployment Patterns",
+          subtitle: "Match the deployment scenario to the right architecture",
+          context:
+            "Your Docker + Kubernetes experience transfers directly to LLM serving. GPU scheduling in K8s uses nvidia.com/gpu resource requests, nvidia-container-toolkit for runtime, and toleration-based nodeSelector for GPU node pools. Horizontal scaling for stateless inference is identical to scaling a REST API.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 40,
+            questions: [
+              {
+                question:
+                  "Single developer building a CLI tool that needs local LLM inference. Best setup?",
+                options: [
+                  "Kubernetes + GPU operator — full production stack, overkill for solo dev",
+                  "Docker Compose with Ollama + Nginx — adds unnecessary network overhead",
+                  "Direct Ollama on localhost — simplest, zero overhead, `ollama run llama3.1:8b`",
+                  "vLLM with FastAPI — requires GPU, production complexity for dev use",
+                ],
+                correct: 2,
+                explanation:
+                  "For a solo developer, `ollama serve` + `ollama run model` is the right tool. Zero configuration, built-in model registry, OpenAI-compatible API at localhost:11434. Reserve Docker and vLLM for when you need multi-user or production deployment.",
+              },
+              {
+                question:
+                  "A team of 10 engineers sharing one LLM server. What's the right architecture?",
+                options: [
+                  "Ollama + Nginx reverse proxy + API key auth via headers — fits in a single docker-compose.yml",
+                  "Kubernetes with HPA — production-grade but expensive and complex for 10 users",
+                  "vLLM with Ray cluster — maximum throughput but requires ML platform expertise",
+                  "Direct Ollama with no auth — simple but exposes inference to anyone on the network",
+                ],
+                correct: 0,
+                explanation:
+                  "Ollama + Nginx reverse proxy + bearer token auth covers the vast majority of team deployments. Single docker-compose.yml, Nginx handles rate limiting and auth via headers, Ollama handles model management. Migrate to vLLM only when you hit throughput limits (>50 concurrent users).",
+              },
+              {
+                question:
+                  "Production serving for 1000 concurrent users with P99 SLA < 500ms. Best choice?",
+                options: [
+                  "Multiple Ollama instances behind a load balancer — simple but lacks continuous batching",
+                  "vLLM on Kubernetes with GPU auto-scaling + HPA on request queue depth",
+                  "TGI (HuggingFace) on a single large A100 — better than Ollama but no auto-scale",
+                  "OpenAI API — cloud, removes infrastructure burden entirely",
+                ],
+                correct: 1,
+                explanation:
+                  "vLLM on Kubernetes is the correct answer: PagedAttention eliminates KV cache waste, continuous batching maximizes GPU utilization, K8s HPA scales GPU replicas based on queue depth (KEDA on Prometheus metrics). Ollama lacks continuous batching, making P99 latency unpredictable under concurrent load.",
+              },
+              {
+                question:
+                  "Air-gapped government facility with no internet access. How do you deploy?",
+                options: [
+                  "OpenAI API with private endpoints — still requires internet egress",
+                  "Docker container with pre-pulled GGUF model files baked into the image or mounted volume",
+                  "Kubernetes pulling from public container registry — requires internet",
+                  "Azure Government Cloud — not truly air-gapped, egress to Microsoft DCs",
+                ],
+                correct: 1,
+                explanation:
+                  "Air-gapped deployment: Docker image with Ollama installed + GGUF model baked in or mounted from a pre-loaded volume. Build the image on an internet-connected machine, export with `docker save`, transfer via USB/internal network, load with `docker load`. No registry pull needed at runtime.",
+              },
+              {
+                question:
+                  "A/B testing three different fine-tuned variants of the same base model. Most efficient approach?",
+                options: [
+                  "Three separate Ollama instances, one per variant — 3× GPU memory usage",
+                  "vLLM with LoRA adapters — one base model in GPU memory, swap adapters per request",
+                  "Three separate K8s deployments — correct but wasteful for identical base models",
+                  "Randomly switch between three GGUF files — requires model reload between requests",
+                ],
+                correct: 1,
+                explanation:
+                  "vLLM's multi-LoRA serving loads one base model into GPU memory and dynamically swaps LoRA adapter weights per request with near-zero overhead. This uses the same VRAM as one model instead of 3×. Critical for A/B testing, personalization, and multi-tenant LoRA serving.",
+              },
+              {
+                question:
+                  "Edge deployment on ARM IoT devices (Raspberry Pi 5, 8 GB). Best approach?",
+                options: [
+                  "Ollama with llama3.1:8b — too large, will OOM and thrash swap",
+                  "llama.cpp compiled for ARM64 NEON with Q2_K quantized 1B model",
+                  "vLLM — requires CUDA GPU, no CPU path",
+                  "TensorFlow Lite — optimized for mobile/IoT, but no LLM support",
+                ],
+                correct: 1,
+                explanation:
+                  "llama.cpp compiled natively for ARM64 with NEON SIMD acceleration, running a 1B model (Phi-3.5-mini or Llama 3.2 1B) at Q4_K_M (~650 MB). On Pi 5 ARM Cortex-A76 you get ~5–8 t/s — usable for edge inference. vLLM requires CUDA; Ollama ships ARM builds but carries more overhead than raw llama.cpp server.",
+              },
+            ],
+          },
+          keyInsight:
+            "The 80/20 deployment map: Ollama on localhost (solo dev), Ollama + Nginx + auth (team), vLLM on K8s (production >50 users). For enterprise interviews: demonstrate you know GPU scheduling in K8s — `resources.limits['nvidia.com/gpu']: 1`, nodeSelector with GPU node pool labels, and KEDA for autoscaling on queue depth. That's what separates ML engineers from ML practitioners.",
+        },
+
+        // ── Level 9 (2.9) ── Privacy & Security ─────────────────────────────────
+        {
+          title: "Privacy & Security Audit",
+          subtitle:
+            "Diagnose the critical vulnerability in this local LLM deployment",
+          context:
+            "Local deployment doesn't automatically mean secure. Prompt injection attacks work identically on local models. Model supply chain attacks are real — malicious weights can be embedded in models uploaded to HuggingFace. For HIPAA-regulated workloads, the technical safeguards are explicit and non-negotiable.",
+          gameType: "DiagnosisLab",
+          gameConfig: {
+            scenario:
+              "Your team deployed a local Llama 3.1 8B model to process sensitive medical intake forms. A HIPAA security officer reviewed the deployment and flagged a critical violation that could result in a $1.9M fine. Review the audit metrics and identify the root cause.",
+            metrics: [
+              {
+                name: "Model Source",
+                value: "HuggingFace (unverified checksum)",
+                status: "alert",
+              },
+              {
+                name: "Input Sanitization",
+                value: "None — raw prompt passthrough",
+                status: "alert",
+              },
+              {
+                name: "Application Logs",
+                value: "Full prompts logged to stdout",
+                status: "alert",
+              },
+              {
+                name: "API Authentication",
+                value: "Bearer token required",
+                status: "ok",
+              },
+              {
+                name: "Rate Limiting",
+                value: "100 req/min per client",
+                status: "ok",
+              },
+              {
+                name: "Network Exposure",
+                value: "localhost only — not public",
+                status: "ok",
+              },
+            ],
+            options: [
+              {
+                id: "pii_logs",
+                label:
+                  "Logs contain full prompts — PHI (patient data) written in plaintext to application logs",
+              },
+              {
+                id: "model_source",
+                label:
+                  "Model from unverified HuggingFace source — potential model backdoor or poisoned weights",
+              },
+              {
+                id: "no_sanitization",
+                label:
+                  "No input sanitization — allows prompt injection attacks on the local model",
+              },
+              {
+                id: "rate_limit",
+                label:
+                  "Rate limiting is too high — 100 req/min could allow extraction attacks",
+              },
+            ],
+            correctId: "pii_logs",
+            explanation:
+              "Under HIPAA 45 CFR §164.312(b), audit controls must NOT capture PHI in plaintext logs. Logging full prompts means patient names, diagnoses, and SSNs are written to log files — which likely flow to aggregation systems, are retained indefinitely, and are accessible to anyone with log access. Fine: up to $1.9M per violation category per year. Fix: scrub all PHI from prompts before logging using a PII redaction layer (AWS Comprehend, Azure Text Analytics, or a local regex pipeline). All three 'alert' items are real issues, but PII in logs is the immediate reportable HIPAA violation.",
+          },
+          keyInsight:
+            "The HIPAA local LLM checklist: (1) Never log raw prompts — scrub PHI first. (2) Encrypt model files at rest (AES-256) and verify SHA-256 checksums against model cards. (3) Prompt injection defense is mandatory — even local models follow injected instructions. (4) BAA (Business Associate Agreement) applies to cloud hosting of the LLM server even if the model is open-weight. (5) Audit logs of who queried what (without PHI content) are required.",
+        },
+
+        // ── Level 10 (2.10) ── Interview Gauntlet ───────────────────────────────
+        {
+          title: "Interview Gauntlet — 20 Expert Questions",
+          subtitle:
+            "Score 12/20 (60%) to complete Chapter 2 and unlock Chapter 3",
+          context:
+            "Final boss: 20 expert-level Local SLM questions. These are the exact questions that separate senior AI engineers from developers who just know how to run `ollama pull`. 45 seconds per question. Your knowledge of quantization, deployment architecture, and security will be tested.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 45,
+            questions: [
+              {
+                question: "GGUF vs GPTQ vs AWQ — when do you choose each?",
+                options: [
+                  "GGUF for CPU/mixed inference; GPTQ for GPU (Hessian-based calibration); AWQ for GPU (activation-aware, better at low bits)",
+                  "GGUF only for Apple Silicon; GPTQ for NVIDIA; AWQ for AMD",
+                  "GPTQ is newest; GGUF is deprecated; AWQ is experimental",
+                  "All three are equivalent — just different file formats for the same quantization",
+                ],
+                correct: 0,
+                explanation:
+                  "GGUF (llama.cpp) runs on CPU, GPU, or mixed — universal. GPTQ uses second-order Hessian information to minimize quantization error per layer, best for pure GPU. AWQ (Activation-aware Weight Quantization) protects the 1% of weights most important to activation magnitude — better perplexity at Q4 than GPTQ, faster inference. Both GPTQ and AWQ require GPU at inference time.",
+              },
+              {
+                question:
+                  "What is Q4_K_M quantization, and how much quality does it lose vs FP16?",
+                options: [
+                  "4-bit with K-means block clustering; ~0.15 perplexity loss vs FP16 — imperceptible in practice",
+                  "4-bit linear quantization; ~2.0 perplexity loss — significant quality degradation",
+                  "4-bit per-tensor; ~0.5 perplexity loss — noticeable on reasoning tasks",
+                  "4-bit with mixed 6-bit embeddings; ~0.05 perplexity loss — near-lossless",
+                ],
+                correct: 0,
+                explanation:
+                  "Q4_K_M: 4-bit weights quantized using K-means clustering within each block (the 'K'), with 'M' (medium) block size. Empirically measured at ~0.15 perplexity point loss vs FP16 on Llama family. Human evaluation studies show this is below the threshold of perceptible quality difference for most users. Memory: 7B model goes from 14 GB (FP16) to ~3.8 GB.",
+              },
+              {
+                question:
+                  "How does speculative decoding achieve 2–3× speed improvement?",
+                options: [
+                  "It skips low-probability tokens and regenerates them if needed",
+                  "A small draft model generates N candidate tokens; the large model verifies all N in one parallel forward pass, accepting the matching prefix",
+                  "It caches the last 100 tokens and replays them from cache",
+                  "Multiple GPU threads generate different continuations and pick the best",
+                ],
+                correct: 1,
+                explanation:
+                  "Speculative decoding (Leviathan et al., 2023): a small 'draft' model (e.g., Phi-3.5-mini) autoregressively generates N=5 tokens. The large 'verifier' model (e.g., Llama 3.1 70B) evaluates all N+1 tokens in one forward pass via parallel attention. It accepts the longest matching prefix — often 3–4 tokens. The small model runs in parallel with the large model's verification, yielding 2–3× effective throughput.",
+              },
+              {
+                question:
+                  "When should you choose Ollama over vLLM for production?",
+                options: [
+                  "Ollama is always better — it has a built-in model registry",
+                  "Ollama for <10 concurrent users or developer tooling; vLLM for production scale (continuous batching, PagedAttention, 10–24× higher throughput)",
+                  "vLLM is always better — Ollama is only for prototyping",
+                  "Ollama when using GGUF; vLLM only supports HuggingFace safetensors",
+                ],
+                correct: 1,
+                explanation:
+                  "Ollama lacks continuous batching and PagedAttention — each request occupies a full KV cache slot for its entire duration. Under concurrent load, P99 latency degrades sharply. vLLM's continuous batching processes new tokens from multiple requests simultaneously, and PagedAttention eliminates KV cache waste by managing it like OS virtual memory pages. For >10 concurrent users with SLA requirements, vLLM is the correct choice.",
+              },
+              {
+                question:
+                  "What is the KV cache and why does context length drive VRAM requirements?",
+                options: [
+                  "A dictionary cache of common phrases — context length expands vocabulary coverage",
+                  "Stores computed attention Key and Value matrices per past token — grows linearly with context, is the primary VRAM consumer after model weights",
+                  "A CPU-side cache of model weights — context length determines how many layers fit",
+                  "A tokenizer cache — longer context means more tokens to cache, using more RAM",
+                ],
+                correct: 1,
+                explanation:
+                  "For each input token, Transformer attention computes Key and Value matrices (of dimension head_dim × num_layers × 2). These are cached to avoid recomputing past tokens. For a 7B model: approximately 0.5 MB per token per 1K context. At 128K context: 64 MB for a single request. With 100 concurrent requests at 128K context = 6.4 GB just for KV cache, on top of ~4 GB model weights.",
+              },
+              {
+                question:
+                  "How does vLLM serve multiple LoRA adapters efficiently?",
+                options: [
+                  "It duplicates the base model in memory for each adapter variant",
+                  "One base model resides in GPU memory; per-request LoRA adapter weights (A and B matrices, ~0.1% of params) are swapped with near-zero overhead",
+                  "It uses CPU offloading for the base model and keeps only adapters on GPU",
+                  "Each LoRA adapter gets its own GPU process via CUDA MPS",
+                ],
+                correct: 1,
+                explanation:
+                  "vLLM's multi-LoRA serving: the full base model lives in GPU VRAM once. LoRA adapter weights (two rank-decomposition matrices per layer, typically rank=16–64) are tiny (~50–200 MB for a 7B model). At request time, vLLM selects and applies the correct adapter matrices without evicting the base model. This enables hundreds of fine-tuned variants sharing one base model with near-zero overhead per request.",
+              },
+              {
+                question:
+                  "What is Flash Attention and why does it matter for local inference?",
+                options: [
+                  "A GPU kernel that speeds up tokenization by 10×",
+                  "Tiled attention computation that keeps intermediate activations in fast SRAM, reducing memory bandwidth from O(n²) to O(n) and enabling longer contexts",
+                  "A quantization technique that flashes weights between CPU and GPU memory",
+                  "A speculative execution technique for the attention mechanism",
+                ],
+                correct: 1,
+                explanation:
+                  "Flash Attention (Dao et al., 2022): standard attention materializes the full N×N attention matrix in HBM (slow GPU memory). Flash Attention computes attention in tiles that fit in SRAM (fast on-chip cache), never writing the full N×N matrix to HBM. Memory complexity: O(N²) → O(N). Speed: 2–4× faster on A100. Critical for long-context inference — 128K context without Flash Attention would require ~64 GB just for the attention matrix on a 7B model.",
+              },
+              {
+                question:
+                  "How do you benchmark a local LLM fairly across model versions?",
+                options: [
+                  "Measure wall-clock time for the same prompt and pick the fastest",
+                  "Fixed hardware, identical prompt suite, measure TTFT + TPS + perplexity on validation set + VRAM peak, across multiple runs to account for thermal throttling",
+                  "Use leaderboard scores from MMLU and HumanEval — these are standardized",
+                  "Compare model size (parameters) — larger models are always better",
+                ],
+                correct: 1,
+                explanation:
+                  "Rigorous local benchmark protocol: (1) same hardware in same thermal state, (2) identical prompt suite representative of YOUR use-case distribution, (3) measure TTFT (user-perceived latency), TPS (throughput), perplexity on a held-out validation set (task-specific quality), and peak VRAM usage, (4) multiple runs to avoid thermal throttling variance (RTX 3090 can drop 30% throughput when hot). Leaderboard scores are valuable signals but often don't generalize to domain-specific tasks.",
+              },
+              {
+                question:
+                  "What is continuous batching in the context of LLM serving?",
+                options: [
+                  "Splitting one long prompt into multiple smaller batches processed continuously",
+                  "Dynamically adding new requests to an in-progress batch as old requests finish, maximizing GPU utilization vs static batching",
+                  "Processing requests in FIFO order with a fixed batch size determined at startup",
+                  "Continuously updating model weights with online learning between requests",
+                ],
+                correct: 1,
+                explanation:
+                  "Static batching (naive): server waits for a full batch, processes all together, returns all results. If requests have different lengths, shorter ones waste GPU cycles waiting. Continuous (dynamic/iteration-level) batching: after each token generation step, the scheduler can add new requests and remove completed ones. GPU is always processing maximum tokens per step. vLLM's implementation gives 10–24× higher throughput than naive batching under real workloads.",
+              },
+              {
+                question:
+                  "What's the primary defense against prompt injection in a local LLM application?",
+                options: [
+                  "Using a smaller, less capable model that can't follow injected instructions",
+                  "Input validation + privilege separation (untrusted input never in system prompt position) + output filtering + canary tokens to detect injection",
+                  "Running the model in a Docker container prevents prompt injection",
+                  "Prompt injection only affects cloud APIs, not local models",
+                ],
+                correct: 1,
+                explanation:
+                  "Prompt injection works on ANY instruction-following model — local or cloud. Defense-in-depth: (1) Input validation: reject inputs containing obvious injection patterns. (2) Privilege separation: never concatenate untrusted user input into the system prompt; use strict message role boundaries. (3) Output filtering: check responses for signs of compliance with injected instructions. (4) Canary tokens: embed secret tokens in the system prompt and alert if they appear in output. Local deployment doesn't help — the model can't distinguish injected instructions from legitimate ones.",
+              },
+              {
+                question:
+                  "What's the difference between GGML and GGUF formats?",
+                options: [
+                  "GGML is for GPUs; GGUF is for CPUs — they target different hardware",
+                  "GGUF is the successor to GGML with standardized metadata, versioning, and extensibility. GGML is deprecated and most tools no longer support it.",
+                  "GGUF is smaller than GGML at the same quantization level",
+                  "GGML supports quantization; GGUF is always FP16",
+                ],
+                correct: 1,
+                explanation:
+                  "GGML was the original format: minimal header, no versioning, metadata baked into C structs. This caused breaking changes whenever the model architecture changed. GGUF (GGML Universal Format, introduced 2023) adds: key-value metadata store (architecture, tokenizer, context length, etc.), versioning (backward-compatible), and extensibility. All modern llama.cpp builds only support GGUF. Never convert to GGML — it's been deprecated since llama.cpp commit 87a7c9a (2023-09).",
+              },
+              {
+                question:
+                  "What is PagedAttention and what problem does it solve?",
+                options: [
+                  "Attention that processes pages of a document — for RAG with PDF inputs",
+                  "vLLM's KV cache manager inspired by OS virtual memory paging; eliminates fragmentation, allows sharing KV cache across beam search sequences, enables ~24× throughput increase",
+                  "A technique to page model weights between CPU and GPU during inference",
+                  "Paginated API responses from the model server — reduces HTTP overhead",
+                ],
+                correct: 1,
+                explanation:
+                  "Pre-PagedAttention: KV cache allocated as contiguous memory blocks per sequence at max_sequence_length. With 1000 concurrent requests, most blocks were partially empty (internal fragmentation) and couldn't be shared. PagedAttention (inspired by OS virtual memory): divides KV cache into fixed-size blocks (pages) managed by a block table. Blocks allocated on-demand, can be shared (prefix caching across requests), zero fragmentation. Result: 3–5× more requests served per GPU, 24× throughput improvement over HuggingFace TGI in Kwon et al. (2023) benchmarks.",
+              },
+              {
+                question:
+                  "How do you estimate VRAM requirements for running a model?",
+                options: [
+                  "VRAM (GB) ≈ (parameters × bits_per_param / 8) / 1e9 + KV_cache_GB + CUDA_overhead_GB",
+                  "VRAM = model file size on disk — what you download is what you need",
+                  "VRAM = parameters in billions × 2 — simple rule of thumb",
+                  "VRAM requirements are listed in the model card and can't be estimated independently",
+                ],
+                correct: 0,
+                explanation:
+                  "Formula: model_VRAM = (N_params × bits) / 8 / 1e9. Examples: 7B FP16 = 7e9 × 16/8/1e9 = 14 GB. 7B Q4 = 7e9 × 4/8/1e9 = 3.5 GB. Add KV cache: ~0.5 MB × context_length_K × num_concurrent. Add CUDA overhead: ~500 MB per process. Add activation memory during forward pass: ~1–2 GB. Rule of thumb: Q4 model in GB ≈ params_B × 0.55. Always add 15% headroom.",
+              },
+              {
+                question:
+                  "Grammar-constrained generation vs JSON retry loop — key tradeoffs?",
+                options: [
+                  "Grammar constraint: 100% valid output, 15–30% latency overhead. Retry: fast path works 95% of the time, p99 latency spikes on failures but usually 1 retry suffices",
+                  "Grammar constraint is always faster because it skips validation overhead",
+                  "Retry loops always produce better output quality than grammar constraints",
+                  "Grammar constraints work with any tokenizer; retry loops only work with ChatML format",
+                ],
+                correct: 0,
+                explanation:
+                  "Grammar-constrained sampling (GBNF in llama.cpp): logit processor masks invalid next tokens at each step — 100% guarantee, but adds ~15–30% latency from logit masking computation. Retry with error: first attempt uses JSON mode (fast, ~95% valid), Pydantic catches violations, failed attempts re-prompt with the validation error message. P50 latency is lower than grammar constraints; p99 is unpredictable when model keeps failing. Use grammar constraints for zero-tolerance (surgical, financial) and retry for general production.",
+              },
+              {
+                question:
+                  "What architectural change did Llama 3 make vs Llama 2 for better inference efficiency?",
+                options: [
+                  "Mixture of Experts routing — Llama 3 uses MoE for 2× speed",
+                  "Grouped Query Attention (GQA) — multiple query heads share fewer KV heads, reducing KV cache size and memory bandwidth",
+                  "Sparse attention — Llama 3 only attends to every 4th token",
+                  "Quantization-aware training — Llama 3 was trained with QAT for better Q4 quality",
+                ],
+                correct: 1,
+                explanation:
+                  "Llama 3's key efficiency upgrade: Grouped Query Attention (GQA). Llama 2 used Multi-Head Attention (MHA) where every query head has its own KV head — O(n_heads) KV cache. GQA groups multiple query heads to share a single KV head — typically 8 query heads per KV head. Result: 8× KV cache reduction, same quality. Combined with the 128K context window (via RoPE scaling) and larger 128K vocabulary (better tokenization efficiency), Llama 3 is significantly more inference-efficient than Llama 2.",
+              },
+              {
+                question:
+                  "How do you fine-tune a model on a GPU with limited VRAM using QLoRA?",
+                options: [
+                  "Load the full FP32 model and use gradient checkpointing to save memory",
+                  "4-bit quantized base model (frozen) + FP16 LoRA adapter matrices trained via bitsandbytes + gradient checkpointing + paged optimizers — trains on 6–8 GB GPU",
+                  "Distill the model to a smaller size first, then fine-tune the distilled version",
+                  "Use parameter-efficient fine-tuning only on the final two layers",
+                ],
+                correct: 1,
+                explanation:
+                  "QLoRA (Dettmers et al., 2023): (1) Load base model in NF4 (4-bit NormalFloat) quantization — frozen, no gradient needed, ~4 GB for 7B. (2) Add LoRA adapter matrices (A: r×d_in, B: d_out×r) in BF16 — these ARE trained. (3) Paged AdamW optimizer pages optimizer states between CPU/GPU to handle spikes. (4) Gradient checkpointing recomputes activations during backward pass instead of storing them. Result: fine-tune 7B on a single RTX 3090 (24 GB) or even 70B on 2×A100s. Quality matches full fine-tune on most tasks.",
+              },
+              {
+                question:
+                  "What is model distillation and how does it differ from fine-tuning?",
+                options: [
+                  "Distillation removes low-magnitude weights — equivalent to pruning",
+                  "Distillation trains a small 'student' model to replicate a large 'teacher' model's output distributions (soft labels), not just hard labels. Fine-tuning adapts an existing model's weights to a new task.",
+                  "Distillation is fine-tuning with a smaller learning rate",
+                  "Both are identical — 'distillation' is marketing terminology for fine-tuning",
+                ],
+                correct: 1,
+                explanation:
+                  "Knowledge distillation (Hinton et al., 2015): teacher model (e.g., GPT-4) generates soft probability distributions over the vocabulary for each position. Student model trains to match these distributions via KL divergence loss — not just the hard argmax label. Soft labels carry richer information (model confidence, near-miss tokens). DeepSeek-R1 used this to distill reasoning capabilities into 1.5B–70B models. Result: 90%+ of teacher quality at 5–50× lower inference cost. Fine-tuning: same architecture, update weights for new task/domain.",
+              },
+              {
+                question:
+                  "How do you detect a potentially corrupted or backdoored model?",
+                options: [
+                  "Run the model and check if output quality is good — backdoors only activate on specific triggers",
+                  "SHA-256 hash verification against official model card, behavioral testing with known adversarial prompts, run ToxiGen/safety benchmarks, verify architecture with model card specifications",
+                  "Models from HuggingFace are automatically scanned — no manual verification needed",
+                  "Only proprietary models can be backdoored; open-weight models are safe",
+                ],
+                correct: 1,
+                explanation:
+                  "Model supply chain attacks (e.g., BadNets, Trojan attacks): malicious actors upload models with modified weights that behave normally except when a specific trigger token/phrase appears. Defense: (1) Verify SHA-256 checksum against official model card — catches any weight modification. (2) Use only models from verified organizations (Meta, Mistral, Google, Microsoft). (3) Run behavioral test suite: adversarial prompts, jailbreak attempts, ToxiGen benchmark. (4) Compare architecture metadata (n_layers, n_heads) against published specs. The HuggingFace malware scanner catches some cases but not all.",
+              },
+              {
+                question:
+                  "What's the practical difference between TTFT and tokens/sec for your app design?",
+                options: [
+                  "They measure the same thing from different angles — optimize one and the other improves automatically",
+                  "TTFT (Time To First Token) = initial latency a user feels before output starts — critical for interactive apps. TPS = sustained generation speed — critical for batch/document workloads.",
+                  "TTFT measures GPU speed; tokens/sec measures CPU speed during decoding",
+                  "TPS is for output tokens only; TTFT includes input processing time only",
+                ],
+                correct: 1,
+                explanation:
+                  "TTFT is the 'first paint' for LLM UIs: users perceive >200ms TTFT as a lag. It's dominated by the prefill pass (processing all input tokens in parallel) — longer prompts → higher TTFT. TPS (generation/decode speed) matters for throughput: document summarization, batch classification, agentic pipelines. Optimize TTFT by: reducing prompt length, GPU offloading, Flash Attention. Optimize TPS by: batching multiple requests, quantization, speculative decoding. Streaming output (SSE) hides TPS latency from users by showing tokens as they arrive.",
+              },
+              {
+                question:
+                  "What is required to make a local LLM deployment HIPAA-compliant?",
+                options: [
+                  "Using an open-source model instead of a proprietary API — local = compliant",
+                  "PHI-scrubbed logs, AES-256 encryption at rest, role-based access controls, audit trail of access (without PHI), BAA if using cloud infrastructure, model provenance verification",
+                  "Running the server on localhost so no data leaves the machine",
+                  "Using a HIPAA-certified model from the HuggingFace model hub",
+                ],
+                correct: 1,
+                explanation:
+                  "HIPAA Technical Safeguards for local LLM (45 CFR §164.312): (a) Audit controls: log who accessed what, when — but NEVER log PHI content in prompts or responses. (b) Transmission security: encrypt data in transit (TLS 1.3 for any network path). (c) Encryption at rest: AES-256 for model files, databases, log files. (d) Access controls: MFA + RBAC, least-privilege. (e) BAA: required if model server runs on AWS/GCP/Azure infrastructure even if model is open-source. There is no 'HIPAA-certified model' — compliance is about the deployment architecture, not the model weights.",
+              },
+            ],
+          },
+          keyInsight:
+            "You've mastered Local SLMs. The signal that separates top 1% engineers: you understand quantization tradeoffs (not just 'use Q4'), deployment architecture (not just 'run Ollama'), and security considerations (not just 'it's local so it's safe'). Chapter 3 unlocked: ML Monitoring & Observability — the 70% of production AI work that nobody talks about.",
+        },
+      ];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        ChapterRunner.start(
+          2,
+          levels,
+          document.getElementById("game-panel"),
+          document.getElementById("level-nav"),
+        );
+      });
+    </script>
+  </body>
+</html>

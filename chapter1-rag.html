@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 1: Production RAG Pipeline — AI/ML Quest</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-page="chapter" data-chapter="1">
+    <canvas id="particle-canvas"></canvas>
+
+    <nav class="hud">
+      <div class="hud-logo">
+        <a href="index.html" style="color: inherit; text-decoration: none"
+          >AI<span>/ML</span> Quest</a
+        >
+      </div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="page-content">
+      <div class="container">
+        <div class="chapter-layout">
+          <nav class="level-nav" id="level-nav"></nav>
+          <div id="game-panel"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+      const levels = [
+        // ── Level 1.1 — What is RAG? ────────────────────────────────────────────
+        {
+          title: "What is RAG?",
+          subtitle: "RAG vs Fine-tuning — know when to use each",
+          context:
+            "LLMs hallucinate because they rely on training data frozen at a point in time. RAG externalizes knowledge into a retrievable index — updates in minutes, provides citations, and is fully auditable. Fine-tuning changes model weights and is best for teaching style or classification. Knowing which to reach for is the first skill of a production AI engineer.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 35,
+            questions: [
+              {
+                question:
+                  "Your company's knowledge base changes weekly with new product documentation. Which approach fits best?",
+                options: [
+                  "RAG — index updates without retraining",
+                  "Fine-tuning — bake knowledge into weights",
+                  "Prompt engineering only",
+                  "In-context learning with full docs in prompt",
+                ],
+                correct: 0,
+                explanation:
+                  "RAG updates in minutes via re-indexing. Fine-tuning requires hours/days of retraining every week — economically unsustainable.",
+              },
+              {
+                question:
+                  "The model needs to match your company's specific legal writing style and tone across all outputs.",
+                options: [
+                  "RAG — retrieve style guides at query time",
+                  "Fine-tuning — teach style directly into weights",
+                  "System prompt only",
+                  "Few-shot examples in every request",
+                ],
+                correct: 1,
+                explanation:
+                  "Style and tone are behavioral patterns best learned through fine-tuning. RAG can surface style guides but can't reliably enforce consistent output style.",
+              },
+              {
+                question:
+                  "Users must receive source citations with every answer for compliance reasons.",
+                options: [
+                  "Fine-tuning — train to always cite sources",
+                  "RAG — citations come from retrieved documents natively",
+                  "Both approaches equally",
+                  "Neither — citations require a separate post-processing step",
+                ],
+                correct: 1,
+                explanation:
+                  "RAG inherently produces citations because the answer derives from specific retrieved chunks. Fine-tuned models generate citations from memory, which can be fabricated.",
+              },
+              {
+                question:
+                  "You need to classify support tickets into 50 proprietary categories that don't exist in the base model's training data.",
+                options: [
+                  "RAG — retrieve examples of each category",
+                  "Fine-tuning — teach the 50 categories directly",
+                  "Zero-shot prompting",
+                  "Rule-based keyword matching",
+                ],
+                correct: 1,
+                explanation:
+                  "Classification into a fixed closed set with proprietary labels is the canonical fine-tuning use case. The model must learn these specific mappings, not retrieve them.",
+              },
+              {
+                question:
+                  "Building an internal search system over 100,000 regulatory documents that updates monthly.",
+                options: [
+                  "RAG — designed exactly for this scale",
+                  "Fine-tuning — embed all regulations in weights",
+                  "Full-text BM25 search only",
+                  "Store all docs in the system prompt",
+                ],
+                correct: 0,
+                explanation:
+                  "100K documents is far beyond any context window. RAG indexes them into a vector store, retrieves the relevant chunks per query, and handles monthly updates via re-indexing — not retraining.",
+              },
+              {
+                question:
+                  "Budget is under $100/month, data is completely static, and accuracy on a narrow domain matters most.",
+                options: [
+                  "RAG — cheaper to run than fine-tuning",
+                  "Fine-tuning — one-time cost, then cheap inference on a small model",
+                  "Both cost the same at this scale",
+                  "Use GPT-4 with a detailed system prompt",
+                ],
+                correct: 1,
+                explanation:
+                  "With static data, fine-tune once on a small model (Llama-3.1-8B costs ~$2 on Lambda Labs). Monthly inference is then cheap. RAG incurs ongoing embedding + vector DB costs every query.",
+              },
+            ],
+          },
+          keyInsight:
+            "RAG for dynamic knowledge + citations. Fine-tuning for style + classification. The production sweet spot is often a RAG pipeline over a fine-tuned small model — best of both worlds.",
+        },
+
+        // ── Level 1.2 — Chunking Strategies ────────────────────────────────────
+        {
+          title: "Chunking Strategies",
+          subtitle: "Build the correct enterprise document processing pipeline",
+          context:
+            "Chunking quality constrains RAG accuracy MORE than embedding model choice. FloTorch 2026 benchmark: recursive 512-token chunks achieved 69% accuracy vs semantic chunking at just 54%. Semantic chunking sounds smart but collapses to tiny fragments on dense technical prose, destroying retrieval precision. The order of your pipeline matters — parse before split, tag before store.",
+          gameType: "PipelineBuilder",
+          gameConfig: {
+            description:
+              "Arrange the correct chunking pipeline for an enterprise document system. Click components in order, then check your pipeline.",
+            components: [
+              { id: "document_loader", label: "Document Loader" },
+              { id: "html_parser", label: "HTML / PDF Parser" },
+              { id: "recursive_splitter", label: "Recursive Text Splitter" },
+              { id: "semantic_splitter", label: "Semantic Splitter" },
+              { id: "fixed_size_splitter", label: "Fixed-Size Splitter" },
+              { id: "overlap_handler", label: "Overlap Handler" },
+              { id: "metadata_tagger", label: "Metadata Tagger" },
+              { id: "vector_store", label: "Vector Store" },
+            ],
+            correctOrder: [
+              "document_loader",
+              "html_parser",
+              "recursive_splitter",
+              "overlap_handler",
+              "metadata_tagger",
+              "vector_store",
+            ],
+          },
+          keyInsight:
+            "Recursive text splitting with 512 tokens and 10-15% overlap is the proven production default. Always parse HTML/PDF before splitting — raw HTML tags corrupt chunks. Metadata (doc ID, section, date) enables filtered retrieval. Semantic chunking is slower and underperforms on dense technical text.",
+        },
+
+        // ── Level 1.3 — Embedding Models ────────────────────────────────────────
+        {
+          title: "Embedding Models",
+          subtitle:
+            "Hit the cost target with the right model + quantization combo",
+          context:
+            "Open-source embedding models now rival proprietary ones. Qwen3-Embedding and NV-Embed-v2 top MTEB 2026. Matryoshka Representation Learning (MRL) trains embeddings so the first N dimensions retain semantic meaning — enabling truncation from 1536 to 256 dimensions with 98% quality retention at 75% less storage. At scale, model choice is a cost engineering problem.",
+          gameType: "CostOptimizer",
+          gameConfig: {
+            scenario:
+              "You have 10M documents to embed and query ~500K times/month. Monthly infrastructure budget is $50. Adjust the sliders to hit your budget without sacrificing quality below 90%.",
+            budget: 50,
+            sliders: [
+              {
+                name: "Model Cost ($/MTok)",
+                min: 0.0,
+                max: 0.1,
+                step: 0.01,
+                default: 0.1,
+                unit: "",
+                costImpact: (v) => {
+                  // 500K queries * avg 500 tokens = 250M tokens = 0.25 MTok * price
+                  return parseFloat((0.25 * v * 1000).toFixed(2));
+                },
+              },
+              {
+                name: "Self-Hosted GPU ($)",
+                min: 0,
+                max: 40,
+                step: 5,
+                default: 0,
+                unit: "$/mo",
+                costImpact: (v) => parseFloat(v),
+              },
+              {
+                name: "Matryoshka Dims",
+                min: 256,
+                max: 1536,
+                step: 256,
+                default: 1536,
+                unit: "d",
+                costImpact: (v) => {
+                  // Higher dims = more storage cost (approx $0.001 per 100 dims per month)
+                  return parseFloat(((v / 100) * 0.002).toFixed(3));
+                },
+              },
+            ],
+          },
+          keyInsight:
+            "At scale, self-hosted BGE-M3 (free model, ~$20/mo GPU) wins decisively. For startups, text-embedding-3-small at $0.02/MTok is the best quality-per-dollar. Always use Matryoshka truncation to 256-512 dims — 98% quality at 75% less storage and vector DB cost.",
+        },
+
+        // ── Level 1.4 — Vector Databases ─────────────────────────────────────────
+        {
+          title: "Vector Databases",
+          subtitle: "Match the workload to the right vector database",
+          context:
+            "pgvector with pgvectorscale achieves 471 QPS at 50M vectors with 99% recall — that's 11x Qdrant's 41 QPS on the same hardware. If you're already running PostgreSQL, pgvector is your default vector DB. But each workload has a best-fit tool: scale, ops budget, metadata filtering needs, and existing infrastructure all matter.",
+          gameType: "ConceptMatcher",
+          gameConfig: {
+            pairs: [
+              {
+                left: "Already running PostgreSQL, <100M vectors",
+                right: "pgvector",
+              },
+              {
+                left: "Billion-scale, fully managed, zero ops",
+                right: "Pinecone",
+              },
+              {
+                left: "Heavy metadata filtering, open-source",
+                right: "Qdrant",
+              },
+              {
+                left: "Local dev / prototyping, embedded Python",
+                right: "ChromaDB",
+              },
+              {
+                left: "Multi-tenant SaaS, enterprise compliance",
+                right: "Weaviate",
+              },
+              {
+                left: "Ultra-high write throughput, Kubernetes-native",
+                right: "Milvus",
+              },
+            ],
+          },
+          keyInsight:
+            "pgvector outperforms dedicated vector DBs at <100M vectors — no extra infra if you're on Postgres. Pinecone for serverless scale. Qdrant for metadata-heavy filtering. ChromaDB only for local dev — it doesn't scale. Your EF Core + SQL Server experience transfers directly to pgvector.",
+        },
+
+        // ── Level 1.5 — Hybrid Search & Retrieval ───────────────────────────────
+        {
+          title: "Hybrid Search & Retrieval",
+          subtitle: "Find the 3 bugs in this hybrid search SQL query",
+          context:
+            "Pure vector search achieves ~62% precision on production queries. Hybrid search with Reciprocal Rank Fusion (RRF) combines vector similarity with BM25 keyword search, pushing precision to ~84%. HyDE (Hypothetical Document Embeddings) boosts nDCG@10 from 44.5 to 61.3 — but fails for fact-bound queries where the hypothesis drifts. The devil is in the implementation details.",
+          gameType: "CodeDebugger",
+          gameConfig: {
+            code: `-- Hybrid search with Reciprocal Rank Fusion (RRF)
+WITH vector_results AS (
+  SELECT id, content, embedding <-> $1 AS distance
+  FROM documents
+  WHERE embedding <-> $1 < 0.5
+  ORDER BY distance LIMIT 20
+),
+text_results AS (
+  SELECT id, content, ts_rank(tsv, query) AS rank
+  FROM documents, plainto_tsquery($2) query
+  WHERE tsv @@ query
+  ORDER BY rank LIMIT 20
+)
+SELECT id, content,
+  COALESCE(1.0/(60+v.rn), 0) + COALESCE(1.0/(60+t.rn), 0) AS rrf_score
+FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY distance) rn FROM vector_results) v
+FULL JOIN (SELECT *, ROW_NUMBER() OVER (ORDER BY rank) rn FROM text_results) t USING (id)
+ORDER BY rrf_score`,
+            bugs: [
+              {
+                line: 3,
+                description:
+                  "Using L2 distance operator <-> instead of cosine distance <=> for normalized embeddings.",
+                fix: "Change <-> to <=> on both occurrences in vector_results. Cosine similarity is correct for normalized text embeddings — L2 distance produces wrong ranking.",
+              },
+              {
+                line: 11,
+                description:
+                  "ORDER BY rank without DESC — ts_rank returns higher values for better matches, so ascending order ranks worst matches first.",
+                fix: "Change 'ORDER BY rank' to 'ORDER BY rank DESC' so the best BM25 matches get the lowest row numbers (rank 1 = best).",
+              },
+              {
+                line: 18,
+                description:
+                  "Final ORDER BY rrf_score without DESC — higher RRF score = better combined match, but ascending order returns worst results first.",
+                fix: "Change 'ORDER BY rrf_score' to 'ORDER BY rrf_score DESC' to return best combined results at the top.",
+              },
+            ],
+          },
+          keyInsight:
+            "Always use cosine distance (<=>) not L2 (<->) for normalized text embeddings. RRF k=60 is the standard constant. ORDER BY rank DESC and rrf_score DESC — higher is always better for both. Add 'LIMIT 10' after the final ORDER BY for production use.",
+        },
+
+        // ── Level 1.6 — Re-ranking ───────────────────────────────────────────────
+        {
+          title: "Re-ranking",
+          subtitle: "Diagnose the p95 latency problem in this RAG system",
+          context:
+            "Cross-encoder re-ranking adds +33-40% accuracy improvements but costs +100-200ms per query. Running it on ALL queries is wasteful — simple factual lookups don't need it. Jina Reranker v3 scores 61.94 BEIR nDCG@10. ColBERT (late interaction) pre-computes document token embeddings for 2-5x speedup over full cross-encoder at similar quality. The key is conditional application.",
+          gameType: "DiagnosisLab",
+          gameConfig: {
+            scenario:
+              "Your RAG system has excellent accuracy (89%) but p95 latency is 3.2 seconds — double your 1.5s SLA. Users are complaining. What's the root cause and fix?",
+            metrics: [
+              { name: "p95 Latency", value: "3.2s", status: "alert" },
+              { name: "Reranker Calls", value: "100%", status: "alert" },
+              { name: "Accuracy", value: "89%", status: "ok" },
+              { name: "Cache Hit Rate", value: "12%", status: "warn" },
+              { name: "Avg Candidates", value: "200", status: "warn" },
+              { name: "Simple Query %", value: "63%", status: "ok" },
+            ],
+            options: [
+              {
+                id: "faster_gpu",
+                label: "Upgrade to a faster GPU for the re-ranker",
+              },
+              {
+                id: "conditional",
+                label:
+                  "Add conditional re-ranking: skip when bi-encoder confidence > 0.85",
+              },
+              {
+                id: "reduce_pool",
+                label: "Reduce candidate pool from 200 to 10 documents",
+              },
+              {
+                id: "disable_rerank",
+                label: "Disable re-ranking entirely to meet latency SLA",
+              },
+            ],
+            correctId: "conditional",
+            explanation:
+              "100% re-ranking on all queries is the problem. 63% of queries are simple factual lookups that don't need re-ranking. Conditional re-ranking skips re-ranker when the top bi-encoder result has confidence > 0.85 (clear best match). This cuts re-ranker calls by ~60%, bringing p95 from 3.2s to ~1.3s while barely touching the 89% accuracy. GPU upgrade doesn't address the architectural waste. Reducing candidate pool to 10 would hurt recall. Disabling entirely wastes the 33-40% accuracy gain.",
+          },
+          keyInsight:
+            "Conditional re-ranking is the production pattern: skip re-ranker when bi-encoder confidence is high (clear best match). ColBERT late interaction pre-computes doc token embeddings for 2-5x speedup over cross-encoder. Also: semantic caching eliminates re-ranking for repeated queries entirely.",
+        },
+
+        // ── Level 1.7 — Evaluation & CI/CD ──────────────────────────────────────
+        {
+          title: "Evaluation & CI/CD",
+          subtitle: "Fix the 3 critical bugs in this RAG quality gate pipeline",
+          context:
+            "Faithfulness is THE most critical RAG metric — low faithfulness means the model is hallucinating beyond retrieved context. DeepEval and RAGAS integrate with pytest for automated CI/CD quality gates. Start with 50-100 golden examples (question + expected answer + source) and grow from production failures. A failing quality gate should block the merge, not just warn.",
+          gameType: "CodeDebugger",
+          gameConfig: {
+            code: `# RAG Quality CI Pipeline
+name: rag-quality-gate
+on: [pull_request]
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install deepeval ragas
+      - run: deepeval test run tests/rag_eval.py
+        env:
+          EVAL_MODEL: gpt-4o-mini
+          MIN_FAITHFULNESS: 0.5
+          MIN_RELEVANCY: 0.7
+          METRICS: "answer_relevancy,context_precision"
+          DATASET: golden_examples.json
+          FAIL_ON_THRESHOLD: "true"`,
+            bugs: [
+              {
+                line: 12,
+                description:
+                  "EVAL_MODEL: gpt-4o-mini is the same family as the generator model. Judge-generator model same-family bias inflates faithfulness scores by 15-25%.",
+                fix: "Use a different model family as judge: EVAL_MODEL: gpt-4o (stronger, different training) or claude-3-5-sonnet. The judge must be independent of the generator.",
+              },
+              {
+                line: 13,
+                description:
+                  "MIN_FAITHFULNESS: 0.5 is dangerously low. A score of 0.5 means half the answer is NOT grounded in retrieved context — that's shipping hallucinations to production.",
+                fix: "Set MIN_FAITHFULNESS: 0.8 or higher. Enterprise RAG systems typically require 0.85+. Anything below 0.8 means too many answers are fabricated beyond the retrieved context.",
+              },
+              {
+                line: 15,
+                description:
+                  "METRICS list is missing 'faithfulness' — the most important RAG metric. Without it, the CI gate doesn't even check for hallucinations.",
+                fix: 'Add faithfulness: METRICS: "faithfulness,answer_relevancy,context_precision". Faithfulness should be first and weighted highest in your quality gate.',
+              },
+            ],
+          },
+          keyInsight:
+            "Never use the same model family as judge and generator — bias inflates scores 15-25%. Faithfulness threshold ≥ 0.8 or you're shipping hallucinations. The golden dataset starts at 50 examples, grows from production failures flagged by users. Run evals on every PR, not just deploys.",
+        },
+
+        // ── Level 1.8 — Advanced RAG Patterns ───────────────────────────────────
+        {
+          title: "Advanced RAG Patterns",
+          subtitle: "Match each query type to the correct RAG architecture",
+          context:
+            "GraphRAG (Microsoft, 2024) indexes documents as a knowledge graph with entity relationships — it costs 10-100x more for indexing but solves theme-level synthesis queries that standard RAG cannot. Agentic RAG uses LLM-driven tool calls to retrieve from multiple sources, verify, and reason across steps. Most production systems are 80% Standard RAG + 20% Agentic, with GraphRAG reserved for analytics use cases.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 40,
+            questions: [
+              {
+                question:
+                  "Query: 'What are the top compliance risks appearing across ALL 500 vendor contracts this quarter?'",
+                options: [
+                  "Standard RAG — retrieve top 20 relevant chunks",
+                  "GraphRAG — requires theme synthesis across all documents",
+                  "Agentic RAG — loop through contracts one by one",
+                  "Fine-tuned classifier — categorize risk types",
+                ],
+                correct: 1,
+                explanation:
+                  "This is a theme-level synthesis query across an entire corpus — the canonical GraphRAG use case. Standard RAG only retrieves 20-40 chunks, missing patterns across 500 documents. GraphRAG's entity graph captures cross-document relationships.",
+              },
+              {
+                question:
+                  "Query: 'What is the return policy for Product X according to the customer handbook?'",
+                options: [
+                  "GraphRAG — policy documents need entity relationships",
+                  "Agentic RAG — need to verify against multiple sources",
+                  "Standard RAG — direct factual point lookup",
+                  "Fine-tuning — bake policy into model weights",
+                ],
+                correct: 2,
+                explanation:
+                  "A direct factual lookup in a known document type is exactly what Standard RAG excels at. GraphRAG and Agentic RAG add cost and latency for zero benefit on simple retrieval queries.",
+              },
+              {
+                question:
+                  "Query: 'Compare pricing in Contract A, check the SLA in Contract B, then summarize total cost exposure.'",
+                options: [
+                  "Standard RAG — retrieve all three in one query",
+                  "GraphRAG — price comparison needs entity graph",
+                  "Agentic RAG — multi-step reasoning across documents",
+                  "Batch processing — run three separate queries",
+                ],
+                correct: 2,
+                explanation:
+                  "Multi-step reasoning that requires: (1) retrieve Contract A pricing, (2) retrieve Contract B SLA, (3) synthesize and calculate — this is the Agentic RAG pattern. The LLM acts as an orchestrator, making sequential tool calls with verification at each step.",
+              },
+              {
+                question:
+                  "Query: 'Find all documents tagged with HIPAA compliance requirements.'",
+                options: [
+                  "GraphRAG — compliance is a relationship concept",
+                  "Agentic RAG — need to verify actual compliance",
+                  "Standard RAG with metadata filtering",
+                  "Full-text BM25 search only",
+                ],
+                correct: 2,
+                explanation:
+                  "Filtered retrieval by document metadata (tags, categories, dates) is a Standard RAG feature. Add a metadata filter WHERE tags @> '{hipaa}' to the vector search. GraphRAG adds no value for what is essentially a labeled retrieval query.",
+              },
+              {
+                question:
+                  "Query: 'What recurring themes appear in all customer support tickets from the past month?'",
+                options: [
+                  "Standard RAG — retrieve all tickets and summarize",
+                  "GraphRAG — theme extraction requires entity relationship graph",
+                  "Agentic RAG — loop through all tickets",
+                  "Fine-tuning — train model on historical tickets",
+                ],
+                correct: 1,
+                explanation:
+                  "Theme discovery across a full corpus (not just top-k chunks) is GraphRAG's core strength. The entity graph captures how concepts co-occur across all tickets, revealing themes that no single chunk or small retrieval set would surface.",
+              },
+            ],
+          },
+          keyInsight:
+            "GraphRAG for theme-level synthesis across entire corpora. Standard RAG for point lookups and filtered retrieval. Agentic RAG for multi-step reasoning with verification. Most production systems: 80% Standard + 20% Agentic. GraphRAG indexing costs 10-100x more — only add it when theme queries are core to your use case.",
+        },
+
+        // ── Level 1.9 — Production RAG Cost & Latency ───────────────────────────
+        {
+          title: "Production Cost & Latency",
+          subtitle: "Cut the naive $2.50/request pipeline to under $0.30",
+          context:
+            "A naive RAG pipeline costs $2.50/request: embedding ($0.30) + vector search ($0.10) + re-ranker ($0.40) + GPT-4o generation ($1.80). With semantic caching, batch embeddings, and model routing, production teams routinely achieve 90%+ cost reduction. The order of optimizations matters — highest-impact first. Target: under $0.30 per request.",
+          gameType: "CostOptimizer",
+          gameConfig: {
+            scenario:
+              "Naive pipeline cost: $2.50/request. Apply semantic caching, batch embedding discounts, and model routing to hit under $0.30. Each slider independently reduces cost.",
+            budget: 0.3,
+            sliders: [
+              {
+                name: "Semantic Cache Hit Rate",
+                min: 0,
+                max: 70,
+                step: 5,
+                default: 0,
+                unit: "%",
+                costImpact: (v) => {
+                  // Cache hits skip LLM call ($1.80 base). Cache hit rate reduces LLM cost proportionally.
+                  // Remaining LLM cost + fixed embedding/search/rerank costs
+                  const llmCost = 1.8 * (1 - v / 100);
+                  return parseFloat((llmCost + 0.4 + 0.1).toFixed(3)); // rerank + search still run
+                },
+              },
+              {
+                name: "Embedding Batch Size",
+                min: 1,
+                max: 100,
+                step: 10,
+                default: 1,
+                unit: "x",
+                costImpact: (v) => {
+                  // Batch pricing: at size 100, 50% discount on embedding cost ($0.30 → $0.15)
+                  const discount = Math.min(0.5, ((v - 1) / 99) * 0.5);
+                  return parseFloat((0.3 * (1 - discount)).toFixed(3));
+                },
+              },
+              {
+                name: "Model Routing to Small Model",
+                min: 0,
+                max: 80,
+                step: 10,
+                default: 0,
+                unit: "%",
+                costImpact: (v) => {
+                  // Route v% of queries to small model (10x cheaper: $0.18 vs $1.80)
+                  // Small model handles simple factual queries
+                  const routedCost = (v / 100) * 0.18;
+                  const fullCost = (1 - v / 100) * 1.8;
+                  return parseFloat((routedCost + fullCost).toFixed(3));
+                },
+              },
+            ],
+          },
+          keyInsight:
+            "Semantic caching (30-70% cache hit rate) is the #1 cost lever — eliminates the entire LLM call for repeated/similar queries. Model routing is #2 — GPT-4o-mini at $0.15/MTok vs GPT-4o at $2.50/MTok. Production latency budget: query embedding 100ms + vector search 50ms + rerank 150ms + LLM 500ms = ~800ms p50, ~1.5s p95.",
+        },
+
+        // ── Level 1.10 — Interview Gauntlet ─────────────────────────────────────
+        {
+          title: "Interview Gauntlet",
+          subtitle:
+            "20 expert-level RAG questions — score 80%+ to unlock Chapter 2",
+          context:
+            "Final challenge: 20 expert-level RAG interview questions drawn from real senior AI engineer interviews at top tech companies. These questions test production reasoning, not tutorial recall. Score 80% (16/20) or higher to demonstrate mastery and unlock Chapter 2. You have 45 seconds per question.",
+          gameType: "SpeedQuiz",
+          gameConfig: {
+            timePerQuestion: 45,
+            questions: [
+              {
+                question:
+                  "How do you diagnose whether a bad RAG answer is a retrieval problem vs a generation problem?",
+                options: [
+                  "Check model temperature — high temperature causes generation errors",
+                  "Inspect the retrieved context: if context is relevant but answer is wrong, it's generation; if context is irrelevant, it's retrieval",
+                  "Run A/B test with different LLMs to isolate the issue",
+                  "Increase chunk size — most bad answers come from incomplete chunks",
+                ],
+                correct: 1,
+                explanation:
+                  "The diagnostic split is: log retrieved chunks, then ask 'could a human answer this correctly from these chunks?' If yes → generation problem. If no → retrieval problem. This determines whether you fix the embedding model/query or the prompt/LLM.",
+              },
+              {
+                question:
+                  "What RAG metric BEST detects hallucination (the model fabricating information)?",
+                options: [
+                  "Answer Relevancy — measures if the answer is on-topic",
+                  "Context Precision — measures if retrieved chunks are relevant",
+                  "Faithfulness — measures if the answer is grounded in retrieved context",
+                  "BLEU score — measures n-gram overlap with reference answers",
+                ],
+                correct: 2,
+                explanation:
+                  "Faithfulness measures the fraction of claims in the answer that can be attributed to the retrieved context. A faithfulness score of 0.6 means 40% of the answer is fabricated beyond what was retrieved — that's hallucination. BLEU is a translation metric, irrelevant here.",
+              },
+              {
+                question:
+                  "What is the RRF (Reciprocal Rank Fusion) formula, and what does the constant k=60 control?",
+                options: [
+                  "RRF = rank / k; k=60 is the number of results to return",
+                  "RRF = 1 / (k + rank); k=60 controls the balance between high-ranked and low-ranked results",
+                  "RRF = k * (1 / rank); k=60 is a quality multiplier",
+                  "RRF = sum(1/rank); k=60 is the minimum relevance threshold",
+                ],
+                correct: 1,
+                explanation:
+                  "RRF score = sum of 1/(k+rank) across all result lists. k=60 prevents the score from being dominated by rank-1 results — it smooths the distribution so a document ranked #2 in both lists beats one ranked #1 in only one. k=60 is the empirically-tuned standard from the original paper.",
+              },
+              {
+                question:
+                  "How do you handle a RAG query where retrieved documents directly contradict each other?",
+                options: [
+                  "Always use the first retrieved document — higher similarity means higher authority",
+                  "Average the conflicting answers",
+                  "Timestamp-based priority, source authority ranking, or explicit contradiction detection in the prompt",
+                  "Reject the query and ask user to be more specific",
+                ],
+                correct: 2,
+                explanation:
+                  "Production strategies: (1) timestamp priority — newer docs override older; (2) source authority hierarchy — official docs override wikis; (3) explicit prompt instruction: 'If sources contradict, present all perspectives and note the contradiction.' Never silently average — that produces confidently wrong answers.",
+              },
+              {
+                question:
+                  "What is Matryoshka Representation Learning (MRL) and what practical problem does it solve?",
+                options: [
+                  "A method to train nested LLMs that share transformer layers",
+                  "A training approach that makes embedding first-N dimensions semantically meaningful, allowing quality truncation",
+                  "An ensemble technique combining multiple embedding models",
+                  "A quantization method for reducing embedding model size",
+                ],
+                correct: 1,
+                explanation:
+                  "MRL trains embeddings so the first N dimensions of a 1536-dim vector retain semantic meaning when truncated to 256 dims. Practical impact: 75% less vector DB storage, 75% faster similarity computation, with only ~2% quality loss. text-embedding-3-small and ada-002 both support MRL truncation.",
+              },
+              {
+                question:
+                  "What is ColBERT and why is it preferred over standard cross-encoder re-ranking at production scale?",
+                options: [
+                  "ColBERT is a larger cross-encoder that improves accuracy at higher cost",
+                  "ColBERT uses late interaction: pre-computes document token embeddings offline, enabling 2-5x faster re-ranking than full cross-encoder",
+                  "ColBERT is a distilled bi-encoder that avoids re-ranking entirely",
+                  "ColBERT quantizes query embeddings to reduce latency",
+                ],
+                correct: 1,
+                explanation:
+                  "ColBERT's late interaction stores pre-computed per-token document embeddings (MaxSim scoring). At query time, only query tokens are encoded live. This gives cross-encoder-level accuracy at near bi-encoder speed — 2-5x faster than full cross-encoder re-ranking. Ideal for latency-sensitive production systems.",
+              },
+              {
+                question:
+                  "What is the production latency budget for a well-optimized RAG system?",
+                options: [
+                  "Under 500ms total: fast embeddings + fast search + no reranking",
+                  "Under 1.5 seconds: embedding 100-150ms + search 50-100ms + rerank 100-200ms + LLM 500ms",
+                  "Under 3 seconds: acceptable for enterprise applications",
+                  "Latency doesn't matter for RAG — users expect LLM responses to be slow",
+                ],
+                correct: 1,
+                explanation:
+                  "Production SLA: p50 ~800ms, p95 ~1.5s. Breakdown: query embedding 100-150ms, vector search 50-100ms (with ANN index), conditional rerank 0-200ms, LLM generation 400-600ms. Semantic caching eliminates the last three steps for cache hits, driving p50 to ~100ms for repeated queries.",
+              },
+              {
+                question:
+                  "How do you version and safely roll back a RAG system when a new embedding model performs worse in production?",
+                options: [
+                  "Re-embed all documents with the old model — rollback takes as long as the initial indexing",
+                  "Version embeddings model, chunk config, prompt template, and index together as a deployment unit; maintain blue-green indexes",
+                  "Keep the old index in S3 and swap the vector DB connection string",
+                  "Rollback is impossible once re-embedded — maintain a staging environment instead",
+                ],
+                correct: 1,
+                explanation:
+                  "Blue-green RAG deployment: maintain two complete indexes (old + new), keep both live during transition, route a percentage of traffic to the new index, monitor faithfulness/relevancy metrics, then cut over fully. Version the embedding model, chunk config, and prompt template together — they are tightly coupled. Rollback = re-route to old index (seconds, not hours).",
+              },
+              {
+                question:
+                  "When would you choose HyDE (Hypothetical Document Embeddings) and when does it fail?",
+                options: [
+                  "HyDE works universally; use it whenever retrieval precision is below 70%",
+                  "HyDE improves recall for complex conceptual queries but fails for fact-bound queries where the hypothesis drifts from ground truth",
+                  "HyDE only works with BM25 search, not vector search",
+                  "HyDE is a retrieval technique for images, not text",
+                ],
+                correct: 1,
+                explanation:
+                  "HyDE generates a hypothetical answer to the query, then embeds it (instead of the raw query) to find similar documents. Wins: conceptual questions like 'explain how distributed consensus works' — the hypothesis is likely in the right semantic neighborhood. Fails: fact queries like 'what was the Q3 revenue?' — the hypothesis fabricates a number and the embedding drifts toward documents containing that fabricated number, not the actual answer.",
+              },
+              {
+                question:
+                  "What chunk size and overlap values are supported by the FloTorch 2026 benchmark as production defaults?",
+                options: [
+                  "128 tokens, 0% overlap — smaller chunks improve precision",
+                  "512 tokens, 10-15% overlap — best accuracy in benchmark testing",
+                  "1024 tokens, 5% overlap — larger context reduces retrieval calls",
+                  "256 tokens, 25% overlap — maximum context continuity",
+                ],
+                correct: 1,
+                explanation:
+                  "FloTorch 2026 benchmark: recursive 512-token chunks with 10-15% overlap (51-77 token overlap) achieved 69% accuracy — highest of all strategies tested. Semantic chunking scored 54%. The overlap prevents splitting sentences that straddle chunk boundaries, preserving context continuity without the computational cost of semantic chunking.",
+              },
+              {
+                question:
+                  "Your RAG system faithfulness drops from 0.87 to 0.61 after a document update. What is the most likely cause?",
+                options: [
+                  "The LLM temperature increased — reduce it to restore faithfulness",
+                  "The new documents contradicted the LLM's training data, causing it to hallucinate",
+                  "Stale embeddings: new document content not yet re-indexed, causing retrieval to return outdated chunks",
+                  "The retrieval pool is too small — increase top-k from 10 to 50",
+                ],
+                correct: 2,
+                explanation:
+                  "Faithfulness drop after document update almost always means stale embeddings — the new text is in the document store but the old chunks are still in the vector index. The LLM generates answers from the updated text but faithfulness is scored against old retrieved chunks. Fix: trigger re-indexing on document update, or use a hybrid store that keeps document versions consistent with embedding versions.",
+              },
+              {
+                question:
+                  "What is the difference between context precision and context recall in RAG evaluation?",
+                options: [
+                  "Precision = retrieval speed, Recall = retrieval accuracy",
+                  "Precision = fraction of retrieved chunks that are relevant; Recall = fraction of all relevant chunks that were retrieved",
+                  "Precision = faithfulness of the answer; Recall = relevancy of the answer",
+                  "They are the same metric measured at different thresholds",
+                ],
+                correct: 1,
+                explanation:
+                  "Context Precision: of the top-k chunks retrieved, what fraction are actually relevant to the query? (Avoid noise). Context Recall: of all chunks that contain the answer, how many did we retrieve? (Avoid missing key info). Production target: Precision > 0.75, Recall > 0.80. Low precision = LLM confused by irrelevant context. Low recall = LLM missing key evidence.",
+              },
+              {
+                question:
+                  "How many golden test examples should you start with for a RAG quality gate, and where do new examples come from?",
+                options: [
+                  "1,000+ — more examples always means better evaluation",
+                  "Start with 50-100 hand-crafted examples; grow the set from production failures flagged by users",
+                  "10-20 examples are sufficient — LLM evaluation doesn't need many",
+                  "Golden examples aren't needed — use LLM-as-judge for all evaluation",
+                ],
+                correct: 1,
+                explanation:
+                  "Start with 50-100 hand-crafted golden examples covering key query types, edge cases, and critical domains. Growing from production failures is the compounding advantage: every real failure flagged by users becomes a regression test. After 6 months, most teams have 500-2,000 examples covering realistic distribution. Never rely solely on LLM-as-judge without ground truth.",
+              },
+              {
+                question:
+                  "What PostgreSQL extension adds native BM25 full-text search with the same performance as dedicated search engines?",
+                options: [
+                  "pg_trgm — trigram similarity for fuzzy text matching",
+                  "pgvector — vector similarity + built-in BM25",
+                  "ParadeDB — purpose-built BM25 extension for PostgreSQL",
+                  "tsquery — native PostgreSQL full-text search",
+                ],
+                correct: 2,
+                explanation:
+                  "ParadeDB is the PostgreSQL extension that adds Elastic-quality BM25 search via 'pg_search'. Combined with pgvector for vector search, you get a full hybrid search system in one PostgreSQL instance — no Elasticsearch cluster required. tsquery is PostgreSQL's built-in FTS but it doesn't implement BM25 scoring.",
+              },
+              {
+                question:
+                  "A user asks: 'How did our pricing strategy evolve from 2020 to 2024?' How should your RAG system handle this temporal query?",
+                options: [
+                  "Retrieve latest pricing documents — they contain the most accurate information",
+                  "Retrieve documents filtered by date range + temporal ordering in the prompt: 'Documents are sorted from oldest to newest'",
+                  "Use fine-tuning — temporal reasoning requires baked-in knowledge",
+                  "Reject temporal queries — RAG cannot reason across time",
+                ],
+                correct: 1,
+                explanation:
+                  "Temporal RAG strategy: (1) add document creation date to metadata; (2) filter by date range in the vector search; (3) sort retrieved chunks chronologically; (4) include dates in the prompt so LLM can reason about evolution. The prompt instruction 'documents are from [dates], ordered chronologically' dramatically improves temporal reasoning accuracy.",
+              },
+              {
+                question:
+                  "What is the 'lost in the middle' problem in RAG and how do you mitigate it?",
+                options: [
+                  "Retrieved documents get lost in the database — use checksums to verify integrity",
+                  "LLMs attend poorly to information in the middle of long contexts; mitigate by placing key chunks at start/end",
+                  "Chunks in the middle of documents are harder to retrieve — use sliding window chunking",
+                  "Network packets get lost during embedding API calls — use retries",
+                ],
+                correct: 1,
+                explanation:
+                  "Stanford 2023 finding: LLMs strongly attend to the beginning and end of their context but poorly to the middle. In a 10-chunk context, chunks 4-7 get underweighted. Mitigation: (1) put highest-relevance chunks at positions 1 and last; (2) limit context to top-5 chunks not top-20; (3) use re-ranking to ensure the most critical chunks are first.",
+              },
+              {
+                question:
+                  "When should you use multi-vector retrieval (ColPali, ColBERT) vs single-vector retrieval?",
+                options: [
+                  "Always use multi-vector — it's strictly better than single-vector",
+                  "Multi-vector for complex queries requiring token-level matching; single-vector for semantic similarity at scale",
+                  "Single-vector for text, multi-vector only for image retrieval",
+                  "Multi-vector is only useful when the corpus has fewer than 1M documents",
+                ],
+                correct: 1,
+                explanation:
+                  "Single-vector: one embedding per document/chunk, fast ANN search, scales to billions. Best for semantic similarity. Multi-vector (ColBERT): per-token embeddings, MaxSim scoring, better for complex multi-concept queries. ColPali extends this to page-level document images. Use single-vector as default; add multi-vector for queries that require token-level precision or when single-vector precision is below 65%.",
+              },
+              {
+                question:
+                  "Your RAG system works great in testing but degrades significantly on production queries. What is the most common root cause?",
+                options: [
+                  "Production servers are slower than dev — optimize infrastructure",
+                  "Distribution shift: production query patterns differ significantly from the golden test set",
+                  "The LLM API rate-limits production traffic",
+                  "Vector DB indexes degrade over time — rebuild indexes weekly",
+                ],
+                correct: 1,
+                explanation:
+                  "Distribution shift is the #1 root cause of test-to-prod degradation. Golden test sets are hand-crafted and don't reflect the messy, ambiguous, multi-language, typo-ridden reality of production queries. Fix: (1) log and analyze production queries weekly; (2) add failing production examples to golden set; (3) monitor online metrics (user thumbs down, session abandonment) not just offline eval.",
+              },
+              {
+                question:
+                  "What is the recommended pgvector index type for <1M vectors at >99% recall, and what index for >10M vectors where recall can be 95%?",
+                options: [
+                  "HNSW for <1M (exact), IVFFlat for >10M (approximate)",
+                  "IVFFlat for <1M (fewer params), HNSW for >10M (better at scale)",
+                  "Both use HNSW — IVFFlat is deprecated",
+                  "Flat (exact search) for all sizes — accuracy is non-negotiable",
+                ],
+                correct: 0,
+                explanation:
+                  "HNSW (Hierarchical Navigable Small World) for <1M vectors: O(log n) query time, >99% recall, memory-intensive (stores the full graph). IVFFlat for >10M: partitions the space into clusters, queries only the nearest cluster — faster at scale with ~95% recall. pgvectorscale adds DiskANN index for billion-scale with disk-based storage, achieving 471 QPS at 50M vectors.",
+              },
+              {
+                question:
+                  "A senior engineer asks you to justify adding re-ranking to your RAG pipeline despite the latency cost. What's the best technical argument?",
+                options: [
+                  "Re-ranking makes the system look more sophisticated in demos",
+                  "Cross-encoder re-ranking adds +33-40% accuracy for +100-200ms latency — that's the best accuracy-per-millisecond trade-off in the entire RAG pipeline",
+                  "Re-ranking eliminates the need for hybrid search",
+                  "Re-ranking is required for compliance — auditors need to see which documents were ranked",
+                ],
+                correct: 1,
+                explanation:
+                  "The numbers justify it: bi-encoder retrieval (fast but imprecise) achieves ~62% precision. Adding a cross-encoder re-ranker brings it to ~84-89%. That's +22-27 percentage points of accuracy for ~150ms additional latency. Compare: switching from GPT-4o-mini to GPT-4o costs +500ms and maybe +15% accuracy. Re-ranking gives better ROI. And conditional re-ranking (skip for high-confidence queries) can reduce the latency cost by 50-60%.",
+              },
+            ],
+          },
+          keyInsight:
+            "You've mastered Production RAG. The differentiators: you can diagnose retrieval vs generation failures, defend architectural tradeoffs with real numbers, and design cost-optimized pipelines. Chapter 2 unlocked: Local SLMs with Ollama — run AI at $0/month on your own hardware.",
+        },
+      ]; // end levels
+
+      document.addEventListener("DOMContentLoaded", () => {
+        ChapterRunner.start(
+          1,
+          levels,
+          document.getElementById("game-panel"),
+          document.getElementById("level-nav"),
+        );
+      });
+    </script>
+  </body>
+</html>

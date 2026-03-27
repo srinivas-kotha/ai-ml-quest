@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 4: Fine-Tuning Mastery — AI/ML Quest</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body data-chapter="4">
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- HUD -->
+    <nav class="hud">
+      <div class="hud-logo">
+        <a href="index.html" style="color: inherit; text-decoration: none"
+          >AI<span>/ML</span> Quest</a
+        >
+      </div>
+      <div class="hud-level">LVL <span id="hud-level-num">1</span></div>
+      <div class="hud-xp-wrap">
+        <div class="hud-xp-bar">
+          <div class="hud-xp-fill" id="hud-xp-fill" style="width: 0%"></div>
+        </div>
+        <span class="hud-xp-text" id="hud-xp-text">0 XP</span>
+      </div>
+      <div class="hud-streak" id="hud-streak">🔥 0</div>
+      <div class="hud-combo" id="hud-combo">1x</div>
+      <button class="hud-sound" id="hud-sound" title="Toggle sound">🔊</button>
+    </nav>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="page-content">
+      <div class="container">
+        <!-- Chapter Header -->
+        <header style="padding: 2rem 0 1rem">
+          <div
+            style="
+              font-size: 0.7rem;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: var(--finetuning, #f59e0b);
+              margin-bottom: 0.4rem;
+            "
+          >
+            Chapter 4
+          </div>
+          <h1
+            style="
+              font-size: 1.9rem;
+              letter-spacing: -0.03em;
+              margin: 0 0 0.4rem;
+            "
+          >
+            Fine-Tuning Mastery
+          </h1>
+          <p class="text-secondary" style="font-size: 0.9rem; margin: 0">
+            LoRA, QLoRA, DPO, RLHF — Make Models Do Exactly What You Want
+          </p>
+        </header>
+
+        <!-- Chapter Layout: sidebar + game panel -->
+        <div class="chapter-layout">
+          <!-- Sidebar nav -->
+          <nav class="level-nav" id="level-nav"></nav>
+
+          <!-- Game panel -->
+          <main class="game-panel" id="game-panel">
+            <div
+              style="
+                text-align: center;
+                padding: 3rem 1rem;
+                color: var(--text-muted);
+              "
+            >
+              Loading levels…
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // ----------------------------------------------------------------
+        // CHAPTER 4 — Fine-Tuning Mastery (11 levels)
+        // ----------------------------------------------------------------
+
+        const levels = [
+          // ── L4.1 ── When to Fine-Tune (Decision Framework) ──────────
+          {
+            title: "When to Fine-Tune",
+            subtitle: "RAG vs Fine-Tune vs Hybrid — Decision Framework",
+            context:
+              "<5% of production AI uses full fine-tuning. LoRA/QLoRA is the standard for 95% of cases. Knowing WHEN to fine-tune separates AI engineers from prompt engineers.",
+            gameType: "SpeedQuiz",
+            gameConfig: {
+              timePerQuestion: 30,
+              questions: [
+                {
+                  question:
+                    "A payment API must always return valid JSON with specific fields. The model sometimes returns prose. Best approach?",
+                  options: [
+                    "RAG — add JSON examples to retrieved docs",
+                    "Fine-tune — teach the model the exact output format",
+                    "Prompt engineering only",
+                    "Use a larger base model",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Fine-tune for FORMAT. JSON output, classification labels, and structured extraction are ideal fine-tuning targets. The model learns the schema as a behavior, not a fact.",
+                },
+                {
+                  question:
+                    "A support bot needs to answer questions about products that change weekly with new SKUs and specs. Best approach?",
+                  options: [
+                    "Fine-tune monthly on new product data",
+                    "RAG — index the product catalog, query at runtime",
+                    "Both fine-tune and RAG every week",
+                    "Hard-code product data in system prompt",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "RAG for KNOWLEDGE. Facts that change frequently should live in a retrieval index, not baked into model weights. Fine-tuning on changing facts causes staleness.",
+                },
+                {
+                  question:
+                    "A legal firm needs their AI to write in their house style: formal, passive voice, UK English, specific citation formats. Best approach?",
+                  options: [
+                    "RAG over style guide documents",
+                    "Fine-tune on ~500 examples of approved legal documents",
+                    "Few-shot prompting with 10 style examples",
+                    "Use a larger frontier model",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Fine-tune for WRITING STYLE. Consistent tone, voice, and formatting patterns are learned behaviors — fine-tuning on real examples outperforms RAG or prompting for style consistency.",
+                },
+                {
+                  question:
+                    "A research assistant must cite sources and show which documents support each claim. Best approach?",
+                  options: [
+                    "Fine-tune to always add citations",
+                    "RAG — retrieval provides the source documents and citations naturally",
+                    "Fine-tune on papers with citation format",
+                    "Both RAG and fine-tune",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "RAG for CITATIONS. You can't fine-tune in real citations — the model would hallucinate them. RAG grounds responses in actual retrieved documents and tracks provenance.",
+                },
+                {
+                  question:
+                    "A bank needs to classify incoming messages into 23 internal categories with 99%+ accuracy at <50ms latency. Best approach?",
+                  options: [
+                    "RAG over category descriptions",
+                    "Fine-tune a small model (BERT/DistilBERT) for classification",
+                    "Use GPT-4 with the full category list in prompt",
+                    "Chain-of-thought prompting",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Fine-tune for LOW-LATENCY CLASSIFICATION. A fine-tuned small classifier (BERT-class) runs in <10ms and achieves 99%+ on narrow tasks. GPT-4 at 2-5s latency and high cost is overkill.",
+                },
+                {
+                  question:
+                    "An analyst needs to answer complex multi-hop questions: 'Which companies in our portfolio overlap with Apple's suppliers that also had earnings misses last quarter?' Best approach?",
+                  options: [
+                    "Fine-tune on multi-hop reasoning examples",
+                    "RAG + agentic tool use — break into sub-queries across multiple indexes",
+                    "Prompt with chain-of-thought",
+                    "Fine-tune + RAG hybrid",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "RAG + Agent for MULTI-HOP. This requires querying multiple data sources and combining results — not a format issue, but a knowledge retrieval + reasoning orchestration problem.",
+                },
+                {
+                  question:
+                    "An insurance company needs to extract 15 specific fields from handwritten legacy claim forms (after OCR). Fields have irregular formatting. Best approach?",
+                  options: [
+                    "RAG over form templates",
+                    "Fine-tune on labeled (form, extracted JSON) pairs",
+                    "Few-shot prompting with 5 examples",
+                    "Use a vision model without fine-tuning",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Fine-tune for STRUCTURED EXTRACTION from irregular formats. The model learns domain-specific field semantics and handles OCR noise. Labeled pairs from your actual forms are the training data.",
+                },
+                {
+                  question:
+                    "A news platform wants to answer questions like 'What happened in the Gaza ceasefire talks today?' Best approach?",
+                  options: [
+                    "Fine-tune weekly on news articles",
+                    "RAG over a live-updated news index",
+                    "Use a model with internet access",
+                    "RAG with daily ingestion pipeline",
+                  ],
+                  correct: 3,
+                  explanation:
+                    "RAG with live ingestion for CURRENT EVENTS. Fine-tuning has a training cutoff and can't adapt to today's news. A daily ingestion pipeline ensures the retrieval index is current.",
+                },
+              ],
+            },
+            keyInsight:
+              "Fine-tune for FORMAT (JSON output, writing style, classification, structured extraction). RAG for KNOWLEDGE (facts, documents, citations, live data). The decision is about what changes: if the task structure changes → fine-tune; if the facts change → RAG.",
+          },
+
+          // ── L4.2 ── SFT Fundamentals ────────────────────────────────
+          {
+            title: "SFT Fundamentals",
+            subtitle: "Supervised Fine-Tuning — Hyperparameters That Matter",
+            context:
+              "Flash Attention 2 delivers 3-10x faster attention computation. Learning rate is the single most critical SFT hyperparameter — too high causes catastrophic forgetting, too low means no adaptation.",
+            gameType: "ParameterTuner",
+            gameConfig: {
+              description:
+                "Configure SFT hyperparameters to minimize training loss without overfitting. All three gauges must be in the green zone.",
+              sliders: [
+                {
+                  name: "learning_rate",
+                  min: 0.00001,
+                  max: 0.001,
+                  step: 0.00001,
+                  default: 0.0002,
+                  unit: "",
+                },
+                {
+                  name: "warmup_steps",
+                  min: 0,
+                  max: 500,
+                  step: 10,
+                  default: 100,
+                  unit: "",
+                },
+                {
+                  name: "epochs",
+                  min: 1,
+                  max: 10,
+                  step: 1,
+                  default: 5,
+                  unit: "",
+                },
+                {
+                  name: "batch_size",
+                  min: 1,
+                  max: 32,
+                  step: 1,
+                  default: 16,
+                  unit: "",
+                },
+              ],
+              gauges: [
+                {
+                  name: "Training Loss",
+                  unit: "",
+                  decimals: 2,
+                  good: [0.5, 1.5],
+                  compute: (v) => {
+                    // Lower LR = higher training loss; reasonable range 0.3-2.5
+                    const lrFactor = (0.001 - v.learning_rate) / 0.001;
+                    const epochFactor = v.epochs / 10;
+                    return (
+                      Math.max(
+                        0.2,
+                        2.5 - epochFactor * 1.8 - (1 - lrFactor) * 0.5,
+                      ).toFixed(2) * 1
+                    );
+                  },
+                },
+                {
+                  name: "Validation Loss",
+                  unit: "",
+                  decimals: 2,
+                  good: [0.5, 2.0],
+                  compute: (v) => {
+                    // Validation loss diverges when lr is high AND epochs are high
+                    const overfit = (v.learning_rate / 0.001) * (v.epochs / 10);
+                    const base = 0.9;
+                    return Math.max(0.3, base + overfit * 2.5).toFixed(2) * 1;
+                  },
+                },
+                {
+                  name: "Overfit Risk",
+                  unit: "%",
+                  decimals: 0,
+                  good: [0, 30],
+                  compute: (v) => {
+                    // epochs * lr correlation; warmup helps
+                    const raw =
+                      v.epochs * (v.learning_rate / 0.0002) * 10 -
+                      (v.warmup_steps / 500) * 15;
+                    return Math.max(0, Math.min(100, Math.round(raw)));
+                  },
+                },
+              ],
+            },
+            keyInsight:
+              "Start with lr=2e-5, warmup=10% of total steps, 3 epochs. Watch validation loss — when it diverges from training loss, you're overfitting. Flash Attention 2 has zero quality impact; enable it unconditionally for 3-10x speed improvement.",
+          },
+
+          // ── L4.3 ── LoRA Deep Dive ───────────────────────────────────
+          {
+            title: "LoRA Deep Dive",
+            subtitle: "The Math Behind Low-Rank Adaptation",
+            context:
+              "W = W₀ + BA. B is (d×r), A is (r×k). With r=16, you train 0.1% of parameters while preserving 95%+ of full fine-tuning quality. The rank r controls the expressivity-efficiency tradeoff.",
+            gameType: "ParameterTuner",
+            gameConfig: {
+              description:
+                "Tune LoRA hyperparameters for a 7B model. Hit all three green zones: low trainable parameter footprint, VRAM that fits a 24GB GPU, and quality close to full fine-tuning.",
+              sliders: [
+                {
+                  name: "rank_r",
+                  min: 4,
+                  max: 128,
+                  step: 4,
+                  default: 64,
+                  unit: "",
+                },
+                {
+                  name: "alpha",
+                  min: 4,
+                  max: 256,
+                  step: 4,
+                  default: 128,
+                  unit: "",
+                },
+                {
+                  name: "target_modules",
+                  min: 2,
+                  max: 7,
+                  step: 1,
+                  default: 5,
+                  unit: " modules",
+                },
+              ],
+              gauges: [
+                {
+                  name: "Trainable Params %",
+                  unit: "%",
+                  decimals: 3,
+                  good: [0.05, 1.0],
+                  compute: (v) => {
+                    // 7B model: ~7000M params. LoRA params = 2 * r * d * num_layers * target_modules
+                    // Rough estimate: each module adds ~2 * r * 4096 * 32 params
+                    const loraParams =
+                      2 * v.rank_r * 4096 * 32 * v.target_modules;
+                    return (loraParams / 7e9) * 100;
+                  },
+                },
+                {
+                  name: "VRAM (GB)",
+                  unit: "",
+                  decimals: 1,
+                  good: [4, 23],
+                  compute: (v) => {
+                    // 7B in 4-bit (QLoRA): ~4GB base + LoRA activations
+                    const baseVram = 4.0;
+                    const loraVram = (v.rank_r / 16) * v.target_modules * 0.15;
+                    const activationVram = 1.5;
+                    return baseVram + loraVram + activationVram;
+                  },
+                },
+                {
+                  name: "Quality vs Full FT %",
+                  unit: "",
+                  decimals: 1,
+                  good: [90, 100],
+                  compute: (v) => {
+                    // Diminishing returns: r=4→80%, r=16→92%, r=64→96%, r=128→97%
+                    const rankQuality = 100 - 20 / Math.log2(v.rank_r + 1);
+                    // Alpha scaling: alpha/r ratio ~2 is optimal; far from 2 hurts slightly
+                    const alphaRatio = v.alpha / v.rank_r;
+                    const alphaPenalty =
+                      alphaRatio < 0.5 || alphaRatio > 8 ? 3 : 0;
+                    // More target modules = better quality
+                    const moduleBonus = (v.target_modules - 2) * 0.5;
+                    return Math.min(
+                      100,
+                      Math.max(70, rankQuality + moduleBonus - alphaPenalty),
+                    );
+                  },
+                },
+              ],
+            },
+            keyInsight:
+              "r=16, alpha=32 (scaling factor=2x) is the universal LoRA starting point. Target all linear layers (not just attention) for a 5-10% quality boost at 2x parameter cost. Beyond r=64, quality gains are marginal — you're wasting VRAM.",
+          },
+
+          // ── L4.4 ── QLoRA ────────────────────────────────────────────
+          {
+            title: "QLoRA Cost Optimizer",
+            subtitle: "4-bit Quantized LoRA — Democratizing Fine-Tuning",
+            context:
+              "7B full fine-tuning = 112GB VRAM → QLoRA = 5GB. 70B full fine-tuning = 560GB VRAM → QLoRA = 46GB. NF4 (NormalFloat4) quantization is information-theoretically optimal for normally distributed neural network weights.",
+            gameType: "CostOptimizer",
+            gameConfig: {
+              scenario:
+                "Fine-tune a 7B model under $10 budget using QLoRA. Sliders: GPU hourly rate (RTX 4090=$0.40/hr, A100-40GB=$1.50/hr, A100-80GB=$2.50/hr), training hours, and model size overhead. Total cost = GPU $/hr × hours + size overhead. Hit under budget to pass.",
+              budget: 10,
+              sliders: [
+                {
+                  // GPU rate slider — its value IS the $/hr directly fed to costImpact
+                  name: "GPU $/hr (0.40=RTX4090, 1.50=A100-40, 2.50=A100-80)",
+                  min: 0.4,
+                  max: 2.5,
+                  step: 0.1,
+                  default: 1.5,
+                  unit: " $/hr",
+                  // costImpact(v): v = GPU rate; multiply by fixed 5h = base cost
+                  costImpact: (v) => v * 5,
+                },
+                {
+                  // Extra hours beyond base 5 — adds cost at current rate
+                  name: "Extra Training Hours (beyond base 5h)",
+                  min: 0,
+                  max: 5,
+                  step: 0.5,
+                  default: 2,
+                  unit: "h",
+                  // At default GPU rate $1.50, each extra hour = $1.50
+                  // We use a fixed $1.00/hr equivalent here as additive overhead
+                  costImpact: (v) => v * 1.0,
+                },
+                {
+                  // Model size — larger models need bigger disks/more download costs
+                  name: "Model Size (7=7B, 13=13B, 34=34B, 70=70B)",
+                  min: 7,
+                  max: 70,
+                  step: 7,
+                  default: 7,
+                  unit: "B",
+                  // Storage + download overhead: ~$0.05 per billion params
+                  costImpact: (v) => v * 0.05,
+                },
+              ],
+            },
+            keyInsight:
+              "7B QLoRA on RTX 4090 (~$0.40/hr on Vast.ai) = ~$1.20 for 3 hours on 1K samples. QLoRA matches full LoRA quality with negligible degradation from the 4-bit NF4 base model. NF4 beats standard INT4 because it places quantization bins at equal-area intervals matching the normal distribution of LLM weights.",
+          },
+
+          // ── L4.5 ── LoRA Variants ────────────────────────────────────
+          {
+            title: "LoRA Variants",
+            subtitle: "DoRA, rsLoRA, LoRA+, TIES Merge, DARE Merge",
+            context:
+              "DoRA (Weight-Decomposed LoRA, ICLR 2025) decomposes weight updates into magnitude and direction components, delivering +22% improvement at low ranks with zero inference overhead — it merges back into the base model identically.",
+            gameType: "ConceptMatcher",
+            gameConfig: {
+              pairs: [
+                {
+                  left: "DoRA",
+                  right:
+                    "Weight-decomposed adaptation — separates magnitude & direction, +22% at r=4",
+                },
+                {
+                  left: "rsLoRA",
+                  right:
+                    "Rank-stabilized scaling — prevents gradient vanishing at high ranks (r≥64)",
+                },
+                {
+                  left: "LoRA+",
+                  right:
+                    "Asymmetric learning rates — higher LR for matrix B than matrix A",
+                },
+                {
+                  left: "TIES Merge",
+                  right:
+                    "Resolves sign conflicts when combining multiple LoRA adapters into one",
+                },
+                {
+                  left: "DARE Merge",
+                  right:
+                    "Randomly drops (zeros out) adapter weights before merging to reduce interference",
+                },
+                {
+                  left: "Task Arithmetic",
+                  right:
+                    "Add or subtract adapter weight vectors to compose or negate task-specific behaviors",
+                },
+              ],
+            },
+            keyInsight:
+              "Try LoRA+ first — it's just a hyperparameter change (set B's LR 4-16x higher than A's). Then DoRA for low-rank scenarios (r≤8). rsLoRA only matters at r≥64. Use TIES merge when combining task-specific adapters to avoid sign conflicts.",
+          },
+
+          // ── L4.6 ── DPO ─────────────────────────────────────────────
+          {
+            title: "DPO Pipeline",
+            subtitle: "Direct Preference Optimization — No Reward Model Needed",
+            context:
+              "DPO eliminates the separate reward model AND the PPO optimizer entirely by using a mathematically equivalent closed-form loss. Quality of CHOSEN responses is the primary driver — focus annotation budget there, not on chosen/rejected balance.",
+            gameType: "PipelineBuilder",
+            gameConfig: {
+              description:
+                "Build the correct DPO alignment pipeline. Select components in the right order. Note: DPO skips several RLHF components entirely.",
+              components: [
+                { id: "sft_model", label: "SFT Model (base)" },
+                { id: "generate_completions", label: "Generate Completions" },
+                { id: "human_scoring", label: "Human Scoring" },
+                { id: "pair_chosen_rejected", label: "Pair Chosen/Rejected" },
+                { id: "dpo_trainer", label: "DPO Trainer" },
+                { id: "reward_model", label: "Reward Model (RM)" },
+                { id: "ppo_optimizer", label: "PPO Optimizer" },
+                { id: "merged_model", label: "Merged/Deployed Model" },
+              ],
+              correctOrder: [
+                "sft_model",
+                "generate_completions",
+                "human_scoring",
+                "pair_chosen_rejected",
+                "dpo_trainer",
+                "merged_model",
+              ],
+            },
+            keyInsight:
+              "DPO skips Reward Model and PPO entirely. Even 2K high-quality chosen/rejected pairs can produce 5% benchmark improvement. Focus annotation budget on CHOSEN response quality — a mediocre chosen example is worse than no example.",
+          },
+
+          // ── L4.7 ── RLHF vs DPO vs ORPO vs SimPO ───────────────────
+          {
+            title: "Alignment Method Selector",
+            subtitle: "RLHF, DPO, ORPO, SimPO, GRPO — When to Use Which",
+            context:
+              "The 2026 production alignment stack: SFT → DPO or SimPO (alignment) → GRPO or RLVR (reasoning). This exact sequence is used by every frontier lab including Llama 3, Qwen 2.5, and DeepSeek.",
+            gameType: "SpeedQuiz",
+            gameConfig: {
+              timePerQuestion: 35,
+              questions: [
+                {
+                  question:
+                    "You have only thumbs-up/thumbs-down feedback — no chosen/rejected pairs. Which alignment method?",
+                  options: [
+                    "DPO — requires only binary labels",
+                    "KTO — Kahneman-Tversky Optimization, works with unpaired binary feedback",
+                    "RLHF — can use binary rewards",
+                    "SimPO — reference-free, no pairs needed",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "KTO (Kahneman-Tversky Optimization) is designed for unpaired binary feedback. DPO and SimPO require paired (chosen, rejected) examples. KTO trains directly on desirable/undesirable signal without pairing.",
+                },
+                {
+                  question:
+                    "You want alignment in a single training stage — no separate SFT then DPO. Maximum efficiency. Which method?",
+                  options: [
+                    "DPO — faster than RLHF",
+                    "RLHF — full pipeline",
+                    "ORPO (Odds Ratio Preference Optimization) — single-stage SFT+alignment",
+                    "SimPO — no reference model",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "ORPO combines supervised fine-tuning and preference optimization into a single stage by adding an odds ratio penalty to the SFT loss. No separate SFT → alignment pipeline needed.",
+                },
+                {
+                  question:
+                    "Your team needs the highest possible AlpacaEval scores and has compute to spare, but wants to avoid maintaining a reference model. Which method?",
+                  options: [
+                    "DPO — industry standard",
+                    "RLHF — highest quality ceiling",
+                    "SimPO (+6.4 AlpacaEval vs DPO) — no reference model, margin-based",
+                    "GRPO — group relative optimization",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "SimPO (Simple Preference Optimization) removes the reference model entirely and uses a target reward margin, achieving +6.4 AlpacaEval improvement over DPO as of 2024 benchmarks.",
+                },
+                {
+                  question:
+                    "You want to improve multi-step mathematical reasoning and code generation. The model needs to learn to think, not just to prefer. Which method?",
+                  options: [
+                    "DPO — preference optimization",
+                    "SimPO — quality optimization",
+                    "GRPO (Group Relative Policy Optimization) — reasoning-specific",
+                    "ORPO — efficient single stage",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "GRPO is used by DeepSeek-R1 and Qwen-Math specifically for reasoning. It computes relative advantages within a group of sampled completions, enabling the model to learn step-by-step reasoning without a reward model.",
+                },
+                {
+                  question:
+                    "Your organization has dedicated RL researchers, PPO expertise, and needs maximum control over the reward signal with human feedback loops. Which method?",
+                  options: [
+                    "DPO — simpler and competitive",
+                    "RLHF with reward model + PPO — full control, highest complexity",
+                    "SimPO — no reward model overhead",
+                    "GRPO — group relative",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "RLHF with a learned reward model + PPO gives the most control but requires RL expertise, careful reward hacking mitigation, and significant infrastructure. Only justified with dedicated teams.",
+                },
+                {
+                  question:
+                    "You want the simplest possible first alignment step for a new product. Baseline quality, fast iteration. Which method?",
+                  options: [
+                    "RLHF — proven and comprehensive",
+                    "DPO — simple, no RL, pairs→loss, 2-3 days to implement",
+                    "GRPO — state of the art",
+                    "KTO — needs no pairs",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "DPO is the practical starting point: no RL infrastructure, no reward model, just paired examples and a cross-entropy-like loss. Most teams start here before considering SimPO or GRPO.",
+                },
+                {
+                  question:
+                    "Which method uses GROUP of sampled outputs to estimate relative advantage without a reward model?",
+                  options: [
+                    "DPO — uses reference model log-probs",
+                    "PPO — uses value function baseline",
+                    "GRPO (Group Relative Policy Optimization)",
+                    "ORPO — uses odds ratio",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "GRPO samples multiple completions per prompt, computes rewards (or rule-based scores) for each, and uses the group's mean reward as the baseline. No critic/value network needed — the group itself is the reference.",
+                },
+                {
+                  question:
+                    "DAPO (Direct Alignment from Preference Optimization) was introduced by which organization and improves upon what method?",
+                  options: [
+                    "OpenAI, improves PPO stability",
+                    "ByteDance, improves GRPO for large-scale reasoning training",
+                    "Google DeepMind, improves DPO with contrastive loss",
+                    "Meta, improves RLHF data efficiency",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "DAPO was introduced by ByteDance/Tiktok Research in 2025, improving upon GRPO by adding clip-higher trick, dynamic sampling, and token-level policy gradient for more stable large-scale reasoning training.",
+                },
+              ],
+            },
+            keyInsight:
+              "DPO for simplicity and fast iteration. SimPO for highest benchmark quality. GRPO for reasoning enhancement (math, code, chain-of-thought). ORPO for single-stage efficiency. RLHF is legacy for teams without dedicated RL researchers.",
+          },
+
+          // ── L4.8 ── Dataset Curation ─────────────────────────────────
+          {
+            title: "Dataset Curation Pipeline",
+            subtitle: "The Secret Weapon — Quality over Quantity",
+            context:
+              "Magpie (ICLR 2025): by prompting Llama 3 with only a user-turn token, the model auto-generates instruction-response pairs. 300K Magpie-filtered examples match the quality of 10M human-curated samples. Data quality beats data quantity every time.",
+            gameType: "PipelineBuilder",
+            gameConfig: {
+              description:
+                "Build a production dataset curation pipeline. Order the stages correctly to go from raw 100K examples to a high-quality training set.",
+              components: [
+                { id: "raw_data_100k", label: "Raw Data (100K examples)" },
+                { id: "perplexity_filter", label: "Perplexity Filter" },
+                { id: "minhash_dedup", label: "MinHash Deduplication" },
+                {
+                  id: "contamination_check",
+                  label: "Benchmark Contamination Check",
+                },
+                {
+                  id: "quality_scorer",
+                  label: "Quality Scorer (LLM-as-judge)",
+                },
+                { id: "length_filter", label: "Length Filter" },
+                { id: "diversity_sampler", label: "Diversity Sampler" },
+                { id: "final_dataset", label: "Final Training Dataset" },
+              ],
+              correctOrder: [
+                "raw_data_100k",
+                "perplexity_filter",
+                "minhash_dedup",
+                "contamination_check",
+                "quality_scorer",
+                "diversity_sampler",
+                "final_dataset",
+              ],
+            },
+            keyInsight:
+              "Magpie synthetic generation costs 30x less than human curation. Always run benchmark contamination checks (MMLU, HumanEval, GSM8K n-gram overlap) before training — contaminated data inflates eval scores without real improvement. A 10K curated set beats 100K noisy data.",
+          },
+
+          // ── L4.9 ── Tools & Deployment ───────────────────────────────
+          {
+            title: "Tools & Deployment",
+            subtitle: "Unsloth, Axolotl, vLLM — Production Fine-Tuning Stack",
+            context:
+              "Unsloth = single-GPU speed king (2-5x faster training via custom CUDA kernels, 70% less VRAM). Axolotl = production pipeline king (YAML-driven, multi-GPU, integrates everything). vLLM for serving multiple LoRA adapters sharing one base model simultaneously.",
+            gameType: "PipelineBuilder",
+            gameConfig: {
+              description:
+                "Build the correct single-GPU fine-tuning and deployment pipeline using Unsloth + Ollama. Select and order the right steps.",
+              components: [
+                { id: "training_data", label: "Training Data (JSONL)" },
+                { id: "unsloth_trainer", label: "Unsloth SFTTrainer" },
+                { id: "axolotl_config", label: "Axolotl YAML Config" },
+                { id: "lora_weights", label: "LoRA Adapter Weights" },
+                { id: "merge_adapter", label: "Merge LoRA into Base" },
+                { id: "export_gguf", label: "Export to GGUF (llama.cpp)" },
+                { id: "ollama_deploy", label: "Ollama Modelfile Deploy" },
+                { id: "vllm_serve", label: "vLLM Multi-Adapter Serve" },
+                {
+                  id: "api_gateway",
+                  label: "API Gateway / OpenAI-compat endpoint",
+                },
+              ],
+              correctOrder: [
+                "training_data",
+                "unsloth_trainer",
+                "lora_weights",
+                "merge_adapter",
+                "export_gguf",
+                "ollama_deploy",
+                "api_gateway",
+              ],
+            },
+            keyInsight:
+              "Two deployment paths: (1) Merge LoRA → GGUF → Ollama: simple, single-user, edge deployment. (2) Keep LoRA separate → vLLM: multiple adapters sharing one base model in memory (enterprise multi-tenant). For >3 adapters, vLLM's LoRA multiplexing beats merged-model memory overhead.",
+          },
+
+          // ── L4.10 ── Evaluation & Catastrophic Forgetting ───────────
+          {
+            title: "Evaluation & Diagnosis",
+            subtitle: "Before/After Metrics — Catching Catastrophic Forgetting",
+            context:
+              "Always report DELTA metrics, not just final scores. Evaluate general benchmarks (MMLU, HellaSwag) alongside task-specific ones to catch catastrophic forgetting — the silent killer of fine-tuned models.",
+            gameType: "DiagnosisLab",
+            gameConfig: {
+              scenario:
+                "You fine-tuned Llama 3.1 8B on 5K medical Q&A pairs. Post-tuning evaluation shows the following metrics compared to baseline. Diagnose what went wrong.",
+              metrics: [
+                { name: "Task Accuracy", value: "+15%", status: "ok" },
+                { name: "General Perplexity", value: "+8%", status: "alert" },
+                { name: "Safety Score", value: "-3%", status: "warn" },
+                { name: "Inference Speed", value: "Same", status: "ok" },
+                { name: "MMLU Score", value: "-5%", status: "alert" },
+              ],
+              options: [
+                {
+                  id: "forgetting",
+                  label:
+                    "Catastrophic forgetting — model lost general reasoning capabilities while gaining task performance",
+                },
+                {
+                  id: "overfit",
+                  label:
+                    "Overfitting to training set — model memorized examples but doesn't generalize to new medical questions",
+                },
+                {
+                  id: "data",
+                  label:
+                    "Training data quality issue — mislabeled or low-quality medical Q&A pairs degraded base knowledge",
+                },
+                {
+                  id: "lr",
+                  label:
+                    "Learning rate too high — weights were corrupted during training causing across-the-board degradation",
+                },
+              ],
+              correctId: "forgetting",
+              explanation:
+                "Classic catastrophic forgetting: task accuracy improved (+15%) while general capabilities degraded (MMLU -5%, perplexity +8%). The model over-adapted to medical data at the expense of general language understanding. Fix: add 20-30% general instruction data to your training mix (e.g., Alpaca, OpenHermes) to preserve base capabilities while learning the task.",
+            },
+            keyInsight:
+              "Fix catastrophic forgetting by mixing 20-30% general instruction data into your fine-tuning dataset. Always track MMLU, safety scores, and perplexity on general text alongside task metrics. The goal is task improvement WITH zero regression on general benchmarks.",
+          },
+
+          // ── L4.11 ── Interview Gauntlet (Boss Level) ─────────────────
+          {
+            title: "Interview Gauntlet",
+            subtitle:
+              "Boss Level — 20 Expert Fine-Tuning Questions. Score 80% to unlock Chapter 5.",
+            context:
+              "20 questions covering every dimension of production fine-tuning. These are real questions asked by AI teams at top companies. Score 16/20 (80%) to pass.",
+            gameType: "SpeedQuiz",
+            gameConfig: {
+              timePerQuestion: 45,
+              questions: [
+                {
+                  question:
+                    "In LoRA, W = W₀ + BA. What are the dimensions of matrices B and A for a weight matrix W of shape (d×k) with rank r?",
+                  options: [
+                    "B: (r×d), A: (k×r)",
+                    "B: (d×r), A: (r×k)",
+                    "B: (d×k), A: (r×r)",
+                    "B: (r×r), A: (d×k)",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "B is (d×r) and A is (r×k). The product BA is (d×r)(r×k) = (d×k), which matches W₀'s shape. At initialization, B=0 so the adaptation starts at zero — the original model output is preserved.",
+                },
+                {
+                  question:
+                    "QLoRA reduces memory for fine-tuning a 7B model from roughly 112GB (full FP32) to approximately how much VRAM?",
+                  options: [
+                    "24GB — same as a single A100",
+                    "12GB — halved via FP16",
+                    "5-6GB — via 4-bit NF4 base + BF16 LoRA adapters",
+                    "1GB — 8-bit quantization plus gradient checkpointing",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "QLoRA (4-bit NF4 base model + BF16 LoRA adapters + paged AdamW optimizer) reduces 7B memory to ~5-6GB, fitting on a single 8GB RTX 3080. The key is the 4-bit NF4 base model — adapters remain in BF16 for stable training.",
+                },
+                {
+                  question:
+                    "In DPO, the beta (β) hyperparameter controls what?",
+                  options: [
+                    "Learning rate scaling factor",
+                    "KL divergence strength — how far the fine-tuned model can deviate from the SFT reference",
+                    "Number of preference pairs per batch",
+                    "Ratio of chosen to rejected examples in training",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "DPO's β controls KL regularization strength. Low β (0.01-0.1): model can deviate a lot from reference, may over-optimize and lose coherence. High β (0.5-1.0): stays close to SFT reference, safer but lower alignment gains. Typical production range: 0.1-0.5.",
+                },
+                {
+                  question:
+                    "GRPO (Group Relative Policy Optimization), used in DeepSeek-R1, differs from PPO primarily by:",
+                  options: [
+                    "Using a learned reward model instead of rule-based rewards",
+                    "Replacing the value function/critic with group-sampled baseline rewards",
+                    "Adding a contrastive loss on top of PPO",
+                    "Using offline preference data instead of online sampling",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "GRPO samples G completions per prompt, computes their mean reward as the baseline, then uses the advantage = (individual_reward - group_mean) / group_std. This eliminates the critic/value network entirely, reducing memory and training complexity.",
+                },
+                {
+                  question: "Magpie dataset generation works by:",
+                  options: [
+                    "Scraping human forums and filtering by quality score",
+                    "Prompting an LLM with only the user-turn template token and letting it generate the instruction + response",
+                    "Using GPT-4 to rewrite low-quality datasets",
+                    "Training a separate instruction-generation model",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Magpie exploits the fact that instruction-tuned models have learned to 'complete' user turns. By providing only the user-turn template without content, the model generates both the instruction AND a high-quality response. Cost: ~$0.005 per pair vs ~$1-5 for human annotation.",
+                },
+                {
+                  question:
+                    "To detect benchmark contamination before training, you should check for:",
+                  options: [
+                    "Duplicate examples within your training set",
+                    "N-gram overlap between training data and evaluation benchmark test sets (MMLU, HumanEval, GSM8K)",
+                    "Training loss convergence speed",
+                    "Validation loss on a held-out split of your training data",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Contamination = training data contains content from benchmark test sets. Even partial n-gram overlap (8-13 grams) can inflate scores. Tools: LLM Decontaminator, manual substring search. Always check MMLU, HumanEval, GSM8K, MATH before releasing a fine-tuned model.",
+                },
+                {
+                  question:
+                    "When deploying multiple fine-tuned LoRA adapters for different clients sharing one base model, which serving framework handles this most efficiently?",
+                  options: [
+                    "Ollama — load each adapter separately",
+                    "Hugging Face TGI with separate model instances",
+                    "vLLM with its LoRA multiplexing feature",
+                    "TensorRT-LLM with merged models only",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "vLLM's LoRA multiplexing keeps one copy of the base model in GPU memory and dynamically loads adapter weights per request. Supports hundreds of LoRA adapters without multiplying base model memory. Critical for multi-tenant production deployments.",
+                },
+                {
+                  question:
+                    "DoRA (Weight-Decomposed LoRA) decomposes the weight update into magnitude and direction. The primary benefit at low ranks (r=4) is:",
+                  options: [
+                    "Lower VRAM usage than standard LoRA",
+                    "+22% improvement without increasing inference latency (merges identically to base model)",
+                    "Faster training convergence at high ranks",
+                    "Better compatibility with quantized base models",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "DoRA decomposes W = magnitude × (direction). The direction is updated via LoRA while magnitude has a learnable scalar. At r=4, this achieves ~22% improvement over standard LoRA with identical inference overhead — the adapter merges back into base weights exactly like standard LoRA.",
+                },
+                {
+                  question:
+                    "NF4 (NormalFloat4) is preferred over standard INT4 for quantizing LLM base models because:",
+                  options: [
+                    "It uses less memory than INT4",
+                    "It's computationally faster than INT4 on CUDA",
+                    "It's information-theoretically optimal for normally distributed weights — equal number of values in each quantization bin",
+                    "It's compatible with more hardware than INT4",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "Neural network weights follow an approximately normal distribution. NF4 places quantization levels such that each bin contains an equal number of values (equal-area histogram bins), minimizing quantization error. Standard INT4 uses uniform spacing, which wastes precision at the tails.",
+                },
+                {
+                  question:
+                    "To prevent catastrophic forgetting during fine-tuning, the most practical production technique is:",
+                  options: [
+                    "Freeze the first 50% of model layers during training",
+                    "Use elastic weight consolidation (EWC) with Fisher information matrix",
+                    "Mix 20-30% general instruction data into the domain-specific training set",
+                    "Use a very low learning rate (1e-7 or below)",
+                  ],
+                  correct: 2,
+                  explanation:
+                    "Mixing general instruction data (Alpaca, OpenHermes, or similar) at 20-30% of your training batch is the practical standard. EWC is theoretically sound but computationally expensive. Freezing layers limits adaptation. Data mixing is simple, effective, and adjustable.",
+                },
+                {
+                  question:
+                    "The recommended starting learning rate for LoRA fine-tuning vs full fine-tuning is:",
+                  options: [
+                    "Same — 2e-5 for both",
+                    "LoRA: 2e-4 to 3e-4 (higher, adapters are randomly initialized); Full FT: 1e-5 to 2e-5",
+                    "LoRA: 1e-6 (lower, avoid weight interference); Full FT: 1e-3",
+                    "Both: 1e-4, the universal LLM learning rate",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "LoRA adapters (A initialized with Kaiming, B initialized to zero) need higher LR (2e-4 to 3e-4) to learn quickly from their random initialization. Full fine-tuning operates on pre-trained weights and requires a lower LR (1e-5 to 2e-5) to avoid destroying learned representations.",
+                },
+                {
+                  question:
+                    "For a narrow classification task (10 categories, 500 labeled examples), approximately how many training examples produce diminishing returns?",
+                  options: [
+                    "50-100 examples are sufficient, more hurts",
+                    "500-2,000 examples for narrow tasks; gains diminish sharply beyond 5K for simple classification",
+                    "You need at least 100K examples for any reliable improvement",
+                    "More is always better — no practical ceiling",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "For narrow, well-defined tasks (classification, extraction, specific format), 500-2K curated examples typically achieves 90%+ of achievable improvement. Beyond 5K, gains are marginal. Data quality matters more than quantity — a 500-example curated set often beats 5K noisy examples.",
+                },
+                {
+                  question:
+                    "Which LoRA target modules configuration yields the highest quality improvement and why?",
+                  options: [
+                    "Query+Value only — these are the most information-rich attention matrices",
+                    "All linear layers (Q, K, V, O projections + FFN up/down/gate) — adapts full network information flow",
+                    "Only the final MLP layers — output is most task-specific",
+                    "Only layer normalization weights — lightweight and effective",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Targeting all linear layers (typically 7 module types in LLaMA architectures) provides 5-10% quality improvement over attention-only LoRA. The FFN contains ~66% of parameters and is critical for factual knowledge and format learning. Cost: ~2x more trainable params, same VRAM.",
+                },
+                {
+                  question:
+                    "What is the correct evaluation methodology when reporting fine-tuning results?",
+                  options: [
+                    "Report final absolute benchmark scores on task test set only",
+                    "Report delta (Δ) vs base model on task metrics AND general benchmarks (MMLU, safety), with separate validation set",
+                    "Report training loss and validation loss curves",
+                    "Report human preference scores only — automated benchmarks are unreliable",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Report Δ vs base model (not absolute scores), on both task-specific AND general benchmarks (MMLU, safety, perplexity). Use a held-out test set never seen during training. Report confidence intervals. Absolute scores without deltas hide regressions on general capabilities.",
+                },
+                {
+                  question:
+                    "TIES merge vs DARE merge — when you have two task-specific LoRA adapters and want to combine them, TIES merge is preferred because:",
+                  options: [
+                    "TIES is faster to compute than DARE",
+                    "TIES resolves parameter sign conflicts that cause destructive interference when merging adapters",
+                    "TIES preserves more adapter parameters than DARE",
+                    "TIES works on quantized adapters while DARE does not",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "When two adapters trained on different tasks update the same parameter in opposite directions (sign conflict), averaging them to near-zero destroys both adaptations. TIES (TrIm, Elect Sign & Merge) resolves conflicts by electing a dominant sign via majority vote before merging.",
+                },
+                {
+                  question:
+                    "What distinguishes Unsloth from Axolotl as fine-tuning frameworks?",
+                  options: [
+                    "Unsloth supports multi-GPU; Axolotl is single-GPU only",
+                    "Unsloth uses custom CUDA kernels for 2-5x speed on single GPU; Axolotl is YAML-config driven with multi-GPU/FSDP support for production pipelines",
+                    "Unsloth supports only LoRA; Axolotl supports full fine-tuning",
+                    "They are identical — just different UI wrappers",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "Unsloth: custom Triton/CUDA kernels, 2-5x training speed, 70% less VRAM, best for single-GPU experimentation. Axolotl: YAML config, DeepSpeed/FSDP integration, multi-GPU, production pipelines. Use Unsloth to iterate quickly; migrate to Axolotl for distributed training.",
+                },
+                {
+                  question: "vLLM's multi-tenant LoRA serving works by:",
+                  options: [
+                    "Running separate model instances per adapter",
+                    "Loading the base model once; dynamically swapping adapter weights per request via batched LoRA",
+                    "Merging all adapters at startup",
+                    "Using CPU offloading for inactive adapters",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "vLLM holds one copy of the base model in GPU HBM and implements batched LoRA: multiple requests with different adapters are batched together, with per-request adapter weights applied during the forward pass. Supports 100s of adapters with minimal memory overhead vs the base model size.",
+                },
+                {
+                  question:
+                    "Quantization-Aware Training (QAT) vs Post-Training Quantization (PTQ) — which statement is correct?",
+                  options: [
+                    "PTQ is always superior; QAT is legacy",
+                    "QAT simulates quantization during training, recovering 1-3% accuracy lost from INT4/INT8 PTQ, at the cost of longer training time",
+                    "QAT only works for INT8, not INT4",
+                    "PTQ and QAT produce identical results for LLMs",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "PTQ applies quantization after training — fast but incurs accuracy loss (1-5% for INT4). QAT inserts fake-quantization ops during forward pass, letting the model adapt its weights to quantization noise. Recovers most PTQ accuracy loss. Standard in on-device deployment where INT4/INT8 is required.",
+                },
+                {
+                  question:
+                    "The correct data format for SFT training with instruction-following (used by most fine-tuning frameworks including Axolotl and Unsloth) is:",
+                  options: [
+                    "Plain text with \\n separators between instruction and response",
+                    "ChatML format: <|im_start|>system/user/assistant<|im_end|> tokens or Llama 3 [INST]/[/INST] tokens",
+                    "JSON with {prompt: ..., completion: ...} key-value pairs only",
+                    "CSV with instruction,response columns",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "ChatML (OpenAI's format, widely adopted) and Llama 3's special tokens are the dominant instruction-tuning formats. The format must match the base model's training format — mixing formats causes degraded instruction-following. Axolotl auto-detects format; Unsloth has format helpers.",
+                },
+                {
+                  question:
+                    "Approximate cost to fine-tune a 7B model with QLoRA on 1,000 training examples using a rented RTX 4090 (24GB, ~$0.40/hr on Vast.ai)?",
+                  options: [
+                    "$50-100 — GPU time dominates",
+                    "$5-15 — approximately 1-3 hours of training",
+                    "$0.10-0.50 — QLoRA is nearly free",
+                    "$200+ — requires multiple GPUs",
+                  ],
+                  correct: 1,
+                  explanation:
+                    "7B QLoRA on 1K examples: roughly 1-3 hours on RTX 4090 depending on sequence length and batch size. At $0.40/hr, total cost: $0.40-1.20. For 10K examples: 3-8 hours = $1.20-3.20. This is the democratization promise of QLoRA — a consumer-level fine-tuning budget.",
+                },
+              ],
+            },
+            keyInsight:
+              "You've mastered Fine-Tuning. The differentiator: you know the math (W=W₀+BA, NF4 optimality), the production stack (QLoRA+Unsloth for experimentation, Axolotl+vLLM for production), and evaluation methodology (always report deltas, always check MMLU regression) — not just 'I ran a notebook'.",
+          },
+        ]; // end levels array
+
+        // ── Boot ChapterRunner ────────────────────────────────────────
+        const gamePanel = document.getElementById("game-panel");
+        const navContainer = document.getElementById("level-nav");
+        ChapterRunner.start(4, levels, gamePanel, navContainer);
+      }); // end DOMContentLoaded
+    </script>
+  </body>
+</html>
