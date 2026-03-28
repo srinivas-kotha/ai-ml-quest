@@ -7,6 +7,7 @@ import {
 import { eq, and, asc } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import LearnPanel from "@/components/learn/LearnPanel";
 import GamePanel from "@/components/games/GamePanel";
@@ -23,6 +24,56 @@ const CHAPTER_ACCENT: Record<string, string> = {
   multimodal: "var(--multimodal)",
   capstone: "var(--capstone)",
 };
+
+// ── Per-level metadata ────────────────────────────────────────────────────────
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string; levelNum: string }>;
+}): Promise<Metadata> {
+  const { slug, levelNum: levelNumStr } = await params;
+  const levelNum = Number(levelNumStr);
+
+  if (!Number.isInteger(levelNum) || levelNum < 1) return {};
+
+  try {
+    const [row] = await db
+      .select({
+        levelTitle: questLevels.title,
+        levelSubtitle: questLevels.subtitle,
+        chapterTitle: questChapters.title,
+      })
+      .from(questLevels)
+      .innerJoin(questChapters, eq(questLevels.chapterId, questChapters.id))
+      .where(
+        and(
+          eq(questChapters.slug, slug),
+          eq(questLevels.levelNumber, levelNum),
+          eq(questChapters.isPublished, true),
+          eq(questLevels.isPublished, true),
+        ),
+      )
+      .limit(1);
+
+    if (!row) return {};
+
+    const description =
+      row.levelSubtitle ??
+      `Level ${levelNum} of ${row.chapterTitle} — interactive AI/ML challenge on AI/ML Quest.`;
+
+    return {
+      title: `${row.levelTitle} — ${row.chapterTitle}`,
+      description,
+      openGraph: {
+        title: `${row.levelTitle} | ${row.chapterTitle} | AI/ML Quest`,
+        description,
+        url: `https://quest.srinivaskotha.uk/chapters/${slug}/levels/${levelNum}`,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
 
 // ── Static params (SSG) ──────────────────────────────────────────────────────
 export async function generateStaticParams() {
@@ -210,11 +261,40 @@ export default async function LevelPage({
     : null;
   const chapterUrl = `/chapters/${slug}`;
 
+  const learningResourceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LearningResource",
+    name: level.title,
+    description:
+      level.subtitle ??
+      `Level ${level.levelNumber} of ${chapter.title} on AI/ML Quest.`,
+    url: `https://quest.srinivaskotha.uk/chapters/${slug}/levels/${level.levelNumber}`,
+    isPartOf: {
+      "@type": "Course",
+      name: chapter.title,
+      url: `https://quest.srinivaskotha.uk/chapters/${slug}`,
+    },
+    educationalLevel: "Advanced",
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    provider: {
+      "@type": "Person",
+      name: "Srinivas Kotha",
+      url: "https://srinivaskotha.uk",
+    },
+  };
+
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(learningResourceJsonLd),
+        }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav

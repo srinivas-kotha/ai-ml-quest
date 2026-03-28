@@ -1,3 +1,5 @@
+"use client";
+
 import type {
   LearnSection,
   SectionType,
@@ -7,14 +9,51 @@ import type {
   StepsContent,
   PlaygroundContent,
 } from "@/types/content";
+import dynamic from "next/dynamic";
 import MarkdownText from "./MarkdownText";
 import CalloutBox from "./CalloutBox";
 import PlaceholderSection from "./PlaceholderSection";
-import AnnotatedCode from "./AnnotatedCode";
-import PipelineDiagram from "./PipelineDiagram";
-import BeforeAfter from "./BeforeAfter";
-import StepReveal from "./StepReveal";
-import SliderPlayground from "./SliderPlayground";
+
+// Lightweight skeleton shown while heavy components load
+function SectionSkeleton() {
+  return (
+    <div
+      className="rounded-xl animate-pulse"
+      style={{
+        backgroundColor: "var(--card)",
+        border: "1px solid var(--border)",
+        height: "160px",
+      }}
+    />
+  );
+}
+
+// Lazy-load heavy interactive components
+const AnnotatedCode = dynamic(() => import("./AnnotatedCode"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const PipelineDiagram = dynamic(() => import("./PipelineDiagram"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const SliderPlayground = dynamic(() => import("./SliderPlayground"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+// BeforeAfter and StepReveal are moderately heavy but still benefit from lazy-loading
+const BeforeAfter = dynamic(() => import("./BeforeAfter"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const StepReveal = dynamic(() => import("./StepReveal"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
 
 interface LearnPanelProps {
   learnSections: LearnSection[];
