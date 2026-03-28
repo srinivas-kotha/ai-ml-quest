@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  /* Core palette — "The Linear Look" */
+  --void: #0c0c14;
+  --surface: #101018;
+  --card: #14141f;
+  --card-hover: #1a1a2a;
+  --border: rgba(255, 255, 255, 0.07);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --success: #f5c542;
+  --error: #ef4444;
+  --code-bg: #0d0d17;
+
+  /* Chapter accent colors */
+  --rag: #3b82f6;
+  --slm: #8b5cf6;
+  --monitoring: #10b981;
+  --finetuning: #f59e0b;
+  --multimodal: #ef4444;
+  --capstone: #f5c542;
+
+  /* Semantic aliases */
+  --background: var(--void);
+  --foreground: var(--text-primary);
+  --border-hover: rgba(255, 255, 255, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-void: var(--void);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-code-bg: var(--code-bg);
+  /* Chapter colors */
+  --color-rag: var(--rag);
+  --color-slm: var(--slm);
+  --color-monitoring: var(--monitoring);
+  --color-finetuning: var(--finetuning);
+  --color-multimodal: var(--multimodal);
+  --color-capstone: var(--capstone);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+code,
+pre {
+  font-family: var(--font-mono), monospace;
+}
