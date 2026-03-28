@@ -18,7 +18,7 @@ export default function XPCounter({ xp, gained = 0 }: XPCounterProps) {
 
     const from = xp - gained;
     const to = xp;
-    const duration = 600;
+    const duration = 800;
 
     setAnimating(true);
     startRef.current = null;
@@ -50,23 +50,31 @@ export default function XPCounter({ xp, gained = 0 }: XPCounterProps) {
       className="flex items-center gap-1.5 rounded-full px-3 py-1"
       style={{
         backgroundColor: animating
-          ? "rgba(245,197,66,0.15)"
+          ? "rgba(255, 184, 0, 0.15)"
           : "rgba(255,255,255,0.05)",
-        border: `1px solid ${animating ? "rgba(245,197,66,0.4)" : "rgba(255,255,255,0.1)"}`,
-        transition: "background-color 0.3s, border-color 0.3s",
+        border: `1px solid ${animating ? "rgba(255, 184, 0, 0.4)" : "var(--color-border)"}`,
+        boxShadow: animating ? "0 0 16px rgba(255, 184, 0, 0.3)" : "none",
+        transition:
+          "background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease",
       }}
     >
       <span
         className="text-xs"
-        style={{ color: animating ? "var(--success)" : "var(--text-muted)" }}
+        style={{
+          color: animating
+            ? "var(--color-accent-gold)"
+            : "var(--color-text-muted)",
+        }}
       >
         ⚡
       </span>
       <span
         className={`text-sm font-mono font-bold tabular-nums ${animating ? "xp-pop" : ""}`}
         style={{
-          color: animating ? "var(--success)" : "var(--text-secondary)",
-          transition: "color 0.3s",
+          color: animating
+            ? "var(--color-accent-gold)"
+            : "var(--color-text-secondary)",
+          transition: "color 300ms ease",
         }}
       >
         {displayXp.toLocaleString()}
@@ -74,7 +82,7 @@ export default function XPCounter({ xp, gained = 0 }: XPCounterProps) {
       {gained > 0 && animating && (
         <span
           className="text-xs font-semibold"
-          style={{ color: "var(--success)" }}
+          style={{ color: "var(--color-accent-gold)" }}
         >
           +{gained}
         </span>

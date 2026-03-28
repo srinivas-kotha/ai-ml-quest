@@ -120,11 +120,12 @@ function RollingXP({
   accentColor: string;
 }) {
   const [displayed, setDisplayed] = useState(0);
+  const [goldFlash, setGoldFlash] = useState(false);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const duration = 600;
+    const duration = 800;
     startRef.current = null;
     const tick = (now: number) => {
       if (!startRef.current) startRef.current = now;
@@ -133,6 +134,10 @@ function RollingXP({
       setDisplayed(Math.round(target * eased));
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
+      } else {
+        // Roll-up complete — trigger gold flash
+        setGoldFlash(true);
+        setTimeout(() => setGoldFlash(false), 400);
       }
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -144,7 +149,16 @@ function RollingXP({
   return (
     <span
       className="xp-pop text-4xl font-bold tabular-nums"
-      style={{ color: accentColor }}
+      style={{
+        color: "var(--color-accent-gold)",
+        transition: "box-shadow 200ms ease",
+        borderRadius: "8px",
+        padding: "2px 8px",
+        boxShadow: goldFlash
+          ? "0 0 24px rgba(255, 184, 0, 0.6)"
+          : "0 0 0 transparent",
+        display: "inline-block",
+      }}
     >
       +{displayed}
     </span>
@@ -187,13 +201,13 @@ export default function LevelComplete({
       <div
         className="relative w-full max-w-sm rounded-2xl p-8 flex flex-col items-center text-center gap-5 overflow-hidden"
         style={{
-          backgroundColor: "var(--card)",
+          backgroundColor: "var(--color-bg-card)",
           border: `1px solid ${accentColor}40`,
           boxShadow: `0 0 60px ${accentColor}20`,
           transform: visible
             ? "scale(1) translateY(0)"
-            : "scale(0.95) translateY(8px)",
-          transition: "transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            : "scale(0.8) translateY(16px)",
+          transition: "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -209,11 +223,14 @@ export default function LevelComplete({
         <div>
           <h2
             className="text-xl font-bold"
-            style={{ color: "var(--text-primary)" }}
+            style={{ color: "var(--color-text-primary)" }}
           >
             {passed ? "Level Complete!" : "Keep Practicing!"}
           </h2>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+          <p
+            className="text-sm mt-1"
+            style={{ color: "var(--color-text-muted)" }}
+          >
             {score}/{maxScore} correct · {pct}%
           </p>
         </div>
@@ -239,12 +256,12 @@ export default function LevelComplete({
         <div className="flex flex-col items-center gap-1">
           <p
             className="text-xs font-medium"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--color-text-muted)" }}
           >
             XP Earned
           </p>
           {visible && <RollingXP target={xpEarned} accentColor={accentColor} />}
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             experience points
           </p>
         </div>
@@ -254,12 +271,15 @@ export default function LevelComplete({
           <div
             className="w-full rounded-xl p-3 text-xs leading-relaxed text-left"
             style={{
-              backgroundColor: `${accentColor}10`,
-              border: `1px solid ${accentColor}25`,
-              color: "var(--text-secondary)",
+              backgroundColor: "rgba(255, 184, 0, 0.08)",
+              border: "1px solid rgba(255, 184, 0, 0.20)",
+              color: "var(--color-text-secondary)",
             }}
           >
-            <span className="font-semibold" style={{ color: accentColor }}>
+            <span
+              className="font-semibold"
+              style={{ color: "var(--color-accent-gold)" }}
+            >
               💡 Key Insight:{" "}
             </span>
             {keyInsight}
@@ -271,10 +291,11 @@ export default function LevelComplete({
           {nextLevelUrl && passed && (
             <Link
               href={nextLevelUrl}
-              className="w-full rounded-xl py-3 text-sm font-semibold text-center block transition-all"
+              className="w-full rounded-xl py-3 text-sm font-semibold text-center block"
               style={{
                 backgroundColor: accentColor,
                 color: "#0c0c14",
+                transition: "filter 150ms ease",
               }}
             >
               Next Level →
@@ -282,11 +303,13 @@ export default function LevelComplete({
           )}
           <Link
             href={backUrl}
-            className="w-full rounded-xl py-3 text-sm font-medium text-center block transition-all"
+            className="w-full rounded-xl py-3 text-sm font-medium text-center block"
             style={{
               backgroundColor: "rgba(255,255,255,0.05)",
-              color: "var(--text-secondary)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--color-text-secondary)",
+              border: "1px solid var(--color-border)",
+              transition:
+                "background-color 150ms ease, border-color 150ms ease",
             }}
           >
             {nextLevelUrl && passed ? "Back to Chapter" : "Try Again"}

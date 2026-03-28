@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import type {
   LearnSection,
   SectionType,
@@ -20,8 +21,8 @@ function SectionSkeleton() {
     <div
       className="rounded-xl animate-pulse"
       style={{
-        backgroundColor: "var(--card)",
-        border: "1px solid var(--border)",
+        backgroundColor: "var(--color-bg-card)",
+        border: "1px solid var(--color-border)",
         height: "160px",
       }}
     />
@@ -80,7 +81,7 @@ function SectionRenderer({
           {title && (
             <h2
               className="text-lg font-semibold mb-3"
-              style={{ color: "var(--text-primary)" }}
+              style={{ color: "var(--color-text-primary)" }}
             >
               {title}
             </h2>
@@ -182,13 +183,17 @@ export default function LearnPanel({
   accentColor,
   className = "",
 }: LearnPanelProps) {
+  const panelStyle: React.CSSProperties = {
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "16px",
+    ...(accentColor ? { borderTop: `2px solid ${accentColor}` } : {}),
+  };
+
   if (learnSections.length === 0) {
     return (
-      <div
-        className={`glass-panel p-6 ${className}`}
-        style={accentColor ? { borderTop: `2px solid ${accentColor}` } : {}}
-      >
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+      <div className={`p-6 ${className}`} style={panelStyle}>
+        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
           No content sections for this level yet.
         </p>
       </div>
@@ -196,10 +201,7 @@ export default function LearnPanel({
   }
 
   return (
-    <div
-      className={`glass-panel p-6 overflow-y-auto ${className}`}
-      style={accentColor ? { borderTop: `2px solid ${accentColor}` } : {}}
-    >
+    <div className={`p-6 overflow-y-auto ${className}`} style={panelStyle}>
       {/* Section list with dividers */}
       <div className="space-y-6">
         {learnSections
@@ -211,7 +213,7 @@ export default function LearnPanel({
                 <div
                   className="mb-6"
                   style={{
-                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    borderTop: "1px solid var(--color-border-subtle)",
                   }}
                 />
               )}

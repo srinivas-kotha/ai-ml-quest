@@ -126,10 +126,10 @@ const VARIANT_CONFIG: Record<
     defaultTitle: "Warning",
   },
   insight: {
-    borderColor: "#8b5cf6",
-    bgColor: "rgba(139, 92, 246, 0.05)",
-    iconColor: "#8b5cf6",
-    icon: <BrainIcon />,
+    borderColor: "var(--color-accent-gold)",
+    bgColor: "rgba(255, 184, 0, 0.08)",
+    iconColor: "var(--color-accent-gold)",
+    icon: <LightbulbIcon />,
     defaultTitle: "Key Insight",
   },
 };
@@ -158,15 +158,22 @@ export default function CalloutBox({
       <div className="flex items-center gap-2 mb-2">
         <span style={{ color: config.iconColor }}>{config.icon}</span>
         <span
-          className="text-sm font-semibold"
-          style={{ color: config.iconColor }}
+          className={
+            variant === "insight"
+              ? "text-xs font-bold uppercase"
+              : "text-sm font-semibold"
+          }
+          style={{
+            color: config.iconColor,
+            letterSpacing: variant === "insight" ? "1.5px" : undefined,
+          }}
         >
           {displayTitle}
         </span>
       </div>
 
       {/* Content rendered as markdown */}
-      <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
+      <div className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
         <MarkdownText content={content} />
       </div>
     </div>

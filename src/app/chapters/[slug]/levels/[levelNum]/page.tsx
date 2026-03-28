@@ -194,7 +194,6 @@ function ChevronRight({ className }: { className?: string }) {
 // ── Key insight banner ───────────────────────────────────────────────────────
 function KeyInsightBanner({
   insight,
-  accentColor,
 }: {
   insight: string;
   accentColor: string;
@@ -203,25 +202,29 @@ function KeyInsightBanner({
     <div
       className="mt-8 rounded-xl p-5 flex items-start gap-4"
       style={{
-        background: `linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, ${accentColor}08 100%)`,
-        border: `1px solid rgba(124, 58, 237, 0.20)`,
+        backgroundColor: "rgba(255, 184, 0, 0.08)",
+        border: "1px solid rgba(255, 184, 0, 0.20)",
+        borderLeft: "4px solid var(--color-accent-gold)",
       }}
     >
-      {/* Brain icon */}
+      {/* Lightbulb icon */}
       <div
         className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 text-lg"
         style={{
-          backgroundColor: "rgba(124, 58, 237, 0.15)",
-          border: "1px solid rgba(124, 58, 237, 0.25)",
+          backgroundColor: "rgba(255, 184, 0, 0.15)",
+          border: "1px solid rgba(255, 184, 0, 0.25)",
         }}
         aria-hidden="true"
       >
-        🧠
+        💡
       </div>
       <div>
         <p
-          className="text-xs font-bold uppercase tracking-widest mb-1.5"
-          style={{ color: "var(--color-accent-teal)" }}
+          className="text-xs font-bold uppercase mb-1.5"
+          style={{
+            color: "var(--color-accent-gold)",
+            letterSpacing: "1.5px",
+          }}
         >
           Key Insight
         </p>
@@ -385,18 +388,43 @@ export default async function LevelPage({
                 </p>
               )}
 
-              {/* Hook (enterprise pain point) — styled as a callout quote */}
+              {/* Hook — editorial pull-quote */}
               {level.hook && (
                 <blockquote
-                  className="ml-9 mt-3 pl-4 py-2 text-sm leading-relaxed rounded-r-lg"
+                  className="ml-9 mt-3 relative pl-12 pt-8 pb-4 pr-4 rounded-r-lg"
                   style={{
-                    color: "var(--color-text-secondary)",
-                    borderLeft: `3px solid ${accentColor}`,
-                    backgroundColor: `${accentColor}08`,
-                    fontStyle: "italic",
+                    borderLeft: `4px solid ${accentColor}`,
+                    backgroundColor: `${accentColor}06`,
                   }}
                 >
-                  {level.hook}
+                  {/* Large opening quote glyph */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-0 left-3 font-display leading-none select-none"
+                    style={{
+                      fontSize: "80px",
+                      color: "var(--color-accent-gold)",
+                      lineHeight: 1,
+                      top: "-4px",
+                    }}
+                  >
+                    &ldquo;
+                  </span>
+                  <p
+                    className="font-display italic leading-relaxed"
+                    style={{
+                      color: "var(--color-text-primary)",
+                      fontSize: "clamp(1rem, 2vw, 1.375rem)",
+                    }}
+                  >
+                    {level.hook}
+                  </p>
+                  <footer
+                    className="mt-2 text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    — Level {level.levelNumber} &middot; {chapter.title}
+                  </footer>
                 </blockquote>
               )}
             </div>
