@@ -2,31 +2,51 @@
 
 ## Project Overview
 
-54-level interactive learning game for AI/ML engineers. Pure vanilla JS, no frameworks, no build tools.
+54-level interactive learning game for AI/ML engineers. Next.js 15 full-stack app with Postgres.
 Live at: https://quest.srinivaskotha.uk
 
 ## Tech Stack
 
-- Vanilla JavaScript (ES6 classes, no build tools)
-- Semantic HTML5 (each chapter = self-contained HTML file)
-- CSS Custom Properties (design tokens in shared.css)
-- Canvas API (particle effects), Web Audio API (game sounds)
-- LocalStorage (progress persistence, key: `aiquest_state`)
-- Docker (nginx:alpine static hosting)
+- **Framework**: Next.js 15 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4, CSS custom properties (`--color-*` tokens)
+- **Database**: PostgreSQL + Drizzle ORM (schema in `drizzle/`)
+- **Auth**: NextAuth v5
+- **Interactive**: React Flow (concept exploration graphs)
+- **Docker**: Next.js standalone + nginx:alpine static serving
+- **LocalStorage**: progress persistence (key: `aiquest_state`)
 
 ## File Structure
 
 ```
-index.html              — Hub dashboard with chapter cards
-chapter1-rag.html       — Chapter 1: Production RAG Pipeline (10 levels)
-chapter2-slm.html       — Chapter 2: Local SLM with Ollama (10 levels)
-chapter3-monitoring.html — Chapter 3: ML Monitoring & Observability (10 levels)
-chapter4-finetuning.html — Chapter 4: Fine-Tuning Mastery (11 levels)
-chapter5-multimodal.html — Chapter 5: Real-Time Multimodal AI + Capstone (13 levels)
-shared.js               — Game engine (8 game types, state management, HUD, particles)
-shared.css              — Design system (colors, layout, responsive, animations)
-.improvement-state.json — Daily improvement cycle state tracking (DO NOT deploy)
+src/app/                    — Next.js App Router pages
+src/components/             — 30+ React components
+  AnalogyPanel.tsx          — Analogy cards with background color variants
+  PredictionPrompt.tsx      — "Predict before you learn" interactive prompts
+  ExplorationWrapper.tsx    — Wrapper for interactive exploration sections
+  ReactFlowExploration.tsx  — React Flow graph visualizations
+drizzle/                    — Drizzle ORM schema + migrations
+  schema.ts                 — DB schema (quest_visual_assets, etc.)
+docs/
+  prd-content-enrichment.md — Content enrichment PRD (LOCKED)
+  execution-plan.md         — Sprint execution plan
+.improvement-state.json     — Daily improvement cycle state (DO NOT delete)
 ```
+
+## Design System ("The Linear Look")
+
+- **Fonts**: Instrument Serif (headings, hero italic) + DM Sans (body text)
+- **Dark theme**: navy-purple `#1c1535` background, near-white text
+- **Light theme**: warm cream `#fafaf7` background, dark text
+- **Accent**: Gold `#ffb800` — CTAs, key insights, progress rings
+- **Per-chapter colors**: `--rag: #3b82f6`, `--slm: #8b5cf6`, `--monitoring: #10b981`, `--finetuning: #f59e0b`, `--multimodal: #ef4444`, `--capstone: #ec4899`
+
+### Design Rules (MANDATORY)
+
+1. **Never use `transition-all`** — use specific CSS properties (`transition-[transform,opacity]`)
+2. **Always use CSS vars** (`--color-*`) — never hardcode hex values in components
+3. **`prefers-reduced-motion`** on ALL animations and transitions
+4. **Dual-theme syntax highlighting** — verify code blocks render correctly in both themes
+5. See `docs/prd-content-enrichment.md §2.7` for full visual style guide
 
 ## Chapter Topics (for research targeting)
 
@@ -88,7 +108,7 @@ shared.css              — Design system (colors, layout, responsive, animation
 - Graceful degradation patterns
 - Capstone system design challenges
 
-## Game Types (8 types in shared.js)
+## Game Types (8 types)
 
 | Type               | Class                | Description                        | Config Fields                                                               |
 | ------------------ | -------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
@@ -103,7 +123,7 @@ shared.css              — Design system (colors, layout, responsive, animation
 
 ## Level Data Structure (template for adding new levels)
 
-```javascript
+```typescript
 {
   title: "Level Title",
   subtitle: "One-liner description",
@@ -136,16 +156,15 @@ When researching improvements, focus on:
 6. **Tool comparisons**: Side-by-side analysis with real metrics (not marketing)
 7. **Interview relevance**: Questions actually asked at FAANG/top-tier companies
 
-## Design Tokens (shared.css)
+## Content Enrichment Sprint Status
 
-```
---rag: #3b82f6        (blue — Chapter 1)
---slm: #8b5cf6        (purple — Chapter 2)
---monitoring: #10b981  (green — Chapter 3)
---finetuning: #f59e0b  (amber — Chapter 4)
---multimodal: #ef4444  (red — Chapter 5)
---capstone: #ec4899    (pink — Capstone)
-```
+| Sprint | Description                                                          | Status   | Issue/PR |
+| ------ | -------------------------------------------------------------------- | -------- | -------- |
+| 6      | React Flow install, quest_visual_assets schema, 4 new components     | COMPLETE | PR #34   |
+| 7A     | RAG Pipeline React Flow exploration + analogies + prediction prompts | NEXT     | #30      |
+| 7B     | SLM analogies + prediction prompts                                   | PLANNED  | #31      |
+| 7C     | Monitoring DiagnosisLab interactive                                  | PLANNED  | #32      |
+| 7D     | Fine-Tuning exploration graphs                                       | PLANNED  | #33      |
 
 ## State File (.improvement-state.json)
 
@@ -154,9 +173,9 @@ This file tracks the daily improvement cycle. Statuses: `proposed` → `approved
 ## Git Workflow
 
 - NEVER commit directly to main
-- Feature branches: `feat/quest-improve-<proposal-id>`
+- Feature branches: `feat/quest-improve-<proposal-id>` or `feat/<sprint>-<description>`
 - PR via `gh pr create` with summary of changes
-- Each implementation = one PR per proposal
+- Each implementation = one PR per proposal/sprint
 
 ## Rules for Adding Content
 
