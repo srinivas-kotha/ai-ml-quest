@@ -124,7 +124,7 @@ export default function TopNav() {
                       className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
                       style={{
                         backgroundColor: "var(--chapter-rag)",
-                        color: "#fff",
+                        color: "var(--color-text-primary)",
                       }}
                     >
                       {(session.user?.name ?? "?")[0].toUpperCase()}

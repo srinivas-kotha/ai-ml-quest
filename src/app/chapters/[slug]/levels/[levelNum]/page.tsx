@@ -221,13 +221,13 @@ function KeyInsightBanner({
       <div>
         <p
           className="text-xs font-bold uppercase tracking-widest mb-1.5"
-          style={{ color: "var(--accent-violet)" }}
+          style={{ color: "var(--color-accent-teal)" }}
         >
           Key Insight
         </p>
         <p
           className="text-sm leading-relaxed font-medium"
-          style={{ color: "var(--text-secondary)" }}
+          style={{ color: "var(--color-text-secondary)" }}
         >
           {insight}
         </p>
@@ -295,7 +295,7 @@ export default async function LevelPage({
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: "var(--background)" }}
+      style={{ backgroundColor: "var(--color-bg-primary)" }}
     >
       <script
         type="application/ld+json"
@@ -312,7 +312,7 @@ export default async function LevelPage({
           <Link
             href="/"
             className="transition-colors"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--color-text-muted)" }}
           >
             Hub
           </Link>
@@ -320,7 +320,7 @@ export default async function LevelPage({
           <Link
             href={`/chapters/${slug}`}
             className="transition-colors"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--color-text-muted)" }}
           >
             {chapter.title}
           </Link>
@@ -332,10 +332,10 @@ export default async function LevelPage({
         <div
           className="relative overflow-hidden rounded-2xl p-5 mb-6"
           style={{
-            background: `linear-gradient(135deg, ${accentColor}10 0%, rgba(9,9,11,0) 60%)`,
+            background: `linear-gradient(135deg, ${accentColor}10 0%, transparent 60%)`,
             border: `1px solid ${accentColor}25`,
             borderLeft: `4px solid ${accentColor}`,
-            backgroundColor: "var(--card)",
+            backgroundColor: "var(--color-bg-card)",
           }}
         >
           {/* Ambient glow */}
@@ -365,7 +365,7 @@ export default async function LevelPage({
                 <h1
                   className="font-bold"
                   style={{
-                    color: "var(--text-primary)",
+                    color: "var(--color-text-primary)",
                     fontSize: "1.25rem",
                     fontFamily: "var(--font-display)",
                     letterSpacing: "-0.025em",
@@ -379,7 +379,7 @@ export default async function LevelPage({
               {level.subtitle && (
                 <p
                   className="text-sm ml-9 mb-2"
-                  style={{ color: "var(--text-secondary)" }}
+                  style={{ color: "var(--color-text-secondary)" }}
                 >
                   {level.subtitle}
                 </p>
@@ -390,7 +390,7 @@ export default async function LevelPage({
                 <blockquote
                   className="ml-9 mt-3 pl-4 py-2 text-sm leading-relaxed rounded-r-lg"
                   style={{
-                    color: "var(--text-secondary)",
+                    color: "var(--color-text-secondary)",
                     borderLeft: `3px solid ${accentColor}`,
                     backgroundColor: `${accentColor}08`,
                     fontStyle: "italic",
@@ -404,13 +404,13 @@ export default async function LevelPage({
             {/* Meta: XP + time */}
             <div
               className="flex flex-col items-end gap-1.5 text-xs flex-shrink-0"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--color-text-muted)" }}
             >
               {level.xpReward && (
                 <span
                   className="font-bold px-2 py-0.5 rounded-lg"
                   style={{
-                    color: "var(--xp-gold)",
+                    color: "var(--color-accent-gold)",
                     backgroundColor: "rgba(245, 158, 11, 0.10)",
                     border: "1px solid rgba(245, 158, 11, 0.20)",
                   }}
@@ -421,7 +421,7 @@ export default async function LevelPage({
               {level.estimatedMinutes && (
                 <span>{level.estimatedMinutes} min</span>
               )}
-              <span style={{ color: "var(--text-muted)" }}>
+              <span style={{ color: "var(--color-text-muted)" }}>
                 {level.levelNumber} / {totalLevels}
               </span>
             </div>
@@ -476,9 +476,9 @@ export default async function LevelPage({
               href={`/chapters/${slug}/levels/${prevLevel.levelNumber}`}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
               style={{
-                backgroundColor: "var(--card)",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
+                backgroundColor: "var(--color-bg-card)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
               }}
             >
@@ -504,9 +504,9 @@ export default async function LevelPage({
               href={`/chapters/${slug}`}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
               style={{
-                backgroundColor: "var(--card)",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
+                backgroundColor: "var(--color-bg-card)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
               }}
             >
