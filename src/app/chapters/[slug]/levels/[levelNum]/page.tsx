@@ -7,6 +7,7 @@ import {
 import { eq, and, asc } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import LearnPanel from "@/components/learn/LearnPanel";
 import GamePanel from "@/components/games/GamePanel";
 import type { LearnSection, GameType, GameConfig } from "@/types/content";
@@ -187,7 +188,10 @@ export default async function LevelPage({
 
   if (!Number.isInteger(levelNum) || levelNum < 1) notFound();
 
-  const data = await getLevelData(slug, levelNum);
+  const [data, session] = await Promise.all([
+    getLevelData(slug, levelNum),
+    auth(),
+  ]);
   if (!data) notFound();
 
   const { chapter, level, learnSections, prevLevel, nextLevel, totalLevels } =
@@ -200,6 +204,11 @@ export default async function LevelPage({
   const typedLearnSections = learnSections as unknown as LearnSection[];
   const gameType = level.gameType as GameType;
   const gameConfig = level.gameConfig as unknown as GameConfig;
+
+  const nextLevelUrl = nextLevel
+    ? `/chapters/${slug}/levels/${nextLevel.levelNumber}`
+    : null;
+  const chapterUrl = `/chapters/${slug}`;
 
   return (
     <div
@@ -332,6 +341,14 @@ export default async function LevelPage({
               gameConfig={gameConfig}
               accentColor={accentColor}
               levelTitle={level.title}
+              levelId={level.id}
+              chapterId={chapter.id}
+              chapterSlug={slug}
+              xpReward={level.xpReward ?? 100}
+              keyInsight={level.keyInsight ?? null}
+              nextLevelUrl={nextLevelUrl}
+              backUrl={chapterUrl}
+              isAuthenticated={!!session?.user?.id}
             />
           </div>
         </div>

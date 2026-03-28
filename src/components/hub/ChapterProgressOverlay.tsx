@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { getGuestStats } from "@/lib/guest-progress";
+import { getGuestChapterCompletedIds } from "@/lib/guest-progress";
 
 interface ChapterProgressOverlayProps {
   chapterId: number;
@@ -24,28 +24,9 @@ export default function ChapterProgressOverlay({
     setMounted(true);
 
     if (!session) {
-      // Guest mode: read from localStorage
-      try {
-        const stats = getGuestStats();
-        const chapterCompleted = Object.values(stats.byChapter).find(
-          (_, idx) => idx === chapterId - 1,
-        );
-        // Count completed levels for this chapter from guest progress
-        const guestProgress = localStorage.getItem("aiquest_progress");
-        if (guestProgress) {
-          const parsed = JSON.parse(guestProgress) as Record<
-            string,
-            { completed: boolean }
-          >;
-          const count = Object.keys(parsed).filter(
-            (key) =>
-              key.startsWith(`chapter_${chapterId}_`) && parsed[key].completed,
-          ).length;
-          setCompleted(count);
-        }
-      } catch {
-        // ignore localStorage errors
-      }
+      // Guest mode: read from localStorage using the canonical key format
+      const completedIds = getGuestChapterCompletedIds(chapterId);
+      setCompleted(completedIds.length);
     }
     // For authenticated users, progress is passed from server via API
     // (kept simple for Phase 1A — real progress fetching in 1B)
