@@ -19,7 +19,7 @@ function ConceptNode({ data }: { data: Record<string, unknown> }) {
   return (
     <div
       onClick={() => setExpanded(!expanded)}
-      className="cursor-pointer rounded-xl transition-all duration-200"
+      className="cursor-pointer rounded-xl transition-[border-color,box-shadow,max-width] duration-200"
       style={{
         backgroundColor: data.active
           ? "var(--color-bg-card)"
