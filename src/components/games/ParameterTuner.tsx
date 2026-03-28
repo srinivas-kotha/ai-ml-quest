@@ -103,7 +103,7 @@ export default function ParameterTuner({
               {/* Gauge bar */}
               <div
                 className="relative h-2 rounded-full overflow-visible"
-                style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                style={{ backgroundColor: "var(--color-border)" }}
               >
                 {/* Optimal marker */}
                 {submitted && (

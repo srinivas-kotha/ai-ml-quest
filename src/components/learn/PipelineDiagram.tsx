@@ -212,14 +212,14 @@ export default function PipelineDiagram({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2.5"
         style={{
-          backgroundColor: "rgba(255,255,255,0.03)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          backgroundColor: "var(--color-bg-surface)",
+          borderBottom: "1px solid var(--color-border)",
         }}
       >
         <span
@@ -261,7 +261,7 @@ export default function PipelineDiagram({
               refY="3"
               orient="auto"
             >
-              <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,255,255,0.25)" />
+              <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-text-muted)" />
             </marker>
             <marker
               id="arrow-active"
@@ -290,7 +290,7 @@ export default function PipelineDiagram({
                     ? accentColor
                     : active
                       ? accentColor
-                      : "rgba(255,255,255,0.2)"
+                      : "var(--color-text-muted)"
                 }
                 strokeWidth={isCurrent ? 2 : 1.5}
                 strokeDasharray={active ? "8 12" : undefined}
@@ -356,14 +356,14 @@ export default function PipelineDiagram({
                       ? `rgba(${accentRgb}, 0.18)`
                       : isVisited && stepThrough
                         ? `rgba(${accentRgb}, 0.08)`
-                        : "rgba(255,255,255,0.05)"
+                        : "var(--color-bg-surface)"
                   }
                   stroke={
                     isActive
                       ? accentColor
                       : isTooltipOpen
                         ? accentColor
-                        : "rgba(255,255,255,0.12)"
+                        : "var(--color-border)"
                   }
                   strokeWidth={isActive ? 1.5 : 1}
                   opacity={isDimmed ? 0.35 : 1}
@@ -456,8 +456,8 @@ export default function PipelineDiagram({
         <div
           className="flex items-center justify-between px-4 py-2.5"
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            backgroundColor: "rgba(255,255,255,0.02)",
+            borderTop: "1px solid var(--color-border)",
+            backgroundColor: "var(--color-bg-surface)",
           }}
         >
           <button
@@ -465,7 +465,7 @@ export default function PipelineDiagram({
             className="text-xs px-2.5 py-1 rounded cursor-pointer"
             style={{
               color: "var(--text-muted)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid var(--color-border)",
             }}
           >
             Reset
@@ -476,9 +476,9 @@ export default function PipelineDiagram({
               disabled={step <= 0}
               className="text-xs px-2.5 py-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: "var(--color-bg-card)",
                 color: "var(--text-secondary)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid var(--color-border)",
               }}
               aria-label="Previous step"
             >
@@ -490,9 +490,9 @@ export default function PipelineDiagram({
               className="text-xs px-2.5 py-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
                 backgroundColor:
-                  step < 0 ? accentColor : "rgba(255,255,255,0.05)",
+                  step < 0 ? accentColor : "var(--color-bg-card)",
                 color: step < 0 ? "#fff" : "var(--text-secondary)",
-                border: `1px solid ${step < 0 ? accentColor : "rgba(255,255,255,0.1)"}`,
+                border: `1px solid ${step < 0 ? accentColor : "var(--color-border)"}`,
               }}
               aria-label="Next step"
             >

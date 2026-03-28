@@ -253,7 +253,7 @@ export default function LevelComplete({
         <div className="w-full">
           <div
             className="w-full h-2 rounded-full overflow-hidden"
-            style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+            style={{ backgroundColor: "var(--color-border)" }}
           >
             <div
               className="h-full rounded-full"
@@ -315,18 +315,33 @@ export default function LevelComplete({
               Next Level →
             </Link>
           )}
+          {nextLevelUrl && !passed && (
+            <Link
+              href={nextLevelUrl}
+              className="w-full rounded-xl py-3 text-sm font-medium text-center block"
+              style={{
+                backgroundColor: "transparent",
+                color: "var(--color-text-muted)",
+                border: "1px solid var(--color-border)",
+                transition:
+                  "background-color 150ms ease, border-color 150ms ease",
+              }}
+            >
+              Continue Anyway →
+            </Link>
+          )}
           <Link
             href={backUrl}
             className="w-full rounded-xl py-3 text-sm font-medium text-center block"
             style={{
-              backgroundColor: "rgba(255,255,255,0.05)",
+              backgroundColor: "var(--color-bg-surface)",
               color: "var(--color-text-secondary)",
               border: "1px solid var(--color-border)",
               transition:
                 "background-color 150ms ease, border-color 150ms ease",
             }}
           >
-            {nextLevelUrl && passed ? "Back to Chapter" : "Try Again"}
+            {nextLevelUrl ? "Back to Chapter" : "Try Again"}
           </Link>
         </div>
       </div>

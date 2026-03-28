@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { CodeContent } from "@/types/content";
 
 interface AnnotatedCodeProps extends CodeContent {
@@ -277,7 +277,7 @@ function tokenizeLine(line: string, lang: string): Token[] {
   return tokens;
 }
 
-const TOKEN_COLORS: Record<TokenType, string> = {
+const TOKEN_COLORS_DARK: Record<TokenType, string> = {
   kw: "#c792ea", // purple — keywords
   str: "#c3e88d", // green  — strings
   cmt: "#546e7a", // grey   — comments
@@ -287,7 +287,39 @@ const TOKEN_COLORS: Record<TokenType, string> = {
   plain: "#e2e8f0", // white  — default
 };
 
-function renderLine(line: string, lang: string) {
+const TOKEN_COLORS_LIGHT: Record<TokenType, string> = {
+  kw: "#7c3aed", // purple — keywords
+  str: "#16a34a", // green  — strings
+  cmt: "#64748b", // grey   — comments
+  num: "#ea580c", // orange — numbers
+  fn: "#2563eb", // blue   — function calls
+  op: "#0891b2", // cyan   — operators
+  plain: "#1e293b", // dark  — default
+};
+
+function useIsDarkTheme(): boolean {
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const check = () => {
+      setIsDark(
+        document.documentElement.getAttribute("data-theme") !== "light",
+      );
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return isDark;
+}
+
+function renderLine(line: string, lang: string, isDark: boolean) {
+  const TOKEN_COLORS = isDark ? TOKEN_COLORS_DARK : TOKEN_COLORS_LIGHT;
   const tokens = tokenizeLine(line, lang);
   return tokens.map((tok, i) => (
     <span key={i} style={{ color: TOKEN_COLORS[tok.type] }}>
@@ -308,6 +340,7 @@ export default function AnnotatedCode({
 }: AnnotatedCodeProps) {
   const [activeAnnotation, setActiveAnnotation] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const isDark = useIsDarkTheme();
 
   const lines = code.split("\n");
 
@@ -360,21 +393,21 @@ export default function AnnotatedCode({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {/* Header bar */}
       <div
         className="flex items-center justify-between px-4 py-2.5"
         style={{
-          backgroundColor: "rgba(255,255,255,0.04)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          backgroundColor: "var(--color-bg-surface)",
+          borderBottom: "1px solid var(--color-border)",
         }}
       >
         <div className="flex items-center gap-2">
           <span
             className="text-xs font-mono px-2 py-0.5 rounded"
             style={{
-              backgroundColor: "rgba(255,255,255,0.06)",
+              backgroundColor: "var(--color-border)",
               color: "var(--text-muted)",
             }}
           >
@@ -394,8 +427,8 @@ export default function AnnotatedCode({
           className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors cursor-pointer"
           style={{
             color: copied ? "#c3e88d" : "var(--text-muted)",
-            backgroundColor: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border)",
           }}
           aria-label="Copy code to clipboard"
         >
@@ -462,7 +495,7 @@ export default function AnnotatedCode({
                     className="select-none text-right pr-4 pl-4 w-8"
                     style={{
                       color: isHighlighted ? accentColor : "var(--text-muted)",
-                      borderRight: "1px solid rgba(255,255,255,0.06)",
+                      borderRight: "1px solid var(--color-border)",
                       userSelect: "none",
                     }}
                   >
@@ -500,7 +533,9 @@ export default function AnnotatedCode({
 
                   {/* Code content */}
                   <td className="py-0.5 pl-2 pr-6 whitespace-pre">
-                    {line === "" ? "\u00A0" : renderLine(line, language)}
+                    {line === ""
+                      ? "\u00A0"
+                      : renderLine(line, language, isDark)}
                   </td>
                 </tr>
               );
@@ -543,8 +578,8 @@ export default function AnnotatedCode({
         <div
           className="flex items-center justify-between px-4 py-2"
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            backgroundColor: "rgba(255,255,255,0.02)",
+            borderTop: "1px solid var(--color-border)",
+            backgroundColor: "var(--color-bg-surface)",
           }}
         >
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
@@ -557,9 +592,9 @@ export default function AnnotatedCode({
               onClick={handlePrev}
               className="text-xs px-2.5 py-1 rounded cursor-pointer transition-colors"
               style={{
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: "var(--color-bg-card)",
                 color: "var(--text-secondary)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid var(--color-border)",
               }}
               aria-label="Previous annotation"
             >
@@ -569,9 +604,9 @@ export default function AnnotatedCode({
               onClick={handleNext}
               className="text-xs px-2.5 py-1 rounded cursor-pointer transition-colors"
               style={{
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: "var(--color-bg-card)",
                 color: "var(--text-secondary)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid var(--color-border)",
               }}
               aria-label="Next annotation"
             >

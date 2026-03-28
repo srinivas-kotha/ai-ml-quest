@@ -43,14 +43,14 @@ export default function BeforeAfter({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {/* Tab bar */}
       <div
         className="flex"
         role="tablist"
         aria-label="Before and after comparison"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         {/* Before tab */}
         <button
@@ -64,9 +64,9 @@ export default function BeforeAfter({
             backgroundColor:
               activeTab === "before"
                 ? "rgba(239,68,68,0.08)"
-                : "rgba(255,255,255,0.02)",
+                : "var(--color-bg-surface)",
             color: activeTab === "before" ? "#ef4444" : "var(--text-muted)",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
+            borderRight: "1px solid var(--color-border)",
           }}
         >
           {/* Before icon: X circle */}
@@ -105,7 +105,7 @@ export default function BeforeAfter({
             backgroundColor:
               activeTab === "after"
                 ? "rgba(16,185,129,0.08)"
-                : "rgba(255,255,255,0.02)",
+                : "var(--color-bg-surface)",
             color: activeTab === "after" ? "#10b981" : "var(--text-muted)",
           }}
         >

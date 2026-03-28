@@ -154,8 +154,8 @@ export default function DiagnosisLab({
       {/* Options */}
       <div className="flex flex-col gap-2">
         {current.options.map((opt, i) => {
-          let bg = "rgba(255,255,255,0.03)";
-          let border = "rgba(255,255,255,0.08)";
+          let bg = "var(--color-bg-surface)";
+          let border = "var(--color-border)";
           let textColor = "var(--text-secondary)";
 
           if (submitted) {

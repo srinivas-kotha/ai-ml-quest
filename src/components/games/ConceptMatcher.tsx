@@ -103,13 +103,13 @@ export default function ConceptMatcher({
                     ? "rgba(245,197,66,0.10)"
                     : isSelected
                       ? `${accentColor}20`
-                      : "rgba(255,255,255,0.03)",
+                      : "var(--color-bg-surface)",
                   border: `1px solid ${
                     isMatched
                       ? "rgba(245,197,66,0.40)"
                       : isSelected
                         ? accentColor
-                        : "rgba(255,255,255,0.08)"
+                        : "var(--color-border)"
                   }`,
                   color: isMatched
                     ? "var(--success)"
@@ -152,15 +152,15 @@ export default function ConceptMatcher({
                     ? "rgba(245,197,66,0.10)"
                     : isWrong
                       ? "rgba(239,68,68,0.12)"
-                      : "rgba(255,255,255,0.03)",
+                      : "var(--color-bg-surface)",
                   border: `1px solid ${
                     isMatched
                       ? "rgba(245,197,66,0.40)"
                       : isWrong
                         ? "var(--error)"
                         : selectedLeft !== null
-                          ? "rgba(255,255,255,0.12)"
-                          : "rgba(255,255,255,0.08)"
+                          ? "var(--color-text-muted)"
+                          : "var(--color-border)"
                   }`,
                   color: isMatched
                     ? "var(--success)"
