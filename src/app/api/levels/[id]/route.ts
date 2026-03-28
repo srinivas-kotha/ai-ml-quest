@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, asc, and } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { questLevels, questLearnSections } from "../../../../../drizzle/schema";
+import { getLevelWithSections } from "@/lib/level-queries";
 
 export async function GET(
   _req: Request,
@@ -15,32 +13,13 @@ export async function GET(
       return NextResponse.json({ error: "Invalid level id" }, { status: 400 });
     }
 
-    // Fetch the published level
-    const level = await db
-      .select()
-      .from(questLevels)
-      .where(
-        and(eq(questLevels.id, levelId), eq(questLevels.isPublished, true)),
-      )
-      .limit(1);
+    const level = await getLevelWithSections(levelId);
 
-    if (level.length === 0) {
+    if (!level) {
       return NextResponse.json({ error: "Level not found" }, { status: 404 });
     }
 
-    // Fetch learn sections ordered by sort_order
-    const learnSections = await db
-      .select()
-      .from(questLearnSections)
-      .where(eq(questLearnSections.levelId, levelId))
-      .orderBy(asc(questLearnSections.sortOrder));
-
-    return NextResponse.json({
-      level: {
-        ...level[0],
-        learnSections,
-      },
-    });
+    return NextResponse.json({ level });
   } catch (err) {
     console.error("[GET /api/levels/[id]] error:", err);
     return NextResponse.json(
