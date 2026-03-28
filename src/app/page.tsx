@@ -142,7 +142,7 @@ export default async function HubPage() {
           </p>
 
           <h1
-            className="text-5xl md:text-7xl font-extrabold tracking-tight text-gradient mb-5"
+            className="text-5xl md:text-7xl font-extrabold tracking-display text-gradient mb-5"
             style={{ fontFamily: "var(--font-display)" }}
           >
             AI/ML Quest

@@ -100,8 +100,8 @@
   /* Legacy chapter aliases */
   --rag: var(--chapter-rag);
   --slm: var(--chapter-slm);
-  --monitoring: var(--chapter-finetuning);
-  --finetuning: var(--chapter-monitoring);
+  --monitoring: var(--chapter-monitoring);
+  --finetuning: var(--chapter-finetuning);
   --multimodal: var(--chapter-multimodal);
   --capstone: var(--chapter-capstone);
 

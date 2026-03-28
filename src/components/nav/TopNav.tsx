@@ -30,7 +30,7 @@ export default function TopNav() {
             style={{ textDecoration: "none" }}
           >
             <span
-              className="font-display font-extrabold tracking-tight text-gradient"
+              className="font-display font-extrabold tracking-heading text-gradient"
               style={{
                 fontSize: "1.05rem",
               }}
