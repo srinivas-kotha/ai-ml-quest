@@ -37,48 +37,54 @@ interface LevelCardProps {
     keyInsight: string | null;
   };
   chapterSlug: string;
+  /** CSS var string like `var(--chapter-rag)` — used for text/border colors */
   accentColor: string;
+  /** Hex color like `#3b82f6` — used for rgba() opacity tricks in backgrounds */
+  accentHex: string;
 }
 
 export default function LevelCard({
   level,
   chapterSlug,
   accentColor,
+  accentHex,
 }: LevelCardProps) {
   const gameLabel = GAME_TYPE_LABELS[level.gameType] ?? level.gameType;
-  const gameColor = GAME_TYPE_COLOR[level.gameType] ?? accentColor;
+  const gameColor = GAME_TYPE_COLOR[level.gameType] ?? accentHex;
 
   return (
     <Link
       href={`/chapters/${chapterSlug}/levels/${level.levelNumber}`}
-      style={{ textDecoration: "none" }}
+      style={{ textDecoration: "none", display: "block" }}
     >
       <div
-        className="flex items-center gap-4 rounded-xl px-4 py-3.5 transition-all duration-150 group"
+        className="flex items-center gap-4 rounded-xl px-4 py-3.5 group"
         style={{
-          backgroundColor: "var(--card)",
-          border: "1px solid var(--border)",
+          backgroundColor: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          transition:
+            "background-color 200ms ease-out, border-color 200ms ease-out, transform 200ms ease-out",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLDivElement;
-          el.style.backgroundColor = "var(--card-hover)";
-          el.style.borderColor = accentColor + "40";
+          el.style.backgroundColor = "var(--color-bg-card-hover)";
+          el.style.borderColor = `${accentHex}40`;
           el.style.transform = "translateX(2px)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLDivElement;
-          el.style.backgroundColor = "var(--card)";
-          el.style.borderColor = "var(--border)";
+          el.style.backgroundColor = "var(--color-bg-card)";
+          el.style.borderColor = "var(--color-border)";
           el.style.transform = "";
         }}
       >
         {/* Level number badge */}
         <div
-          className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
           style={{
-            backgroundColor: `${accentColor}18`,
+            backgroundColor: `${accentHex}20`,
             color: accentColor,
-            border: `1px solid ${accentColor}30`,
+            border: `1px solid ${accentHex}35`,
             fontFamily: "var(--font-display)",
           }}
         >
@@ -91,7 +97,7 @@ export default function LevelCard({
             <span
               className="text-sm font-semibold"
               style={{
-                color: "var(--text-primary)",
+                color: "var(--color-text-primary)",
                 fontFamily: "var(--font-display)",
               }}
             >
@@ -101,9 +107,9 @@ export default function LevelCard({
             <span
               className="text-xs px-2 py-0.5 rounded-md font-medium"
               style={{
-                backgroundColor: `${gameColor}12`,
+                backgroundColor: `${gameColor}15`,
                 color: gameColor,
-                border: `1px solid ${gameColor}25`,
+                border: `1px solid ${gameColor}28`,
               }}
             >
               {gameLabel}
@@ -112,17 +118,17 @@ export default function LevelCard({
           {level.subtitle && (
             <p
               className="text-xs mt-0.5 truncate"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--color-text-secondary)" }}
             >
               {level.subtitle}
             </p>
           )}
         </div>
 
-        {/* Meta: XP + time */}
+        {/* Meta: XP + time + chevron */}
         <div
           className="flex-shrink-0 flex items-center gap-3 text-xs"
-          style={{ color: "var(--text-muted)" }}
+          style={{ color: "var(--color-text-muted)" }}
         >
           {level.estimatedMinutes && (
             <span className="hidden sm:block">
@@ -130,18 +136,24 @@ export default function LevelCard({
             </span>
           )}
           {level.xpReward && (
-            <span className="font-semibold" style={{ color: "var(--xp-gold)" }}>
+            <span
+              className="font-semibold"
+              style={{ color: "var(--color-accent-gold)" }}
+            >
               +{level.xpReward} XP
             </span>
           )}
-          {/* Chevron — visible on hover */}
+          {/* Chevron — slides right on hover */}
           <svg
-            className="w-4 h-4 opacity-0 group-hover:opacity-50 transition-opacity duration-150"
+            className="w-4 h-4 opacity-0 group-hover:opacity-60"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             aria-hidden="true"
-            style={{ color: accentColor }}
+            style={{
+              color: accentColor,
+              transition: "opacity 200ms ease-out, transform 200ms ease-out",
+            }}
           >
             <path
               strokeLinecap="round"

@@ -14,15 +14,15 @@ export default function BreadcrumbLink({
   return (
     <Link
       href={href}
-      className="transition-colors"
-      style={{ color: "var(--text-muted)" }}
+      className="transition-colors duration-150"
+      style={{ color: "var(--color-text-muted)" }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLAnchorElement).style.color =
-          "var(--text-secondary)";
+          "var(--color-accent-gold)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLAnchorElement).style.color =
-          "var(--text-muted)";
+          "var(--color-text-muted)";
       }}
     >
       {children}

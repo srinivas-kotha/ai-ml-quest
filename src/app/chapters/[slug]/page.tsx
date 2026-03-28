@@ -8,13 +8,24 @@ import BreadcrumbLink from "@/components/chapters/BreadcrumbLink";
 
 export const dynamic = "force-dynamic";
 
-const CHAPTER_ACCENT: Record<string, string> = {
-  "rag-pipeline": "var(--rag)",
-  "local-slm": "var(--slm)",
-  "ml-monitoring": "var(--monitoring)",
-  "fine-tuning": "var(--finetuning)",
-  multimodal: "var(--multimodal)",
-  capstone: "var(--capstone)",
+// Accent color CSS vars by slug (for display, borders, pills)
+const CHAPTER_ACCENT_VAR: Record<string, string> = {
+  "rag-pipeline": "var(--chapter-rag)",
+  "local-slm": "var(--chapter-slm)",
+  "ml-monitoring": "var(--chapter-monitoring)",
+  "fine-tuning": "var(--chapter-finetuning)",
+  multimodal: "var(--chapter-multimodal)",
+  capstone: "var(--chapter-capstone)",
+};
+
+// Concrete hex values for use in rgba() within inline styles (gradients, glows)
+const CHAPTER_ACCENT_HEX: Record<string, string> = {
+  "rag-pipeline": "#3b82f6",
+  "local-slm": "#8b5cf6",
+  "ml-monitoring": "#f59e0b",
+  "fine-tuning": "#10b981",
+  multimodal: "#ec4899",
+  capstone: "#ffb800",
 };
 
 // Per-chapter metadata
@@ -120,8 +131,11 @@ export default async function ChapterPage({
   if (!data) notFound();
 
   const { chapter, levels } = data;
-  const accentColor =
-    CHAPTER_ACCENT[slug] ?? chapter.accentColor ?? "var(--rag)";
+  // CSS var for borders/pills/text (uses theme tokens)
+  const accentVar =
+    CHAPTER_ACCENT_VAR[slug] ?? chapter.accentColor ?? "var(--chapter-rag)";
+  // Hex for gradients and rgba() in inline styles
+  const accentHex = CHAPTER_ACCENT_HEX[slug] ?? "#3b82f6";
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -136,7 +150,7 @@ export default async function ChapterPage({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          style={{ color: "var(--text-muted)" }}
+          style={{ color: "var(--color-text-muted)" }}
           aria-hidden="true"
         >
           <path
@@ -146,17 +160,17 @@ export default async function ChapterPage({
             d="M9 5l7 7-7 7"
           />
         </svg>
-        <span style={{ color: accentColor }}>{chapter.title}</span>
+        <span style={{ color: accentVar }}>{chapter.title}</span>
       </nav>
 
       {/* Chapter header */}
       <div
-        className="relative overflow-hidden rounded-2xl p-6 mb-8"
+        className="relative overflow-hidden rounded-2xl p-6 mb-8 animate-fade-up"
         style={{
-          background: `linear-gradient(135deg, ${accentColor}10 0%, rgba(9,9,11,0) 60%)`,
-          border: `1px solid ${accentColor}30`,
-          borderLeft: `4px solid ${accentColor}`,
-          backgroundColor: "var(--card)",
+          background: `linear-gradient(135deg, ${accentHex}0d 0%, transparent 60%)`,
+          border: `1px solid ${accentHex}30`,
+          borderLeft: `4px solid ${accentVar}`,
+          backgroundColor: "var(--color-bg-surface)",
         }}
       >
         {/* Ambient glow */}
@@ -164,15 +178,15 @@ export default async function ChapterPage({
           className="absolute top-0 right-0 w-72 h-40 pointer-events-none"
           aria-hidden="true"
           style={{
-            background: `radial-gradient(ellipse 240px 160px at 80% 20%, ${accentColor}15 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse 240px 160px at 80% 20%, ${accentHex}1e 0%, transparent 70%)`,
           }}
         />
         <div className="relative z-10 flex items-start gap-4">
           <div
             className="flex items-center justify-center w-12 h-12 rounded-xl text-2xl flex-shrink-0"
             style={{
-              backgroundColor: `${accentColor}18`,
-              border: `1px solid ${accentColor}30`,
+              backgroundColor: `${accentHex}18`,
+              border: `1px solid ${accentHex}30`,
             }}
             aria-hidden="true"
           >
@@ -180,12 +194,11 @@ export default async function ChapterPage({
           </div>
           <div className="flex-1 min-w-0">
             <h1
+              className="font-display tracking-heading"
               style={{
-                color: "var(--text-primary)",
+                color: "var(--color-text-primary)",
                 fontSize: "1.75rem",
-                fontFamily: "var(--font-display)",
                 fontWeight: 800,
-                letterSpacing: "-0.03em",
               }}
             >
               {chapter.title}
@@ -193,7 +206,7 @@ export default async function ChapterPage({
             {chapter.subtitle && (
               <p
                 className="mt-1 text-sm"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ color: "var(--color-text-secondary)" }}
               >
                 {chapter.subtitle}
               </p>
@@ -201,7 +214,7 @@ export default async function ChapterPage({
             {chapter.description && (
               <p
                 className="mt-3 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ color: "var(--color-text-secondary)" }}
               >
                 {chapter.description}
               </p>
@@ -210,9 +223,9 @@ export default async function ChapterPage({
               <span
                 className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium"
                 style={{
-                  backgroundColor: `${accentColor}15`,
-                  color: accentColor,
-                  border: `1px solid ${accentColor}25`,
+                  backgroundColor: `${accentHex}15`,
+                  color: accentVar,
+                  border: `1px solid ${accentHex}28`,
                 }}
               >
                 {levels.length} level{levels.length !== 1 ? "s" : ""}
@@ -227,11 +240,11 @@ export default async function ChapterPage({
         <div
           className="rounded-xl p-8 text-center"
           style={{
-            backgroundColor: "var(--card)",
-            border: "1px solid var(--border)",
+            backgroundColor: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
           }}
         >
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
             No levels published yet. Check back soon.
           </p>
         </div>
@@ -246,7 +259,8 @@ export default async function ChapterPage({
               <LevelCard
                 level={level}
                 chapterSlug={slug}
-                accentColor={accentColor}
+                accentColor={accentVar}
+                accentHex={accentHex}
               />
             </div>
           ))}

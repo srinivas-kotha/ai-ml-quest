@@ -3,22 +3,54 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 
 export default function TopNav() {
   const { data: session, status } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [scrollOpacity, setScrollOpacity] = useState(0.7);
+  const [theme, setTheme] = useState("dark");
+
+  // Scroll-responsive opacity
+  useEffect(() => {
+    const handleScroll = () => {
+      const opacity = Math.min(0.95, 0.7 + (window.scrollY / 300) * 0.25);
+      setScrollOpacity(opacity);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Theme detection + observer
+  useEffect(() => {
+    const t = document.documentElement.getAttribute("data-theme") || "dark";
+    setTheme(t);
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute("data-theme") || "dark");
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const navBgColor =
+    theme === "dark"
+      ? `rgba(28, 21, 53, ${scrollOpacity})`
+      : `rgba(250, 250, 247, ${scrollOpacity})`;
 
   return (
     <nav
       className="sticky top-0 z-50 w-full"
       style={{
-        backgroundColor: "var(--color-bg-overlay)",
+        backgroundColor: navBgColor,
         backdropFilter: "blur(16px) saturate(180%)",
         WebkitBackdropFilter: "blur(16px) saturate(180%)",
-        borderBottom: "1px solid var(--color-border)",
+        borderBottom: "1px solid var(--color-border-subtle)",
         height: "60px",
+        transition: "background-color 150ms ease-out",
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
@@ -30,9 +62,10 @@ export default function TopNav() {
             style={{ textDecoration: "none" }}
           >
             <span
-              className="font-display font-extrabold tracking-heading text-gradient"
+              className="font-display font-extrabold tracking-heading"
               style={{
                 fontSize: "1.05rem",
+                color: "var(--color-text-primary)",
               }}
             >
               AI/ML Quest
@@ -66,7 +99,7 @@ export default function TopNav() {
                       e.currentTarget as HTMLButtonElement
                     ).style.backgroundColor = "var(--color-bg-surface)";
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "var(--border-hover)";
+                      "var(--color-accent-gold)";
                   }}
                   onMouseLeave={(e) => {
                     (
@@ -91,7 +124,7 @@ export default function TopNav() {
                       className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
                       style={{
                         backgroundColor: "var(--chapter-rag)",
-                        color: "#fff",
+                        color: "var(--color-text-primary)",
                       }}
                     >
                       {(session.user?.name ?? "?")[0].toUpperCase()}
@@ -181,21 +214,21 @@ export default function TopNav() {
               /* Not signed in */
               <button
                 onClick={() => signIn("github")}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium"
                 style={{
                   color: "var(--color-text-secondary)",
                   border: "1px solid var(--color-border)",
                   backgroundColor: "transparent",
+                  transition:
+                    "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
                 }}
                 onMouseEnter={(e) => {
                   const btn = e.currentTarget as HTMLButtonElement;
-                  btn.style.backgroundColor = "rgba(0, 201, 167, 0.08)";
-                  btn.style.borderColor = "rgba(0, 201, 167, 0.35)";
-                  btn.style.color = "var(--color-accent-teal)";
+                  btn.style.borderColor = "var(--color-accent-gold)";
+                  btn.style.color = "var(--color-accent-gold)";
                 }}
                 onMouseLeave={(e) => {
                   const btn = e.currentTarget as HTMLButtonElement;
-                  btn.style.backgroundColor = "transparent";
                   btn.style.borderColor = "var(--color-border)";
                   btn.style.color = "var(--color-text-secondary)";
                 }}
