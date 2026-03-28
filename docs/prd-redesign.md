@@ -397,7 +397,7 @@ AI/ML Quest now supports both light and dark modes. Light mode was previously ou
 
 **Mode Toggle:**
 
-- Default: `prefers-color-scheme` media query
+- Default: **light mode** (better for reading comprehension, matches Brilliant/Exercism/Duolingo). Falls back to `prefers-color-scheme: dark` only if user has system dark mode AND no localStorage override.
 - Override: `data-theme` attribute on `<html>`, persisted in `localStorage` key `aiquest_theme`
 - Toggle: sun/moon icon button in TopNav (right side, before Sign In)
 - Transition: `200ms` on `background-color, color, border-color` for smooth switch
@@ -480,7 +480,8 @@ AI/ML Quest now supports both light and dark modes. Light mode was previously ou
 
 ### AC-9: Light/Dark Mode
 
-- [ ] System preference (`prefers-color-scheme`) detected and applied on first load
+- [ ] Default is light mode on first visit (no localStorage preference set)
+- [ ] Respects `prefers-color-scheme: dark` only as fallback when no localStorage override exists
 - [ ] `data-theme` attribute on `<html>` drives all color tokens
 - [ ] Toggle (sun/moon) in nav switches mode with 200ms transition on `background-color, color, border-color`
 - [ ] Preference persisted in `localStorage` key `aiquest_theme`
