@@ -6,19 +6,78 @@ import ChapterProgressOverlay from "@/components/hub/ChapterProgressOverlay";
 function LockIcon() {
   return (
     <svg
-      className="w-5 h-5"
+      className="w-6 h-6"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
       aria-hidden="true"
-      style={{ color: "var(--text-muted)", opacity: 0.6 }}
+      style={{ color: "var(--color-text-muted)", opacity: 0.7 }}
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2}
+        strokeWidth={1.5}
         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
       />
+    </svg>
+  );
+}
+
+interface ProgressRingProps {
+  pct: number; // 0–1
+  accentColor: string;
+}
+
+function ProgressRing({ pct, accentColor }: ProgressRingProps) {
+  // circumference of circle r=16: 2π×16 ≈ 100.53
+  const circumference = 100.53;
+  const filled = pct * circumference;
+
+  return (
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 40 40"
+      aria-label={`${Math.round(pct * 100)}% complete`}
+      role="img"
+    >
+      {/* Track */}
+      <circle
+        cx="20"
+        cy="20"
+        r="16"
+        fill="none"
+        stroke="var(--color-border)"
+        strokeWidth="3"
+      />
+      {/* Fill */}
+      <circle
+        cx="20"
+        cy="20"
+        r="16"
+        fill="none"
+        stroke={accentColor}
+        strokeWidth="3"
+        strokeDasharray={`${filled} ${circumference}`}
+        strokeLinecap="round"
+        transform="rotate(-90 20 20)"
+        style={{
+          transition:
+            "stroke-dasharray 800ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}
+      />
+      {/* Percentage label */}
+      <text
+        x="20"
+        y="20"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="var(--color-text-muted)"
+        fontSize="10"
+        fontWeight="500"
+      >
+        {Math.round(pct * 100)}%
+      </text>
     </svg>
   );
 }
@@ -37,6 +96,8 @@ interface ChapterCardProps {
   prereqs: string[];
   isFeatured?: boolean;
   chapterIndex?: number;
+  // Optional progress for the ring — ChapterProgressOverlay will supply this
+  completedLevels?: number;
 }
 
 export default function ChapterCard({
@@ -47,43 +108,50 @@ export default function ChapterCard({
   isFeatured = false,
   chapterIndex = 1,
 }: ChapterCardProps) {
+  // Estimated reading time: ~3 min per level
+  const estMinutes = chapter.levelCount * 3;
+  const estTime =
+    estMinutes >= 60 ? `${Math.round(estMinutes / 60)}h` : `${estMinutes}m`;
+
   const cardInner = (
     <div
-      className="relative overflow-hidden rounded-2xl h-full flex flex-col transition-all duration-200 group"
+      className="relative overflow-hidden rounded-2xl h-full flex flex-col group"
       style={{
-        backgroundColor: "var(--card)",
-        border: "1px solid var(--border)",
+        backgroundColor: "var(--color-bg-card)",
+        border: "1px solid var(--color-border)",
         borderLeft: `4px solid ${accentColor}`,
-        opacity: isLocked ? 0.55 : 1,
-        minHeight: isFeatured ? "180px" : "200px",
+        filter: isLocked ? "blur(2px)" : undefined,
+        opacity: isLocked ? 0.5 : 1,
+        minHeight: isFeatured ? "200px" : "220px",
         boxShadow: "var(--shadow-card)",
+        transition:
+          "transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out",
       }}
       onMouseEnter={(e) => {
+        if (isLocked) return;
         const el = e.currentTarget as HTMLDivElement;
-        el.style.backgroundColor = "var(--card-hover)";
-        el.style.borderColor = accentColor;
-        el.style.transform = "translateY(-4px)";
-        el.style.boxShadow = `0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px ${accentColor}40`;
+        el.style.transform = "translateY(-6px)";
+        el.style.boxShadow = `0 20px 60px var(--color-shadow-gold), 0 0 0 1px rgba(255,184,0,0.3)`;
+        el.style.borderColor = `rgba(255,184,0,0.3)`;
       }}
       onMouseLeave={(e) => {
+        if (isLocked) return;
         const el = e.currentTarget as HTMLDivElement;
-        el.style.backgroundColor = "var(--card)";
-        el.style.borderColor = accentColor;
-        el.style.borderLeftColor = accentColor;
         el.style.transform = "";
         el.style.boxShadow = "var(--shadow-card)";
+        el.style.borderColor = "var(--color-border)";
       }}
     >
-      {/* Ambient accent glow top-right */}
+      {/* Ambient accent glow */}
       <div
         className="absolute top-0 right-0 w-64 h-32 pointer-events-none"
         aria-hidden="true"
         style={{
-          background: `radial-gradient(ellipse 200px 120px at 80% 20%, ${accentColor}12 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse 200px 120px at 80% 20%, ${accentColor}18 0%, transparent 70%)`,
         }}
       />
 
-      {/* Large background chapter numeral */}
+      {/* Ghost chapter numeral */}
       <div
         className="absolute bottom-0 right-4 pointer-events-none select-none"
         aria-hidden="true"
@@ -92,7 +160,7 @@ export default function ChapterCard({
           fontWeight: 900,
           lineHeight: 1,
           color: accentColor,
-          opacity: 0.035,
+          opacity: 0.04,
           fontFamily: "var(--font-display)",
           letterSpacing: "-0.05em",
         }}
@@ -100,35 +168,53 @@ export default function ChapterCard({
         {chapterIndex}
       </div>
 
+      {/* Progress ring — top right corner */}
+      <div className="absolute top-4 right-4 z-20">
+        <ChapterProgressOverlay
+          chapterId={chapter.id}
+          totalLevels={chapter.levelCount}
+          accentColor={accentColor}
+          renderAs="ring"
+        />
+      </div>
+
+      {/* Lock overlay */}
+      {isLocked && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl"
+          style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
+        >
+          <LockIcon />
+        </div>
+      )}
+
       {/* Card content */}
       <div
         className={`relative z-10 p-5 flex flex-col h-full ${isFeatured ? "sm:p-7" : ""}`}
       >
-        {/* Icon row */}
-        <div className="flex items-start justify-between mb-4">
+        {/* Icon */}
+        <div className="mb-4">
           <div
             className="flex items-center justify-center w-11 h-11 rounded-xl text-2xl flex-shrink-0"
             style={{
-              backgroundColor: `${accentColor}15`,
-              border: `1px solid ${accentColor}25`,
+              backgroundColor: `${accentColor}18`,
+              border: `1px solid ${accentColor}28`,
             }}
             aria-hidden="true"
           >
             {chapter.icon ?? "🧠"}
           </div>
-          {isLocked && <LockIcon />}
         </div>
 
         {/* Title */}
         <h2
-          className="mb-1.5"
+          className="font-display mb-1.5"
           style={{
-            color: "var(--text-primary)",
-            fontFamily: "var(--font-display)",
-            fontSize: isFeatured ? "1.35rem" : "1.05rem",
+            color: "var(--color-text-primary)",
+            fontSize: "1.375rem",
             fontWeight: 700,
             letterSpacing: "-0.02em",
-            lineHeight: 1.25,
+            lineHeight: 1.2,
           }}
         >
           {chapter.title}
@@ -138,7 +224,10 @@ export default function ChapterCard({
         {chapter.subtitle && (
           <p
             className="text-sm mb-3 flex-1"
-            style={{ color: "var(--text-secondary)", lineHeight: "1.5" }}
+            style={{
+              color: "var(--color-text-secondary)",
+              lineHeight: "1.5",
+            }}
           >
             {chapter.subtitle}
           </p>
@@ -147,47 +236,46 @@ export default function ChapterCard({
         {/* Footer row — level count + time */}
         <div
           className="flex items-center gap-3 mt-auto pt-3"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--color-border)" }}
         >
-          <div className="flex items-center gap-1.5">
-            <svg
-              className="w-3.5 h-3.5 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              style={{ color: accentColor }}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {chapter.levelCount} level{chapter.levelCount !== 1 ? "s" : ""}
-            </span>
-          </div>
+          <span
+            className="text-xs"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            {chapter.levelCount} level{chapter.levelCount !== 1 ? "s" : ""}
+          </span>
+          <span
+            className="text-xs"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            ·
+          </span>
+          <span
+            className="text-xs"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            ~{estTime}
+          </span>
 
-          {/* Locked prereq hint */}
           {isLocked && prereqs.length > 0 && (
             <span
               className="text-xs ml-auto"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--color-text-muted)" }}
             >
               Requires: {prereqs.join(", ")}
             </span>
           )}
 
-          {/* Arrow indicator on hover for unlocked cards */}
           {!isLocked && (
             <svg
-              className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-60 transition-opacity duration-200"
+              className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-60"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                transition: "opacity 200ms ease-out",
+              }}
               aria-hidden="true"
             >
               <path
@@ -199,15 +287,6 @@ export default function ChapterCard({
             </svg>
           )}
         </div>
-
-        {/* Progress overlay — reads session + localStorage */}
-        {!isLocked && (
-          <ChapterProgressOverlay
-            chapterId={chapter.id}
-            totalLevels={chapter.levelCount}
-            accentColor={accentColor}
-          />
-        )}
       </div>
     </div>
   );
@@ -235,3 +314,6 @@ export default function ChapterCard({
     </Link>
   );
 }
+
+// Export ProgressRing for use in ChapterProgressOverlay
+export { ProgressRing };
