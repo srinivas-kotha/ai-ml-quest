@@ -4,7 +4,7 @@ import { eq, count, sql } from "drizzle-orm";
 import Link from "next/link";
 import ChapterProgressOverlay from "@/components/hub/ChapterProgressOverlay";
 
-export const revalidate = 3600; // Revalidate hourly
+export const dynamic = "force-dynamic"; // Always fetch fresh from DB
 
 // Chapter slug → accent CSS variable mapping
 const CHAPTER_ACCENT: Record<string, string> = {

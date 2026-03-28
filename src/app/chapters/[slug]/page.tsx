@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Badge from "@/components/ui/Badge";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const CHAPTER_ACCENT: Record<string, string> = {
   "rag-pipeline": "var(--rag)",
