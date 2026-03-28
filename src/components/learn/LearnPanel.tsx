@@ -1,7 +1,20 @@
-import type { LearnSection, SectionType } from "@/types/content";
+import type {
+  LearnSection,
+  SectionType,
+  CodeContent,
+  DiagramContent,
+  ComparisonContent,
+  StepsContent,
+  PlaygroundContent,
+} from "@/types/content";
 import MarkdownText from "./MarkdownText";
 import CalloutBox from "./CalloutBox";
 import PlaceholderSection from "./PlaceholderSection";
+import AnnotatedCode from "./AnnotatedCode";
+import PipelineDiagram from "./PipelineDiagram";
+import BeforeAfter from "./BeforeAfter";
+import StepReveal from "./StepReveal";
+import SliderPlayground from "./SliderPlayground";
 
 interface LearnPanelProps {
   learnSections: LearnSection[];
@@ -10,7 +23,13 @@ interface LearnPanelProps {
 }
 
 // Render a single section based on its type
-function SectionRenderer({ section }: { section: LearnSection }) {
+function SectionRenderer({
+  section,
+  accentColor,
+}: {
+  section: LearnSection;
+  accentColor?: string;
+}) {
   const { sectionType, content, title } = section;
   const type = sectionType as SectionType;
 
@@ -47,19 +66,66 @@ function SectionRenderer({ section }: { section: LearnSection }) {
       );
     }
 
-    // Placeholders for Phase 2 interactive components
-    case "code":
-    case "diagram":
-    case "comparison":
-    case "steps":
-    case "playground":
+    case "code": {
+      const codeContent = content as CodeContent;
       return (
-        <PlaceholderSection
-          sectionType={type}
-          title={title}
-          content={content}
+        <AnnotatedCode
+          language={codeContent.language ?? "python"}
+          title={codeContent.title ?? title ?? undefined}
+          code={codeContent.code ?? ""}
+          annotations={codeContent.annotations ?? []}
+          accentColor={accentColor}
         />
       );
+    }
+
+    case "diagram": {
+      const diagramContent = content as DiagramContent;
+      return (
+        <PipelineDiagram
+          nodes={diagramContent.nodes ?? []}
+          edges={diagramContent.edges ?? []}
+          animate={diagramContent.animate ?? true}
+          stepThrough={diagramContent.stepThrough ?? false}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "comparison": {
+      const compContent = content as ComparisonContent;
+      return (
+        <BeforeAfter
+          before={compContent.before}
+          after={compContent.after}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "steps": {
+      const stepsContent = content as StepsContent;
+      return (
+        <StepReveal
+          steps={stepsContent.steps ?? []}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "playground": {
+      const playContent = content as PlaygroundContent;
+      return (
+        <SliderPlayground
+          title={playContent.title ?? title ?? "Interactive Playground"}
+          sliders={playContent.sliders ?? []}
+          renderType={playContent.renderType ?? "chunkPreview"}
+          sampleText={playContent.sampleText}
+          customRenderer={playContent.customRenderer}
+          accentColor={accentColor}
+        />
+      );
+    }
 
     default:
       return (
@@ -110,7 +176,7 @@ export default function LearnPanel({
                   }}
                 />
               )}
-              <SectionRenderer section={section} />
+              <SectionRenderer section={section} accentColor={accentColor} />
             </div>
           ))}
       </div>
