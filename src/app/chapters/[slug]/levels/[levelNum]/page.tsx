@@ -13,7 +13,7 @@ import LearnPanel from "@/components/learn/LearnPanel";
 import GamePanel from "@/components/games/GamePanel";
 import type { LearnSection, GameType, GameConfig } from "@/types/content";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 // ── Chapter accent mapping (mirrors page.tsx) ───────────────────────────────
 const CHAPTER_ACCENT: Record<string, string> = {
