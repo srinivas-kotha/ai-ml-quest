@@ -441,7 +441,7 @@ function HowItWorksStep({
         className="font-display flex items-center justify-center w-12 h-12 rounded-full text-xl font-bold mb-4 mx-auto lg:mx-0 flex-shrink-0"
         style={{
           backgroundColor: "var(--color-accent-gold)",
-          color: "#1a1a2e",
+          color: "var(--color-bg-primary)",
           fontWeight: 700,
         }}
         aria-hidden="true"
