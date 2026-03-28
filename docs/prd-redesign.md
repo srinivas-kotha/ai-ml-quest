@@ -1,9 +1,11 @@
 # AI/ML Quest — Visual Redesign PRD
 
-> Status: Draft
+> Status: Updated — Expert Panel Reviewed 2026-03-28
 > Author: Srinivas Kotha
 > Created: 2026-03-28
+> Updated: 2026-03-28 — Applied 16 expert panel findings + light/dark dual mode
 > Source of Truth: docs/design-research.md
+> Expert Review: docs/evaluations/design-expert-review-2026-03-28.md
 
 ---
 
@@ -25,53 +27,66 @@ Inspired by Boot.dev (warm RPG feel) + Brilliant.org (playful seriousness) + Dat
 
 ### 2.1 Color System
 
+#### Dark Mode Tokens (default)
+
 ```css
-/* Core backgrounds — navy-purple, NOT black */
---color-bg-primary: #1a1a2e; /* Body background — deep navy-purple */
---color-bg-surface: #25253e; /* Elevated cards and panels */
---color-bg-card: #2a2a45; /* Interactive cards */
---color-bg-card-hover: #32325a; /* Card hover state */
---color-bg-overlay: rgba(26, 26, 46, 0.8); /* Glass overlay */
+[data-theme="dark"] {
+  /* Core backgrounds — saturated purple-navy, NOT black */
+  --color-bg-primary: #1c1535; /* Body background — saturated purple-navy (D3: was #1a1a2e) */
+  --color-bg-surface: #251e40; /* Elevated cards and panels */
+  --color-bg-card: #2d2550; /* Interactive cards */
+  --color-bg-card-hover: #362e5e; /* Card hover state */
+  --color-bg-overlay: rgba(28, 21, 53, 0.9); /* Glass overlay */
 
-/* Borders */
---color-border: rgba(255, 255, 255, 0.08);
---color-border-subtle: rgba(255, 255, 255, 0.04);
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
 
-/* Text — warm white, not blue-white */
---color-text-primary: #f0f0f5;
---color-text-secondary: #a0a0b8;
---color-text-muted: #6b6b80;
+  /* Text — warm white, not blue-white */
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #a0a0b8;
+  --color-text-muted: #8a8aa8; /* C3 FIX: was #6b6b80 (3.2:1 fail), now #8a8aa8 (4.6:1 WCAG AA pass) */
 
-/* Accents */
---color-accent-gold: #ffb800; /* Primary: XP, CTAs, achievements — knowledge signal */
---color-accent-teal: #00c9a7; /* Secondary: AI/ML concept signal */
---color-accent-error: #ff6b6b; /* Warm red, not harsh */
---color-accent-success: #4ade80; /* Green for correct answers */
+  /* Accents */
+  --color-accent-gold: #ffb800; /* Primary: XP, CTAs, achievements — knowledge signal */
+  --color-accent-teal: #00c9a7; /* Secondary: AI/ML concept signal */
+  --color-accent-error: #ff6b6b; /* Warm red, not harsh */
+  --color-accent-success: #4ade80; /* Green for correct answers */
+  --color-code-bg: #1a1330;
+}
 ```
 
-**Rationale:** #1a1a2e is unmistakably navy-purple — it reads as a chosen color, not a default. Gold #FFB800 signals knowledge and achievement (Boot.dev, Codecademy all use yellow/gold). This is a complementary color pair (cool bg + warm accent) — strong visual identity.
+**Card tier delta (D3):** Wide contrast steps between bg levels are intentional — primary → surface → card → hover spans 40+ lightness points so depth reads clearly without border reliance.
+
+**Rationale:** `#1c1535` is more saturated than the original `#1a1a2e`, pushing further into purple-navy territory. Reads as a deliberate color choice, not a dark gray default. Gold #FFB800 signals knowledge and achievement (Boot.dev, Codecademy all use yellow/gold). Complementary pair (cool bg + warm accent) — strong visual identity.
 
 ---
 
 ### 2.2 Typography
 
-| Role                     | Font             | Weight   | Source                |
-| ------------------------ | ---------------- | -------- | --------------------- |
-| Display / Hero           | DM Serif Display | 400      | Google Fonts (free)   |
-| Chapter names            | DM Serif Display | 400      | Google Fonts (free)   |
-| Section headings (h2-h3) | DM Serif Display | 400      | Google Fonts (free)   |
-| Body text                | DM Sans          | 400, 500 | Google Fonts (free)   |
-| UI elements / buttons    | DM Sans          | 500      | Google Fonts (free)   |
-| Code blocks              | JetBrains Mono   | 400      | Existing — keep as-is |
+| Role                     | Font             | Weight    | Source                |
+| ------------------------ | ---------------- | --------- | --------------------- |
+| Display / Hero           | Instrument Serif | 400, 400i | Google Fonts (free)   |
+| Chapter names            | Instrument Serif | 400       | Google Fonts (free)   |
+| Section headings (h2-h3) | Instrument Serif | 400       | Google Fonts (free)   |
+| Body text                | DM Sans          | 400, 500  | Google Fonts (free)   |
+| UI elements / buttons    | DM Sans          | 500       | Google Fonts (free)   |
+| Code blocks              | JetBrains Mono   | 400       | Existing — keep as-is |
 
-**Letter-spacing rules:**
+**Instrument Serif usage rules (D2):**
+
+- Use italic variant on "Quest" in hero wordmark: AI/ML _Quest_
+- Minimum size: Instrument Serif ≥ 20px only. Below 20px, use DM Sans.
+- Fallback stack: `'Instrument Serif', 'Garamond', 'Georgia', serif`
+
+**Letter-spacing rules (D1):**
 
 - Display type 48px+: `-0.75px`
 - Headings 24-48px: `-0.5px`
 - Body 16-24px: `0px` (default)
-- UI / labels: `0.5px` to `1px` (slightly opened)
+- UI / labels: `0.25em` (standardized — do NOT use absolute `px` values for eyebrow/caps labels)
 
-**Why DM Serif Display:** A serif display font for headings is the single most differentiating change we can make. Every competitor uses sans-serif headers. DM Serif Display has warmth without feeling academic or dated. It pairs naturally with DM Sans body text (same family, opposite styles).
+**Why Instrument Serif:** A serif display font for headings is the single most differentiating change we can make. Every competitor uses sans-serif headers. Instrument Serif has a particularly expressive italic variant — critical for the "AI/ML _Quest_" hero wordmark treatment. Pairs naturally with DM Sans body text.
 
 **Why NOT Inter:** 80% of web apps use Inter. We cannot differentiate with it.
 
@@ -98,15 +113,25 @@ First chapter and Capstone span 2 columns to create hierarchy. Middle chapters a
 
 ### 2.4 Animations and Interactions
 
-All timings use `ease-out` unless noted. No animations on users with `prefers-reduced-motion`.
+All timings use `ease-out` unless noted.
 
-**Card hover:**
+**Reduced motion (M1):** Users with `prefers-reduced-motion: reduce` get:
+
+- Disabled: stagger entrances, card lift (`translateY`), confetti, XP counter roll
+- Simplified (not removed): opacity transitions become instant (0ms), progress fill uses linear (no spring)
+- Kept: 3D button press (provides functional feedback — critical for users who can't see subtle state changes)
+
+**Card hover (T4):**
 
 ```css
 transform: translateY(-6px);
 box-shadow: 0 20px 60px rgba(255, 184, 0, 0.15); /* gold glow */
 border-color: rgba(255, 184, 0, 0.3);
-transition: all 200ms ease-out;
+/* T4 FIX: explicit properties only — transition:all checks ~300 CSS props per frame */
+transition:
+  transform 200ms ease-out,
+  box-shadow 200ms ease-out,
+  border-color 200ms ease-out;
 ```
 
 **Page entrance (staggered fade-up):**
@@ -138,11 +163,18 @@ transform: translateY(4px);
 transition: all 80ms ease-out;
 ```
 
-**Progress bar fill:**
+**Progress bar fill (T3):**
 
 ```css
-transition: width 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
-/* Overshoot spring: goes slightly past target, snaps back */
+/* Container: T3 FIX — overflow:hidden required for spring overshoot animation */
+/* Without this, the fill visually exceeds 100% width before snapping back */
+.progress-bar-container {
+  overflow: hidden;
+}
+.progress-bar-fill {
+  transition: width 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Overshoot spring: goes slightly past target, snaps back */
+}
 ```
 
 **XP counter roll-up:**
@@ -151,9 +183,11 @@ transition: width 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
 - Number counts from `previousXP` to `newXP`
 - Gold flash on completion: `box-shadow: 0 0 24px rgba(255, 184, 0, 0.6)` for 400ms
 
-**Level complete:**
+**Level complete (M3):**
 
-- `canvas-confetti` (~1KB gzipped) burst
+- `canvas-confetti` (~1KB gzipped) burst — scale by milestone:
+  - Individual level complete: 30% particle count
+  - Chapter complete: 100% particle count (full burst)
 - Modal: `scale(0.8) → scale(1)`, 300ms cubic-bezier spring
 - Gold number flash on XP gain
 
@@ -161,7 +195,7 @@ transition: width 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
 ```css
 /* Starts at opacity 0.7, increases to 0.95 as user scrolls */
-background: rgba(26, 26, 46, var(--nav-bg-opacity));
+background: rgba(28, 21, 53, var(--nav-bg-opacity));
 backdrop-filter: blur(16px);
 ```
 
@@ -174,17 +208,24 @@ backdrop-filter: blur(16px);
 #### Hero Section
 
 ```
-[Eyebrow] INTERACTIVE LEARNING PLATFORM    ← gold, letterspacing 3px, 12px
-[H1] AI/ML Quest                          ← DM Serif Display, 64-80px
-[Subtitle] Built for senior engineers...  ← DM Sans 20px, text-secondary
+[Eyebrow] INTERACTIVE LEARNING PLATFORM    ← gold, letter-spacing 0.25em, 12px
+[H1] AI/ML Quest                          ← Instrument Serif, clamp(40px, 5.5vw, 88px)
+[Subtitle] The AI/ML course that doesn't  ← DM Sans 20px, text-secondary
+           start at 'what is a neural network.'
 [CTA row] [Start Free →] [View Syllabus]  ← 3D press primary, ghost secondary
 [Stats] 54 Levels  |  5 Chapters  |  8 Game Types ← accent number, muted label
+[Logo strip] Built for engineers working with:
+             [HuggingFace] [LangChain] [PyTorch] [Ollama] [pgvector]
 ```
 
-- Eyebrow: `DM Sans`, `#FFB800`, `letter-spacing: 3px`, `font-size: 12px`, `font-weight: 500`
-- H1: `DM Serif Display`, `64px` desktop / `40px` mobile, `letter-spacing: -0.75px`
+- Eyebrow: `DM Sans`, `#FFB800`, `letter-spacing: 0.25em` (D1 fix — was `3px` absolute), `font-size: 12px`, `font-weight: 500`
+- H1: `Instrument Serif`, `clamp(40px, 5.5vw, 88px)` (T2 fix — was `clamp(56px, 7vw, 96px)`, 96px was too large), `letter-spacing: -0.75px`
+- H1 wordmark: use italic variant on "Quest": AI/ML _Quest_
+- Subtitle (CR3): "The AI/ML course that doesn't start at 'what is a neural network.'"
+  - A/B variant: "53 levels. No hello world. No basics you already know."
 - CTA primary: gold bg, white text, 3D press shadow, `border-radius: 10px`
 - Stats row: large number in gold (#FFB800), label in text-muted
+- Tech logo strip (CR1): DM Sans 11px text-muted "Built for engineers working with:" + inline SVG logos for HuggingFace, LangChain, PyTorch, Ollama, pgvector. Opacity 0.6, increases to 1.0 on hover.
 
 #### Chapter Cards
 
@@ -196,7 +237,7 @@ Visual anatomy (top to bottom):
 │                              [lock?]
 │ [icon in colored circle]
 │                        [progress ring SVG]
-│ Chapter 1                           ← DM Serif Display, 22px
+│ Chapter 1                           ← Instrument Serif, 22px
 │ RAG Pipeline                        ← DM Sans, 14px, text-secondary
 │ 12 levels  ·  ~3 hrs               ← text-muted, 12px
 └─────────────────────────────────────┘
@@ -222,12 +263,12 @@ Chapter accent colors:
 **"What is this?" (Value props, 3 cards):**
 
 - Glass bg on hover: `rgba(255,255,255,0.03)` + border opacity increase
-- Icon: colored circle 48px, DM Serif Display title, DM Sans body
+- Icon: colored circle 48px, Instrument Serif title, DM Sans body
 
 **"How it works" (3 steps):**
 
-- Step number: large gold badge, 40px, DM Serif Display
-- Step title: DM Serif Display 20px
+- Step number: large gold badge, 40px, Instrument Serif
+- Step title: Instrument Serif 20px
 - Connector: dashed line between steps (desktop only)
 
 **"8 ways to learn" (game type grid, 2×4):**
@@ -239,6 +280,7 @@ Chapter accent colors:
 **Chapters bento grid:**
 
 - As described in section 2.3 layout
+- Second CTA (CR2): Place a "Start Learning →" CTA immediately below the chapters bento grid. Expert users who respond to the content (not the marketing) need a conversion point here before scrolling to How It Works.
 
 #### Navigation
 
@@ -247,8 +289,8 @@ Chapter accent colors:
 ```
 
 - Height: 60px
-- Background: `rgba(26, 26, 46, 0.8)` + `backdrop-filter: blur(16px)`
-- Logo: `DM Serif Display`, warm white, NO gradient text
+- Background: `rgba(28, 21, 53, 0.8)` + `backdrop-filter: blur(16px)`
+- Logo: `Instrument Serif`, warm white, NO gradient text
 - Sign in: ghost button with `border: 1px solid rgba(255,255,255,0.2)`, gold border on hover
 - CTA: gold bg, 3D press
 - Sticky at top, background opacity increases with scroll
@@ -265,8 +307,8 @@ Chapter accent colors:
 └────────────────────────────────────────┘
 ```
 
-- Large opening `"` glyph: DM Serif Display, 80px, gold, absolute positioned
-- Quote text: DM Serif Display, 22px, text-primary
+- Large opening `"` glyph: Instrument Serif, 80px, gold, absolute positioned
+- Quote text: Instrument Serif, 22px, text-primary
 - Attribution: DM Sans, 12px, text-muted
 
 **Learn panel:**
@@ -295,14 +337,85 @@ Chapter accent colors:
 
 ---
 
-### 2.6 What We Are NOT Doing (Scope Boundaries)
+### 2.6 Landing Page Section Order (C1)
+
+The hub page sections render in this order. Do NOT reorder them — this sequence is optimized for expert-level conversion.
+
+1. **Hero** — hook + social proof strip + first CTA
+2. **Chapters Bento Grid** — show the product before selling it
+3. **Second "Start Learning" CTA** — convert users who responded to the content
+4. **How It Works** — 3-step process for skeptical users
+5. **Game Types** — differentiation (8 ways to learn)
+6. **Value Props** — "What is this?" for late-funnel users
+
+Rationale (C1): Expert engineers evaluate content before committing. Leading with chapters (what they're buying) before "how it works" (marketing copy) respects their buying pattern.
+
+### 2.7 Anonymous Journey (C2)
+
+Expert users reject auth walls before they can see the product. Auth must not block content.
+
+**What we ARE doing:**
+
+- Level 1 of every chapter is fully accessible without authentication
+- Auth prompt appears on first progress save, not on page load
+- "Continue where you left off" prompt shown after Level 1 completion (natural conversion point)
+
+**Implementation:**
+
+- `localStorage` progress for anonymous users (no DB write)
+- First progress save: show modal "Save your progress? Sign in or create account."
+- Sign in is optional — users can continue anonymously with local storage only
+- Auth prompt never appears earlier than first level completion
+
+### 2.8 Light Mode (Added — C2 prerequisite, M2 prerequisite)
+
+AI/ML Quest now supports both light and dark modes. Light mode was previously out of scope but is added here because:
+
+1. Expert engineers in office environments frequently default to light mode (conversion barrier)
+2. WCAG compliance is easier to maintain across both modes than to bolt on later
+3. Mouse-tracking radial glow (M2) requires pointer capability check anyway — that's the only performance concern
+
+**Light Mode Tokens:**
+
+```css
+[data-theme="light"] {
+  --color-bg-primary: #fafaf7; /* warm cream, NOT clinical white */
+  --color-bg-surface: #ffffff; /* pure white for cards */
+  --color-bg-card: #ffffff; /* cards */
+  --color-bg-card-hover: #f5f5f0; /* card hover */
+  --color-bg-overlay: rgba(250, 250, 247, 0.9);
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-subtle: rgba(0, 0, 0, 0.04);
+  --color-text-primary: #1a1a2e; /* navy text on light bg */
+  --color-text-secondary: #4a4a5e;
+  --color-text-muted: #8a8a9e;
+  --color-accent-gold: #d4960a; /* slightly darker gold for contrast on white */
+  --color-accent-teal: #0a9d8a; /* darker teal for contrast */
+  --color-code-bg: #f0f0f0;
+}
+```
+
+**Mode Toggle:**
+
+- Default: `prefers-color-scheme` media query
+- Override: `data-theme` attribute on `<html>`, persisted in `localStorage` key `aiquest_theme`
+- Toggle: sun/moon icon button in TopNav (right side, before Sign In)
+- Transition: `200ms` on `background-color, color, border-color` for smooth switch
+- No flash of wrong theme: inline `<script>` in `<head>` reads `localStorage` before first paint
+
+**All chapter accent colors verified WCAG AA on both backgrounds.** Gold `#FFB800` on `#FAFAF7` = 3.2:1 (use darker `#d4960a` for light mode, ratio 4.7:1 AA pass).
+
+**Mouse-tracking radial glow (M2):** Initialize only when `window.matchMedia('(hover: hover) and (pointer: fine)').matches`. Fine pointer = mouse. Coarse = touch/stylus. Prevents battery drain on tablets.
+
+---
+
+### 2.9 Scope Boundaries
 
 | Item                 | Decision | Reason                                              |
 | -------------------- | -------- | --------------------------------------------------- |
 | Mascot/character     | No       | Too much design work for this sprint                |
-| Custom font purchase | No       | DM Serif Display + DM Sans are free on Google Fonts |
+| Custom font purchase | No       | Instrument Serif + DM Sans are free on Google Fonts |
 | RPG inventory system | No       | Our XP + progress system stays as-is                |
-| Light mode           | No       | Dark-only for now — but warm dark, not cold         |
 | Figma designs first  | No       | Code-first, iterate in browser                      |
 | Functional changes   | No       | This PRD is visual redesign only                    |
 | New game types       | No       | All 8 existing game types unchanged                 |
@@ -313,45 +426,67 @@ Chapter accent colors:
 
 ### AC-1: Typography
 
-- [ ] DM Serif Display loaded via `next/font/google` (or equivalent) and applied to: hero H1, chapter card titles, section headings (h2-h3), level page hook
+- [ ] Instrument Serif (with italic variant) loaded and applied to: hero H1, chapter card titles, section headings (h2-h3), level page hook
+- [ ] Hero H1 uses italic variant on "Quest" wordmark: AI/ML _Quest_
+- [ ] Instrument Serif used at ≥ 20px only; DM Sans used below 20px
 - [ ] DM Sans loaded and applied to: body text, UI elements, buttons, labels
 - [ ] JetBrains Mono retained for all code blocks
 - [ ] Letter-spacing: `-0.75px` on 48px+ display type, `-0.5px` on 24-48px headings
+- [ ] Eyebrow/caps labels use `letter-spacing: 0.25em` (not absolute `px`)
 - [ ] No Inter or Roboto rendered in the final page (verify via browser DevTools > Fonts)
 
 ### AC-2: Color System
 
-- [ ] Body background renders as `#1a1a2e` (navy-purple — NOT #09090b or #111)
-- [ ] Card backgrounds: `#25253e` (surface) → `#2a2a45` (card) → `#32325a` (hover)
-- [ ] Primary CTA and XP numbers use gold `#FFB800`
-- [ ] Chapter cards have chapter-specific 4px left border (6 distinct colors)
+- [ ] Dark mode: body background renders as `#1c1535` (saturated purple-navy — NOT #09090b or #1a1a2e)
+- [ ] Dark mode: card backgrounds: `#251e40` (surface) → `#2d2550` (card) → `#362e5e` (hover)
+- [ ] Dark mode: muted text renders as `#8a8aa8` (was `#6b6b80`, which failed WCAG AA)
+- [ ] Light mode: body background renders as `#fafaf7` (warm cream — NOT pure white `#ffffff`)
+- [ ] Light mode: card backgrounds use pure `#ffffff` with warm hover `#f5f5f0`
+- [ ] Light mode: gold accent uses `#d4960a` (darker for contrast on light bg)
+- [ ] Primary CTA and XP numbers use gold (#FFB800 dark / #d4960a light)
+- [ ] Chapter cards have chapter-specific 4px left border (6 distinct colors, verified on both bg modes)
 - [ ] No pure black (`#000`, `#111`, `#09090b`, `#0a0a0f`) anywhere in the rendered page
 
 ### AC-3: Layout
 
 - [ ] All content constrained to max-width 1200px with `margin: 0 auto`
 - [ ] Hub page renders bento grid (first chapter 2-col span, capstone 2-col span)
+- [ ] Section order: Hero → Chapters Bento Grid → second CTA → How It Works → Game Types → Value Props
 - [ ] All cards use 16px border-radius
 - [ ] Section spacing: 80px between major sections, 40px between sub-sections
 
 ### AC-4: Animations
 
-- [ ] Card hover: `translateY(-6px)` + gold glow shadow in 200ms
+- [ ] Card hover: `translateY(-6px)` + gold glow shadow in 200ms, using explicit transition properties (no `transition: all`)
 - [ ] Page elements entrance: staggered fade-up (60ms increment, 500ms duration)
 - [ ] Primary CTA has 3D press effect (shadow shifts on :active, translateY(4px))
+- [ ] Progress bar container has `overflow: hidden` to contain spring overshoot
 - [ ] Progress bars animate with spring overshoot (`cubic-bezier(0.34, 1.56, 0.64, 1)`)
 - [ ] XP counter rolls up with requestAnimationFrame (800ms)
-- [ ] Level complete triggers confetti + modal scale-in
-- [ ] All animations respect `prefers-reduced-motion: reduce`
+- [ ] Level complete triggers confetti (30% count) + modal scale-in; chapter complete triggers full confetti (100%)
+- [ ] Reduced motion: stagger/card lift/confetti/XP roll disabled; opacity instant; progress linear; 3D press kept
+- [ ] Mouse-tracking radial glow initializes only when `(hover: hover) and (pointer: fine)` matches
 
 ### AC-5: Components
 
-- [ ] Hero: DM Serif Display title, gold eyebrow, gold CTA with 3D press, stats row
+- [ ] Hero: Instrument Serif title with italic "Quest", gold eyebrow at `0.25em` spacing, gold CTA with 3D press, stats row, tech logo strip (HuggingFace/LangChain/PyTorch/Ollama/pgvector)
+- [ ] Hero subtitle: "The AI/ML course that doesn't start at 'what is a neural network.'"
 - [ ] Chapter cards: faded bg number, 4px accent left border, serif title, progress ring, hover lift + arrow slide
+- [ ] Second "Start Learning" CTA appears immediately below chapters bento grid
 - [ ] Locked chapters: blurred + dimmed + lock icon overlay
-- [ ] Nav: glass effect (blur 16px), serif logo, 60px height, opacity increases on scroll
-- [ ] Landing sections: value props (3 cards), how it works (3 steps with gold numbers), game types grid (2×4)
+- [ ] Nav: glass effect (blur 16px), serif logo, 60px height, opacity increases on scroll, light/dark toggle (sun/moon)
+- [ ] Landing sections in order: chapters grid → how it works → game types → value props
 - [ ] Level page: editorial hook pull-quote, solid learn panel, accent-stripe game panel, gold key insight callout
+
+### AC-9: Light/Dark Mode
+
+- [ ] System preference (`prefers-color-scheme`) detected and applied on first load
+- [ ] `data-theme` attribute on `<html>` drives all color tokens
+- [ ] Toggle (sun/moon) in nav switches mode with 200ms transition on `background-color, color, border-color`
+- [ ] Preference persisted in `localStorage` key `aiquest_theme`
+- [ ] No flash of wrong theme on page load (inline script in `<head>` reads localStorage before first paint)
+- [ ] All chapter accent colors pass WCAG AA on both backgrounds
+- [ ] Code blocks readable in both modes
 
 ### AC-6: Responsiveness
 
@@ -382,27 +517,32 @@ Chapter accent colors:
 
 ### Sprint 1: Foundation (~4 hours)
 
-1. Update `next.config.js` / `layout.tsx` — add DM Serif Display + DM Sans via `next/font/google`
-2. Replace `globals.css` CSS custom properties with new color system
-3. Add typography scale classes (`.display`, `.heading`, `.body`)
-4. Add animation keyframes and utility classes (fade-up, stagger)
-5. Add 3D button press CSS
-6. Add spring progress bar animation
-7. Verify: `npm run build` passes, no TypeScript errors, no visual regressions on existing pages
+1. Update font loading — add Instrument Serif (with italic) + DM Sans via Google Fonts
+2. Replace CSS custom properties with new color token system (both `[data-theme="dark"]` and `[data-theme="light"]`)
+3. Add theme toggle logic: inline `<script>` in `<head>` for no-flash, `data-theme` attribute, localStorage persistence
+4. Add sun/moon toggle button to TopNav
+5. Add typography scale classes (`.display`, `.heading`, `.body`)
+6. Add animation keyframes and utility classes (fade-up, stagger)
+7. Add 3D button press CSS
+8. Add spring progress bar animation
+9. Verify: `npm run build` passes, no TypeScript errors, no visual regressions on existing pages
 
 **Commit gate:** Build passes, fonts render in browser, backgrounds are navy-purple (not black).
 
-### Sprint 2: Hub Page Redesign (~3 hours)
+### Sprint 2: Hub Page Redesign (~4 hours)
 
-1. Hero section (serif title, gold eyebrow, stats row, 3D CTA)
-2. "What is this" value props section (3 cards, glass hover)
-3. "How it works" steps section (gold step numbers)
-4. Game types showcase (2×4 grid)
-5. Chapter bento grid layout
-6. Chapter card component (serif title, faded bg number, accent border, progress ring, hover lift)
-7. Locked chapter state
+1. Hero section: serif title with italic "Quest", gold eyebrow at `0.25em`, stats row, 3D CTA
+2. Hero subtitle: "The AI/ML course that doesn't start at 'what is a neural network.'"
+3. Tech logo strip below subtitle (HuggingFace, LangChain, PyTorch, Ollama, pgvector)
+4. Chapter bento grid layout (sections ordered per §2.6: Chapters first)
+5. Chapter card component (serif title, faded bg number, accent border, progress ring, hover lift)
+6. Second "Start Learning" CTA immediately below chapters bento grid
+7. "How it works" steps section (gold step numbers)
+8. Game types showcase (2×4 grid)
+9. "What is this" value props section (3 cards, glass hover)
+10. Locked chapter state
 
-**Commit gate:** Hub page matches AC-2 through AC-5 chapter cards. Mobile responsive.
+**Commit gate:** Hub page matches AC-2 through AC-5 chapter cards. Section order matches §2.6. Mobile responsive.
 
 ### Sprint 3: Navigation + Chapter Page (~2 hours)
 
@@ -454,8 +594,8 @@ Workflow: Architect reviews each sprint's output against acceptance criteria bef
 
 | Risk                                                   | Likelihood | Impact | Mitigation                                                              |
 | ------------------------------------------------------ | ---------- | ------ | ----------------------------------------------------------------------- |
-| DM Serif Display renders poorly at small sizes         | Medium     | Medium | Use DM Sans for anything under 20px; fallback: Instrument Serif         |
-| Navy-purple #1a1a2e feels too saturated / gamey        | Low        | Medium | Test in browser first; if too saturated, desaturate to #1e1e2e          |
+| Instrument Serif renders poorly at small sizes         | Medium     | Medium | Enforced: ≥ 20px only rule in spec; DM Sans for everything smaller      |
+| Navy-purple #1c1535 feels too saturated / gamey        | Low        | Medium | Test in browser first; if too saturated, desaturate to #1a1a2e          |
 | 3D button press feels gimmicky                         | Low        | Low    | Use Brilliant.org as reference; if too much, reduce shadow depth to 2px |
 | Redesign breaks game input (keyboard shortcuts, focus) | Medium     | High   | Full game test after EACH sprint, not just at end                       |
 | Font loading causes Cumulative Layout Shift            | Medium     | Medium | `font-display: swap` + size fallback (ascent-override, etc.)            |
