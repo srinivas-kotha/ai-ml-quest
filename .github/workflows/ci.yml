@@ -1,0 +1,56 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholder DATABASE_URL for build-time type generation only (not a real secret)
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ~/ai-ml-quest
+            git pull origin main
+            cd ~/ai-orchestration
+            docker compose build ai_ml_quest
+            docker compose up -d ai_ml_quest
+            sleep 5
+            curl -sf http://localhost:3003/api/health || echo "Health check failed"
