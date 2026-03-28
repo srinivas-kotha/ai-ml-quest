@@ -71,6 +71,34 @@ export const questLevels = pgTable(
 );
 
 // ============================================================
+// VISUAL ASSETS
+// ============================================================
+export const questVisualAssets = pgTable(
+  "quest_visual_assets",
+  {
+    id: serial("id").primaryKey(),
+    levelId: integer("level_id").references(() => questLevels.id, {
+      onDelete: "cascade",
+    }),
+    assetType: text("asset_type").notNull(), // 'napkin', 'd2', 'react-flow', 'analogy'
+    title: text("title").notNull(),
+    description: text("description"),
+    sourcePrompt: text("source_prompt"),
+    sourceFile: text("source_file"),
+    r2Url: text("r2_url"),
+    r2Key: text("r2_key"),
+    metadata: jsonb("metadata"), // React Flow node/edge data, analogy fields, etc.
+    sortOrder: integer("sort_order").default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    levelIdx: index("idx_quest_visual_assets_level").on(table.levelId),
+    assetTypeIdx: index("idx_quest_visual_assets_type").on(table.assetType),
+  }),
+);
+
+// ============================================================
 // LEARN SECTIONS
 // ============================================================
 export const questLearnSections = pgTable(

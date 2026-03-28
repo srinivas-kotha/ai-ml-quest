@@ -51,7 +51,10 @@ export type SectionType =
   | "comparison"
   | "steps"
   | "playground"
-  | "callout";
+  | "callout"
+  | "analogy"
+  | "exploration"
+  | "prediction";
 
 export interface LearnSection {
   id: number;
@@ -134,6 +137,67 @@ export interface CalloutContent {
   content: string;
 }
 
+// ----------------------------------------------------------
+// Analogy content schema
+// ----------------------------------------------------------
+export interface AnalogyItem {
+  background: "frontend" | "backend" | "devops" | "general" | string;
+  familiarConcept: string;
+  familiarIcon: string; // emoji
+  newConcept: string;
+  newIcon: string; // emoji
+  bridgeText: string;
+  breakPoint: string; // where the analogy breaks down
+}
+
+export interface AnalogyContent {
+  analogies: AnalogyItem[];
+}
+
+// ----------------------------------------------------------
+// Exploration (React Flow) content schema
+// ----------------------------------------------------------
+export interface ReactFlowNodeData {
+  id: string;
+  type?: string;
+  position: { x: number; y: number };
+  data: {
+    label: string;
+    icon?: string;
+    details?: string;
+    active?: boolean;
+    accentColor?: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface ReactFlowEdgeData {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  type?: string;
+  animated?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ExplorationContent {
+  title: string;
+  description?: string;
+  nodes: ReactFlowNodeData[];
+  edges: ReactFlowEdgeData[];
+  staticFallbackUrl?: string;
+}
+
+// ----------------------------------------------------------
+// Prediction prompt content schema
+// ----------------------------------------------------------
+export interface PredictionContent {
+  question: string;
+  options?: string[];
+  reveal: string;
+}
+
 export type LearnSectionContent =
   | TextContent
   | CodeContent
@@ -141,7 +205,10 @@ export type LearnSectionContent =
   | ComparisonContent
   | StepsContent
   | PlaygroundContent
-  | CalloutContent;
+  | CalloutContent
+  | AnalogyContent
+  | ExplorationContent
+  | PredictionContent;
 
 // ----------------------------------------------------------
 // Game types

@@ -9,6 +9,9 @@ import type {
   ComparisonContent,
   StepsContent,
   PlaygroundContent,
+  AnalogyContent,
+  ExplorationContent,
+  PredictionContent,
 } from "@/types/content";
 import dynamic from "next/dynamic";
 import MarkdownText from "./MarkdownText";
@@ -52,6 +55,21 @@ const BeforeAfter = dynamic(() => import("./BeforeAfter"), {
 });
 
 const StepReveal = dynamic(() => import("./StepReveal"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const AnalogyPanel = dynamic(() => import("./AnalogyPanel"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const ExplorationWrapper = dynamic(() => import("./ExplorationWrapper"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const PredictionPrompt = dynamic(() => import("./PredictionPrompt"), {
   loading: () => <SectionSkeleton />,
   ssr: false,
 });
@@ -162,6 +180,42 @@ function SectionRenderer({
           renderType={playContent.renderType ?? "chunkPreview"}
           sampleText={playContent.sampleText}
           customRenderer={playContent.customRenderer}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "analogy": {
+      const analogyContent = content as AnalogyContent;
+      return (
+        <AnalogyPanel
+          analogies={analogyContent.analogies ?? []}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "exploration": {
+      const explorationContent = content as ExplorationContent;
+      return (
+        <ExplorationWrapper
+          title={explorationContent.title ?? title ?? "Interactive Exploration"}
+          description={explorationContent.description}
+          nodes={explorationContent.nodes ?? []}
+          edges={explorationContent.edges ?? []}
+          accentColor={accentColor}
+          staticFallbackUrl={explorationContent.staticFallbackUrl}
+        />
+      );
+    }
+
+    case "prediction": {
+      const predictionContent = content as PredictionContent;
+      return (
+        <PredictionPrompt
+          question={predictionContent.question ?? ""}
+          options={predictionContent.options}
+          reveal={predictionContent.reveal ?? ""}
           accentColor={accentColor}
         />
       );
