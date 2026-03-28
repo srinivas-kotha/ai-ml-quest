@@ -1,0 +1,37 @@
+# Local development docker-compose for AI/ML Quest v2.0
+# NOTE: Production deployment uses the shared ai-orchestration/docker-compose.yml
+# This file is for local dev convenience only.
+
+services:
+  quest:
+    build: .
+    ports:
+      - "3003:3003"
+    environment:
+      - DATABASE_URL=postgresql://crawler_admin:password@postgres:5432/n8n
+      - NEXTAUTH_SECRET=dev-secret-change-in-production
+      - NEXTAUTH_URL=http://localhost:3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: crawler_admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: n8n
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../postgres/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crawler_admin -d n8n"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

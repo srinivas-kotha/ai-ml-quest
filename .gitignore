@@ -1,0 +1,8 @@
+# v1 build artifacts (none currently — static site)
+.DS_Store
+*.local
+
+# improvement state (managed by daily CI agent, not for source control)
+.improvement-state.json
+
+# nextjs handled by nextjs/.gitignore
