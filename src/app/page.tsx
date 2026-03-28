@@ -1,65 +1,319 @@
-import Image from "next/image";
+import { db } from "@/lib/db";
+import { questChapters, questLevels } from "../../drizzle/schema";
+import { eq, count, sql } from "drizzle-orm";
+import Link from "next/link";
+import ChapterProgressOverlay from "@/components/hub/ChapterProgressOverlay";
 
-export default function Home() {
+export const revalidate = 3600; // Revalidate hourly
+
+// Chapter slug → accent CSS variable mapping
+const CHAPTER_ACCENT: Record<string, string> = {
+  "rag-pipeline": "var(--rag)",
+  "local-slm": "var(--slm)",
+  "ml-monitoring": "var(--monitoring)",
+  "fine-tuning": "var(--finetuning)",
+  multimodal: "var(--multimodal)",
+  capstone: "var(--capstone)",
+};
+
+function LockIcon() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <svg
+      className="w-4 h-4 opacity-50"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+      />
+    </svg>
+  );
+}
+
+interface ChapterWithCount {
+  id: number;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  icon: string | null;
+  accentColor: string | null;
+  sortOrder: number;
+  prerequisites: unknown;
+  levelCount: number;
+}
+
+async function getChaptersWithLevelCounts(): Promise<ChapterWithCount[]> {
+  try {
+    const rows = await db
+      .select({
+        id: questChapters.id,
+        slug: questChapters.slug,
+        title: questChapters.title,
+        subtitle: questChapters.subtitle,
+        icon: questChapters.icon,
+        accentColor: questChapters.accentColor,
+        sortOrder: questChapters.sortOrder,
+        prerequisites: questChapters.prerequisites,
+        levelCount: count(questLevels.id),
+      })
+      .from(questChapters)
+      .leftJoin(
+        questLevels,
+        sql`${questLevels.chapterId} = ${questChapters.id} AND ${questLevels.isPublished} = true`,
+      )
+      .where(eq(questChapters.isPublished, true))
+      .groupBy(questChapters.id)
+      .orderBy(questChapters.sortOrder);
+
+    return rows.map((r) => ({ ...r, levelCount: Number(r.levelCount) }));
+  } catch {
+    // DB not yet seeded or not available during build
+    return [];
+  }
+}
+
+export default async function HubPage() {
+  const chapters = await getChaptersWithLevelCounts();
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Header */}
+      <div className="mb-10">
+        <h1 className="mb-2" style={{ color: "var(--text-primary)" }}>
+          AI/ML Quest
+        </h1>
+        <p
+          className="text-base max-w-xl"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Enterprise-framed AI/ML learning for engineers who already know
+          backend systems. Pick a chapter and start building.
+        </p>
+      </div>
+
+      {/* Chapter grid */}
+      {chapters.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {chapters.map((chapter) => {
+            const accentColor =
+              CHAPTER_ACCENT[chapter.slug] ??
+              chapter.accentColor ??
+              "var(--rag)";
+            const prereqs = Array.isArray(chapter.prerequisites)
+              ? (chapter.prerequisites as string[])
+              : [];
+            const isLocked = false; // prerequisite check implemented in Phase 1B with auth
+
+            return (
+              <ChapterCard
+                key={chapter.id}
+                chapter={chapter}
+                accentColor={accentColor}
+                isLocked={isLocked}
+                prereqs={prereqs}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Guest sign-in banner */}
+      <GuestSignInBanner />
+    </div>
+  );
+}
+
+function ChapterCard({
+  chapter,
+  accentColor,
+  isLocked,
+  prereqs,
+}: {
+  chapter: ChapterWithCount;
+  accentColor: string;
+  isLocked: boolean;
+  prereqs: string[];
+}) {
+  const cardInner = (
+    <div
+      className="relative rounded-2xl p-5 h-full flex flex-col transition-all duration-200"
+      style={{
+        backgroundColor: "var(--card)",
+        border: `1px solid var(--border)`,
+        borderLeft: `3px solid ${accentColor}`,
+        opacity: isLocked ? 0.6 : 1,
+      }}
+    >
+      {/* Icon + lock */}
+      <div className="flex items-start justify-between mb-3">
+        <span className="text-2xl" aria-hidden="true">
+          {chapter.icon ?? "🧠"}
+        </span>
+        {isLocked && <LockIcon />}
+      </div>
+
+      {/* Title + subtitle */}
+      <h2
+        className="mb-1 font-semibold"
+        style={{
+          color: "var(--text-primary)",
+          fontSize: "1rem",
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {chapter.title}
+      </h2>
+      {chapter.subtitle && (
+        <p
+          className="text-sm mb-3 flex-1"
+          style={{ color: "var(--text-secondary)", lineHeight: "1.5" }}
+        >
+          {chapter.subtitle}
+        </p>
+      )}
+
+      {/* Level count */}
+      <div className="flex items-center gap-1.5 mt-auto">
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          style={{ color: accentColor }}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
+        </svg>
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+          {chapter.levelCount} level{chapter.levelCount !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Progress overlay — client component reads session + localStorage */}
+      {!isLocked && (
+        <ChapterProgressOverlay
+          chapterId={chapter.id}
+          totalLevels={chapter.levelCount}
+          accentColor={accentColor}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+    </div>
+  );
+
+  if (isLocked) {
+    return (
+      <div
+        className="cursor-not-allowed"
+        title={
+          prereqs.length > 0 ? `Requires: ${prereqs.join(", ")}` : "Locked"
+        }
+      >
+        {cardInner}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/chapters/${chapter.slug}`}
+      className="block"
+      style={{ textDecoration: "none" }}
+      onMouseEnter={(e) => {
+        const card = e.currentTarget.querySelector(
+          ".rounded-2xl",
+        ) as HTMLDivElement | null;
+        if (card) {
+          card.style.backgroundColor = "var(--card-hover)";
+          card.style.borderColor = "var(--border-hover)";
+          card.style.transform = "translateY(-2px)";
+          card.style.boxShadow = `0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px ${accentColor}33`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        const card = e.currentTarget.querySelector(
+          ".rounded-2xl",
+        ) as HTMLDivElement | null;
+        if (card) {
+          card.style.backgroundColor = "var(--card)";
+          card.style.borderColor = "var(--border)";
+          card.style.transform = "";
+          card.style.boxShadow = "";
+        }
+      }}
+    >
+      {cardInner}
+    </Link>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div
+      className="rounded-2xl p-12 text-center"
+      style={{
+        backgroundColor: "var(--card)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="text-4xl mb-4">🚧</div>
+      <h2
+        className="text-lg font-semibold mb-2"
+        style={{ color: "var(--text-primary)" }}
+      >
+        Content loading
+      </h2>
+      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+        Chapters will appear once the database is seeded.
+      </p>
+    </div>
+  );
+}
+
+function GuestSignInBanner() {
+  return (
+    <div
+      className="mt-10 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap"
+      style={{
+        backgroundColor: "rgba(59, 130, 246, 0.06)",
+        border: "1px solid rgba(59, 130, 246, 0.15)",
+      }}
+    >
+      <div>
+        <p
+          className="text-sm font-medium"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Sync your progress across devices
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+          Sign in with GitHub to save your progress to the cloud.
+        </p>
+      </div>
+      <Link
+        href="/api/auth/signin"
+        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: "rgba(59, 130, 246, 0.15)",
+          color: "#3b82f6",
+          border: "1px solid rgba(59, 130, 246, 0.3)",
+          textDecoration: "none",
+        }}
+      >
+        Sign in free
+      </Link>
     </div>
   );
 }
