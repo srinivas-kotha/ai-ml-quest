@@ -167,7 +167,7 @@ export default function PipelineBuilder({
             draggable={!submitted}
             onDragStart={() => onDragStart("pool", i)}
             onClick={() => tapPoolItem(i)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-grab active:cursor-grabbing select-none transition-all"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-grab active:cursor-grabbing select-none transition-[background-color,border-color,transform]"
             style={{
               backgroundColor:
                 tappedPool === i ? `${accentColor}25` : `${accentColor}15`,
@@ -203,7 +203,7 @@ export default function PipelineBuilder({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => onDropSlot(i)}
                 onClick={() => placeInSlot(i)}
-                className="flex-1 rounded-xl px-3 py-2.5 text-sm transition-all cursor-pointer"
+                className="flex-1 rounded-xl px-3 py-2.5 text-sm transition-[background-color,border-color,color] cursor-pointer"
                 style={{
                   backgroundColor: slot
                     ? isCorrect
@@ -258,7 +258,7 @@ export default function PipelineBuilder({
           type="button"
           disabled={!allFilled}
           onClick={checkPipeline}
-          className="rounded-xl py-2.5 text-sm font-semibold transition-all"
+          className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
             backgroundColor: allFilled ? accentColor : "rgba(255,255,255,0.05)",
             color: allFilled ? "#0c0c14" : "var(--text-muted)",

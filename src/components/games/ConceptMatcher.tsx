@@ -97,7 +97,7 @@ export default function ConceptMatcher({
                 type="button"
                 disabled={isMatched}
                 onClick={() => handleLeftClick(item.idx)}
-                className="text-sm text-left rounded-xl px-3 py-2.5 transition-all leading-snug"
+                className="text-sm text-left rounded-xl px-3 py-2.5 transition-[background-color,border-color,color,transform] leading-snug"
                 style={{
                   backgroundColor: isMatched
                     ? "rgba(245,197,66,0.10)"
@@ -146,7 +146,7 @@ export default function ConceptMatcher({
                 type="button"
                 disabled={isMatched || selectedLeft === null}
                 onClick={() => handleRightClick(i, item.idx)}
-                className="text-sm text-left rounded-xl px-3 py-2.5 transition-all leading-snug"
+                className="text-sm text-left rounded-xl px-3 py-2.5 transition-[background-color,border-color,color,transform] leading-snug"
                 style={{
                   backgroundColor: isMatched
                     ? "rgba(245,197,66,0.10)"

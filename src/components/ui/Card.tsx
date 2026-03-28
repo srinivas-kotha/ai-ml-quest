@@ -29,7 +29,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={`
-          relative rounded-2xl transition-all duration-200
+          relative rounded-2xl transition-[background-color,border-color,box-shadow,transform] duration-200
           ${hover ? "cursor-pointer" : ""}
           ${paddingMap[padding]}
           ${className}

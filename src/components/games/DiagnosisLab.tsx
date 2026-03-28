@@ -176,7 +176,7 @@ export default function DiagnosisLab({
               type="button"
               disabled={submitted}
               onClick={() => handleAnswer(i)}
-              className="text-sm text-left rounded-xl px-4 py-3 transition-all"
+              className="text-sm text-left rounded-xl px-4 py-3 transition-[background-color,border-color,color]"
               style={{
                 backgroundColor: bg,
                 border: `1px solid ${border}`,

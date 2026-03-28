@@ -197,7 +197,7 @@ export default function CostOptimizer({
         <button
           type="button"
           onClick={handleSubmit}
-          className="rounded-xl py-2.5 text-sm font-semibold transition-all"
+          className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
             backgroundColor: allOptimal ? "var(--success)" : accentColor,
             color: "#0c0c14",

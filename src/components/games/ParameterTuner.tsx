@@ -119,7 +119,7 @@ export default function ParameterTuner({
                 )}
                 {/* Fill */}
                 <div
-                  className="h-full rounded-full transition-all duration-150"
+                  className="h-full rounded-full"
                   style={{
                     width: `${pct}%`,
                     backgroundColor: gaugeColor,
@@ -191,7 +191,7 @@ export default function ParameterTuner({
         <button
           type="button"
           onClick={handleSubmit}
-          className="rounded-xl py-2.5 text-sm font-semibold transition-all"
+          className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
             backgroundColor: accentColor,
             color: "#0c0c14",
