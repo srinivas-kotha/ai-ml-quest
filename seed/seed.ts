@@ -1,8 +1,9 @@
 /**
- * Seed script: inserts Chapter 1 (RAG Pipeline) into the database.
+ * Seed script: inserts all 5 chapters into the database.
  * Run with: npx tsx seed/seed.ts
  *
  * Requires DATABASE_URL environment variable (or .env.local).
+ * Idempotent: uses ON CONFLICT (upsert) for chapters and levels.
  */
 
 import { Pool } from "pg";
@@ -26,10 +27,10 @@ interface Level {
   level_number: number;
   title: string;
   subtitle: string;
-  hook: string;
+  hook?: string;
   game_type: string;
   game_config: Record<string, unknown>;
-  key_insight: string;
+  key_insight?: string;
   xp_reward: number;
   estimated_minutes: number;
   is_published: boolean;
@@ -53,6 +54,112 @@ interface SeedData {
   levels: Level[];
 }
 
+/**
+ * Seed a single chapter (upsert chapter + levels + learn sections).
+ * Uses a single transaction — rolls back fully on any error.
+ */
+async function seedChapter(
+  client: import("pg").PoolClient,
+  data: SeedData,
+): Promise<{ levelCount: number; sectionCount: number }> {
+  // Upsert chapter
+  const chapterResult = await client.query(
+    `INSERT INTO quest_chapters (slug, title, subtitle, description, icon, accent_color, sort_order, is_published, prerequisites)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     ON CONFLICT (slug) DO UPDATE SET
+       title = EXCLUDED.title,
+       subtitle = EXCLUDED.subtitle,
+       description = EXCLUDED.description,
+       icon = EXCLUDED.icon,
+       accent_color = EXCLUDED.accent_color,
+       sort_order = EXCLUDED.sort_order,
+       is_published = EXCLUDED.is_published,
+       prerequisites = EXCLUDED.prerequisites,
+       updated_at = NOW()
+     RETURNING id`,
+    [
+      data.chapter.slug,
+      data.chapter.title,
+      data.chapter.subtitle,
+      data.chapter.description,
+      data.chapter.icon,
+      data.chapter.accent_color,
+      data.chapter.sort_order,
+      data.chapter.is_published,
+      JSON.stringify(data.chapter.prerequisites),
+    ],
+  );
+
+  const chapterId = chapterResult.rows[0].id;
+  console.log(`  Chapter '${data.chapter.title}' upserted (id=${chapterId})`);
+
+  let totalSections = 0;
+
+  // Upsert levels
+  for (const level of data.levels) {
+    const levelResult = await client.query(
+      `INSERT INTO quest_levels (chapter_id, slug, level_number, title, subtitle, hook, game_type, game_config, key_insight, xp_reward, estimated_minutes, is_published)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (chapter_id, level_number) DO UPDATE SET
+         slug = EXCLUDED.slug,
+         title = EXCLUDED.title,
+         subtitle = EXCLUDED.subtitle,
+         hook = EXCLUDED.hook,
+         game_type = EXCLUDED.game_type,
+         game_config = EXCLUDED.game_config,
+         key_insight = EXCLUDED.key_insight,
+         xp_reward = EXCLUDED.xp_reward,
+         estimated_minutes = EXCLUDED.estimated_minutes,
+         is_published = EXCLUDED.is_published,
+         updated_at = NOW()
+       RETURNING id`,
+      [
+        chapterId,
+        level.slug,
+        level.level_number,
+        level.title,
+        level.subtitle,
+        level.hook ?? null,
+        level.game_type,
+        JSON.stringify(level.game_config),
+        level.key_insight ?? null,
+        level.xp_reward,
+        level.estimated_minutes,
+        level.is_published,
+      ],
+    );
+
+    const levelId = levelResult.rows[0].id;
+    console.log(
+      `    Level ${level.level_number}: '${level.title}' upserted (id=${levelId})`,
+    );
+
+    // Delete existing learn sections and re-insert (ordered content — simpler than granular upsert)
+    await client.query(`DELETE FROM quest_learn_sections WHERE level_id = $1`, [
+      levelId,
+    ]);
+
+    for (const section of level.learn_sections) {
+      await client.query(
+        `INSERT INTO quest_learn_sections (level_id, sort_order, section_type, title, content)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          levelId,
+          section.sort_order,
+          section.section_type,
+          section.title ?? null,
+          JSON.stringify(section.content),
+        ],
+      );
+    }
+
+    totalSections += level.learn_sections.length;
+    console.log(`      ${level.learn_sections.length} learn sections`);
+  }
+
+  return { levelCount: data.levels.length, sectionCount: totalSections };
+}
+
 async function seed() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -60,115 +167,47 @@ async function seed() {
 
   const client = await pool.connect();
 
-  try {
-    console.log("Starting seed...");
+  // All 5 chapter seed files, in sort_order
+  const seedFiles = [
+    "chapter1-rag.json",
+    "chapter2-slm.json",
+    "chapter3-monitoring.json",
+    "chapter4-finetuning.json",
+    "chapter5-multimodal.json",
+  ];
 
-    // Load seed data
-    const dataPath = path.resolve(__dirname, "chapter1-rag.json");
-    const data: SeedData = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+  try {
+    console.log("Starting seed — all 5 chapters...\n");
 
     await client.query("BEGIN");
 
-    // Upsert chapter
-    const chapterResult = await client.query(
-      `INSERT INTO quest_chapters (slug, title, subtitle, description, icon, accent_color, sort_order, is_published, prerequisites)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (slug) DO UPDATE SET
-         title = EXCLUDED.title,
-         subtitle = EXCLUDED.subtitle,
-         description = EXCLUDED.description,
-         icon = EXCLUDED.icon,
-         accent_color = EXCLUDED.accent_color,
-         sort_order = EXCLUDED.sort_order,
-         is_published = EXCLUDED.is_published,
-         prerequisites = EXCLUDED.prerequisites,
-         updated_at = NOW()
-       RETURNING id`,
-      [
-        data.chapter.slug,
-        data.chapter.title,
-        data.chapter.subtitle,
-        data.chapter.description,
-        data.chapter.icon,
-        data.chapter.accent_color,
-        data.chapter.sort_order,
-        data.chapter.is_published,
-        JSON.stringify(data.chapter.prerequisites),
-      ],
-    );
+    let totalLevels = 0;
+    let totalSections = 0;
 
-    const chapterId = chapterResult.rows[0].id;
-    console.log(`Chapter '${data.chapter.title}' upserted (id=${chapterId})`);
+    for (const filename of seedFiles) {
+      const dataPath = path.resolve(__dirname, filename);
 
-    // Upsert levels
-    for (const level of data.levels) {
-      const levelResult = await client.query(
-        `INSERT INTO quest_levels (chapter_id, slug, level_number, title, subtitle, hook, game_type, game_config, key_insight, xp_reward, estimated_minutes, is_published)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-         ON CONFLICT (chapter_id, level_number) DO UPDATE SET
-           slug = EXCLUDED.slug,
-           title = EXCLUDED.title,
-           subtitle = EXCLUDED.subtitle,
-           hook = EXCLUDED.hook,
-           game_type = EXCLUDED.game_type,
-           game_config = EXCLUDED.game_config,
-           key_insight = EXCLUDED.key_insight,
-           xp_reward = EXCLUDED.xp_reward,
-           estimated_minutes = EXCLUDED.estimated_minutes,
-           is_published = EXCLUDED.is_published,
-           updated_at = NOW()
-         RETURNING id`,
-        [
-          chapterId,
-          level.slug,
-          level.level_number,
-          level.title,
-          level.subtitle,
-          level.hook,
-          level.game_type,
-          JSON.stringify(level.game_config),
-          level.key_insight,
-          level.xp_reward,
-          level.estimated_minutes,
-          level.is_published,
-        ],
-      );
-
-      const levelId = levelResult.rows[0].id;
-      console.log(
-        `  Level ${level.level_number}: '${level.title}' upserted (id=${levelId})`,
-      );
-
-      // Delete existing learn sections and re-insert (simpler than upsert for ordered content)
-      await client.query(
-        `DELETE FROM quest_learn_sections WHERE level_id = $1`,
-        [levelId],
-      );
-
-      for (const section of level.learn_sections) {
-        await client.query(
-          `INSERT INTO quest_learn_sections (level_id, sort_order, section_type, title, content)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            levelId,
-            section.sort_order,
-            section.section_type,
-            section.title,
-            JSON.stringify(section.content),
-          ],
-        );
+      if (!fs.existsSync(dataPath)) {
+        console.warn(`  WARNING: ${filename} not found, skipping`);
+        continue;
       }
 
-      console.log(`    ${level.learn_sections.length} learn sections inserted`);
+      const data: SeedData = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+      console.log(`\nSeeding: ${filename}`);
+
+      const { levelCount, sectionCount } = await seedChapter(client, data);
+      totalLevels += levelCount;
+      totalSections += sectionCount;
     }
 
     await client.query("COMMIT");
+
     console.log(
-      `\nSeed complete: 1 chapter, ${data.levels.length} levels, ${data.levels.reduce((n, l) => n + l.learn_sections.length, 0)} learn sections`,
+      `\n✓ Seed complete: ${seedFiles.length} chapters, ${totalLevels} levels, ${totalSections} learn sections`,
     );
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Seed failed:", err);
+    console.error("Seed failed, transaction rolled back:", err);
     process.exit(1);
   } finally {
     client.release();

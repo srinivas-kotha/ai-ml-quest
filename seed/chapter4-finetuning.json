@@ -1,0 +1,389 @@
+{
+  "chapter": {
+    "slug": "fine-tuning",
+    "title": "Fine-Tuning Mastery",
+    "subtitle": "Customize foundation models for your domain without a PhD",
+    "description": "Master the complete fine-tuning stack — from LoRA math to QLoRA cost optimization, DPO alignment, dataset curation, and production deployment with vLLM and Ollama.",
+    "icon": "🔧",
+    "accent_color": "#f59e0b",
+    "sort_order": 4,
+    "is_published": true,
+    "prerequisites": []
+  },
+  "levels": [
+    {
+      "slug": "when-to-fine-tune",
+      "level_number": 1,
+      "title": "When to Fine-Tune",
+      "subtitle": "RAG vs Fine-Tune vs Hybrid — Decision Framework",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "Fine-tune for FORMAT (JSON output, writing style, classification, structured extraction). RAG for KNOWLEDGE (facts, documents, citations, live data). The decision is about what changes: if the task structure changes → fine-tune; if the facts change → RAG.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: When to Fine-Tune",
+          "content": {
+            "markdown": "<5% of production AI uses full fine-tuning. LoRA/QLoRA is the standard for 95% of cases. Knowing WHEN to fine-tune separates AI engineers from prompt engineers."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Fine-tune for FORMAT (JSON output, writing style, classification, structured extraction). RAG for KNOWLEDGE (facts, documents, citations, live data). The decision is about what changes: if the task structure changes → fine-tune; if the facts change → RAG."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "sft-fundamentals",
+      "level_number": 2,
+      "title": "SFT Fundamentals",
+      "subtitle": "Supervised Fine-Tuning — Hyperparameters That Matter",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "Flash Attention 2 delivers 3-10x faster attention computation. Learning rate is the single most critical SFT hyperparameter — too high causes catastrophic forgetting, too low means no adaptation.",
+        "parameters": []
+      },
+      "key_insight": "Start with lr=2e-5, warmup=10% of total steps, 3 epochs. Watch validation loss — when it diverges from training loss, you're overfitting. Flash Attention 2 has zero quality impact; enable it unconditionally for 3-10x speed improvement.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: SFT Fundamentals",
+          "content": {
+            "markdown": "Flash Attention 2 delivers 3-10x faster attention computation. Learning rate is the single most critical SFT hyperparameter — too high causes catastrophic forgetting, too low means no adaptation."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Start with lr=2e-5, warmup=10% of total steps, 3 epochs. Watch validation loss — when it diverges from training loss, you're overfitting. Flash Attention 2 has zero quality impact; enable it unconditionally for 3-10x speed improvement."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "lora-deep-dive",
+      "level_number": 3,
+      "title": "LoRA Deep Dive",
+      "subtitle": "The Math Behind Low-Rank Adaptation",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "W = W₀ + BA. B is (d×r), A is (r×k). With r=16, you train 0.1% of parameters while preserving 95%+ of full fine-tuning quality. The rank r controls the expressivity-efficiency tradeoff.",
+        "parameters": []
+      },
+      "key_insight": "r=16, alpha=32 (scaling factor=2x) is the universal LoRA starting point. Target all linear layers (not just attention) for a 5-10% quality boost at 2x parameter cost. Beyond r=64, quality gains are marginal — you're wasting VRAM.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: LoRA Deep Dive",
+          "content": {
+            "markdown": "W = W₀ + BA. B is (d×r), A is (r×k). With r=16, you train 0.1% of parameters while preserving 95%+ of full fine-tuning quality. The rank r controls the expressivity-efficiency tradeoff."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "r=16, alpha=32 (scaling factor=2x) is the universal LoRA starting point. Target all linear layers (not just attention) for a 5-10% quality boost at 2x parameter cost. Beyond r=64, quality gains are marginal — you're wasting VRAM."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "qlora-cost-optimizer",
+      "level_number": 4,
+      "title": "QLoRA Cost Optimizer",
+      "subtitle": "4-bit Quantized LoRA — Democratizing Fine-Tuning",
+      "game_type": "CostOptimizer",
+      "game_config": {
+        "scenario": "7B full fine-tuning = 112GB VRAM → QLoRA = 5GB. 70B full fine-tuning = 560GB VRAM → QLoRA = 46GB. NF4 (NormalFloat4) quantization is information-theoretically optimal for normally distributed neural n",
+        "budget": 100,
+        "sliders": []
+      },
+      "key_insight": "7B QLoRA on RTX 4090 (~$0.40/hr on Vast.ai) = ~$1.20 for 3 hours on 1K samples. QLoRA matches full LoRA quality with negligible degradation from the 4-bit NF4 base model. NF4 beats standard INT4 because it places quantization bins at equal-area intervals matching the normal distribution of LLM weights.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: QLoRA Cost Optimizer",
+          "content": {
+            "markdown": "7B full fine-tuning = 112GB VRAM → QLoRA = 5GB. 70B full fine-tuning = 560GB VRAM → QLoRA = 46GB. NF4 (NormalFloat4) quantization is information-theoretically optimal for normally distributed neural network weights."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "7B QLoRA on RTX 4090 (~$0.40/hr on Vast.ai) = ~$1.20 for 3 hours on 1K samples. QLoRA matches full LoRA quality with negligible degradation from the 4-bit NF4 base model. NF4 beats standard INT4 because it places quantization bins at equal-area intervals matching the normal distribution of LLM weights."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "lora-variants",
+      "level_number": 5,
+      "title": "LoRA Variants",
+      "subtitle": "DoRA, rsLoRA, LoRA+, TIES Merge, DARE Merge",
+      "game_type": "ConceptMatcher",
+      "game_config": {
+        "pairs": []
+      },
+      "key_insight": "Try LoRA+ first — it's just a hyperparameter change (set B's LR 4-16x higher than A's). Then DoRA for low-rank scenarios (r≤8). rsLoRA only matters at r≥64. Use TIES merge when combining task-specific adapters to avoid sign conflicts.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: LoRA Variants",
+          "content": {
+            "markdown": "DoRA (Weight-Decomposed LoRA, ICLR 2025) decomposes weight updates into magnitude and direction components, delivering +22% improvement at low ranks with zero inference overhead — it merges back into the base model identically."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Try LoRA+ first — it's just a hyperparameter change (set B's LR 4-16x higher than A's). Then DoRA for low-rank scenarios (r≤8). rsLoRA only matters at r≥64. Use TIES merge when combining task-specific adapters to avoid sign conflicts."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "dpo-pipeline",
+      "level_number": 6,
+      "title": "DPO Pipeline",
+      "subtitle": "Direct Preference Optimization — No Reward Model Needed",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "DPO skips Reward Model and PPO entirely. Even 2K high-quality chosen/rejected pairs can produce 5% benchmark improvement. Focus annotation budget on CHOSEN response quality — a mediocre chosen example is worse than no example.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: DPO Pipeline",
+          "content": {
+            "markdown": "DPO eliminates the separate reward model AND the PPO optimizer entirely by using a mathematically equivalent closed-form loss. Quality of CHOSEN responses is the primary driver — focus annotation budget there, not on chosen/rejected balance."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "DPO skips Reward Model and PPO entirely. Even 2K high-quality chosen/rejected pairs can produce 5% benchmark improvement. Focus annotation budget on CHOSEN response quality — a mediocre chosen example is worse than no example."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "alignment-method-selector",
+      "level_number": 7,
+      "title": "Alignment Method Selector",
+      "subtitle": "RLHF, DPO, ORPO, SimPO, GRPO — When to Use Which",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "DPO for simplicity and fast iteration. SimPO for highest benchmark quality. GRPO for reasoning enhancement (math, code, chain-of-thought). ORPO for single-stage efficiency. RLHF is legacy for teams without dedicated RL researchers.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Alignment Method Selector",
+          "content": {
+            "markdown": "The 2026 production alignment stack: SFT → DPO or SimPO (alignment) → GRPO or RLVR (reasoning). This exact sequence is used by every frontier lab including Llama 3, Qwen 2.5, and DeepSeek."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "DPO for simplicity and fast iteration. SimPO for highest benchmark quality. GRPO for reasoning enhancement (math, code, chain-of-thought). ORPO for single-stage efficiency. RLHF is legacy for teams without dedicated RL researchers."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "dataset-curation-pipeline",
+      "level_number": 8,
+      "title": "Dataset Curation Pipeline",
+      "subtitle": "The Secret Weapon — Quality over Quantity",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "Magpie synthetic generation costs 30x less than human curation. Always run benchmark contamination checks (MMLU, HumanEval, GSM8K n-gram overlap) before training — contaminated data inflates eval scores without real improvement. A 10K curated set beats 100K noisy data.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Dataset Curation Pipeline",
+          "content": {
+            "markdown": "Magpie (ICLR 2025): by prompting Llama 3 with only a user-turn token, the model auto-generates instruction-response pairs. 300K Magpie-filtered examples match the quality of 10M human-curated samples. Data quality beats data quantity every time."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Magpie synthetic generation costs 30x less than human curation. Always run benchmark contamination checks (MMLU, HumanEval, GSM8K n-gram overlap) before training — contaminated data inflates eval scores without real improvement. A 10K curated set beats 100K noisy data."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "tools-deployment",
+      "level_number": 9,
+      "title": "Tools & Deployment",
+      "subtitle": "Unsloth, Axolotl, vLLM — Production Fine-Tuning Stack",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "Two deployment paths: (1) Merge LoRA → GGUF → Ollama: simple, single-user, edge deployment. (2) Keep LoRA separate → vLLM: multiple adapters sharing one base model in memory (enterprise multi-tenant). For >3 adapters, vLLM's LoRA multiplexing beats merged-model memory overhead.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Tools & Deployment",
+          "content": {
+            "markdown": "Unsloth = single-GPU speed king (2-5x faster training via custom CUDA kernels, 70% less VRAM). Axolotl = production pipeline king (YAML-driven, multi-GPU, integrates everything). vLLM for serving multiple LoRA adapters sharing one base model simultaneously."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Two deployment paths: (1) Merge LoRA → GGUF → Ollama: simple, single-user, edge deployment. (2) Keep LoRA separate → vLLM: multiple adapters sharing one base model in memory (enterprise multi-tenant). For >3 adapters, vLLM's LoRA multiplexing beats merged-model memory overhead."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "evaluation-diagnosis",
+      "level_number": 10,
+      "title": "Evaluation & Diagnosis",
+      "subtitle": "Before/After Metrics — Catching Catastrophic Forgetting",
+      "game_type": "DiagnosisLab",
+      "game_config": {
+        "cases": []
+      },
+      "key_insight": "Fix catastrophic forgetting by mixing 20-30% general instruction data into your fine-tuning dataset. Always track MMLU, safety scores, and perplexity on general text alongside task metrics. The goal is task improvement WITH zero regression on general benchmarks.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Evaluation & Diagnosis",
+          "content": {
+            "markdown": "Always report DELTA metrics, not just final scores. Evaluate general benchmarks (MMLU, HellaSwag) alongside task-specific ones to catch catastrophic forgetting — the silent killer of fine-tuned models."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Fix catastrophic forgetting by mixing 20-30% general instruction data into your fine-tuning dataset. Always track MMLU, safety scores, and perplexity on general text alongside task metrics. The goal is task improvement WITH zero regression on general benchmarks."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "interview-gauntlet",
+      "level_number": 11,
+      "title": "Interview Gauntlet",
+      "subtitle": "Boss Level — 20 Expert Fine-Tuning Questions. Score 80% to unlock Chapter 5.",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": null,
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Interview Gauntlet",
+          "content": {
+            "markdown": "20 questions covering every dimension of production fine-tuning. These are real questions asked by AI teams at top companies. Score 16/20 (80%) to pass."
+          }
+        }
+      ]
+    }
+  ]
+}

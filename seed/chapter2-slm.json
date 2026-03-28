@@ -1,0 +1,353 @@
+{
+  "chapter": {
+    "slug": "local-slm",
+    "title": "Local SLM with Ollama",
+    "subtitle": "Run production-grade AI on your own hardware",
+    "description": "Master self-hosted LLMs with Ollama — from quantization formats to production deployment. Build AI systems that run on your own hardware for $0/month in API costs.",
+    "icon": "🧠",
+    "accent_color": "#8b5cf6",
+    "sort_order": 2,
+    "is_published": true,
+    "prerequisites": []
+  },
+  "levels": [
+    {
+      "slug": "why-local-decision-framework",
+      "level_number": 1,
+      "title": "Why Local? Decision Framework",
+      "subtitle": "When does self-hosting actually beat the cloud?",
+      "game_type": "CostOptimizer",
+      "game_config": {
+        "scenario": "At 10K requests/day, a self-hosted RTX 4090 ($1,500) pays for itself in ~2 months vs GPT-4o-mini API at $0.15/1M input tokens. Privacy (GDPR/HIPAA), sub-10ms latency, and air-gapped deployment are the",
+        "budget": 100,
+        "sliders": []
+      },
+      "key_insight": "Local wins at >5K requests/day for most open-weight models. But factor in: GPU depreciation (~$83/mo for RTX 4090 over 18 months), electricity (~$50/mo at full load), maintenance time, and operator expertise. The true break-even for a team is typically 3–8K requests/day depending on average prompt length.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Why Local? Decision Framework",
+          "content": {
+            "markdown": "At 10K requests/day, a self-hosted RTX 4090 ($1,500) pays for itself in ~2 months vs GPT-4o-mini API at $0.15/1M input tokens. Privacy (GDPR/HIPAA), sub-10ms latency, and air-gapped deployment are the other three drivers that APIs simply can't match."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Local wins at >5K requests/day for most open-weight models. But factor in: GPU depreciation (~$83/mo for RTX 4090 over 18 months), electricity (~$50/mo at full load), maintenance time, and operator expertise. The true break-even for a team is typically 3–8K requests/day depending on average prompt length."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "quantization-formats-gguf-deep-dive",
+      "level_number": 2,
+      "title": "Quantization Formats — GGUF Deep Dive",
+      "subtitle": "Q4_K_M vs Q8_0 vs FP16 — find the production sweet spot",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "GGUF Q4_K_M loses only ~0.15 perplexity points vs FP16 while using 4× less memory. Q2_K loses ~1.2 perplexity — usually unacceptable. Q8_0 is near-lossless at 0.02 perplexity loss. The 'K' suffix mean",
+        "parameters": []
+      },
+      "key_insight": "Q4_K_M is the production sweet spot for 7B–13B models: 0.15 perplexity loss is imperceptible in human evaluation, 4× VRAM reduction enables larger context or smaller GPU. Use Q8_0 when output quality is critical (legal, medical, code generation). Never ship Q2_K in production — the quality degradation is visible in coherence and factual accuracy.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Quantization Formats — GGUF Deep Dive",
+          "content": {
+            "markdown": "GGUF Q4_K_M loses only ~0.15 perplexity points vs FP16 while using 4× less memory. Q2_K loses ~1.2 perplexity — usually unacceptable. Q8_0 is near-lossless at 0.02 perplexity loss. The 'K' suffix means K-means clustering improves weight distribution within each quantization block."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Q4_K_M is the production sweet spot for 7B–13B models: 0.15 perplexity loss is imperceptible in human evaluation, 4× VRAM reduction enables larger context or smaller GPU. Use Q8_0 when output quality is critical (legal, medical, code generation). Never ship Q2_K in production — the quality degradation is visible in coherence and factual accuracy."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "llamacpp-internals",
+      "level_number": 3,
+      "title": "llama.cpp Internals",
+      "subtitle": "Match the optimization technique to what it actually does",
+      "game_type": "ConceptMatcher",
+      "game_config": {
+        "pairs": []
+      },
+      "key_insight": "KV cache is why context length drives VRAM requirements — every cached token costs memory (roughly 0.5 MB/K tokens for a 7B model). Speculative decoding gives 2–3× speed gains when the draft model (e.g., Phi-3.5-mini) agrees with the large model >70% of the time. Grammar constraints add ~15–30% latency but guarantee 100% schema compliance.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: llama.cpp Internals",
+          "content": {
+            "markdown": "llama.cpp's genius is running billion-parameter models on commodity hardware through aggressive memory optimization and hardware-specific kernels. It supports SIMD (x86 AVX-512, ARM NEON), CUDA, Metal, Vulkan, and SYCL backends — all in a single C/C++ codebase with zero external dependencies."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "KV cache is why context length drives VRAM requirements — every cached token costs memory (roughly 0.5 MB/K tokens for a 7B model). Speculative decoding gives 2–3× speed gains when the draft model (e.g., Phi-3.5-mini) agrees with the large model >70% of the time. Grammar constraints add ~15–30% latency but guarantee 100% schema compliance."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "model-selection-20252026",
+      "level_number": 4,
+      "title": "Model Selection 2025–2026",
+      "subtitle": "Match use case to the right open-weight model",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "No single model wins everything. Decision tree: <4 GB RAM → Llama 3.2 1B or Phi-3.5-mini. 8–16 GB GPU → Phi-4 14B or DeepSeek-R1-distill-14B. 24 GB → Qwen 2.5 32B or Llama 3.1 8B with long context. Coding → Qwen 2.5-Coder 32B. Multilingual → Qwen 2.5. Always benchmark on YOUR specific task and data distribution — leaderboard scores don't always translate.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Model Selection 2025–2026",
+          "content": {
+            "markdown": "The open-weight model landscape changes monthly. What matters: benchmark scores on YOUR task, context window, license constraints, and inference speed on YOUR hardware. Qwen 2.5 and DeepSeek-V3 dominated the 2025 open-weight rankings; Phi-4 leads for small-hardware reasoning."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "No single model wins everything. Decision tree: <4 GB RAM → Llama 3.2 1B or Phi-3.5-mini. 8–16 GB GPU → Phi-4 14B or DeepSeek-R1-distill-14B. 24 GB → Qwen 2.5 32B or Llama 3.1 8B with long context. Coding → Qwen 2.5-Coder 32B. Multilingual → Qwen 2.5. Always benchmark on YOUR specific task and data distribution — leaderboard scores don't always translate."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "ollama-mastery",
+      "level_number": 5,
+      "title": "Ollama Mastery",
+      "subtitle": "Debug a broken Modelfile and API call — 4 bugs to find",
+      "game_type": "CodeDebugger",
+      "game_config": {
+        "bugs": []
+      },
+      "key_insight": "Inference server trade-offs: Ollama (simplest, built-in model registry, single-user) vs vLLM (24× higher throughput via PagedAttention + continuous batching, production multi-user) vs TGI/HuggingFace (native HF ecosystem) vs llama.cpp server (most control, lowest memory, exposes raw GGUF options). Choose based on your concurrency requirements.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Ollama Mastery",
+          "content": {
+            "markdown": "Ollama wraps llama.cpp with a REST API and model registry. Your ASP.NET Web API experience transfers directly — it's just HTTP endpoints: /api/generate (raw completion), /api/chat (message history), /api/embeddings. The Modelfile is a Dockerfile-like DSL for customizing model behavior."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Inference server trade-offs: Ollama (simplest, built-in model registry, single-user) vs vLLM (24× higher throughput via PagedAttention + continuous batching, production multi-user) vs TGI/HuggingFace (native HF ecosystem) vs llama.cpp server (most control, lowest memory, exposes raw GGUF options). Choose based on your concurrency requirements."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "structured-output-pipeline",
+      "level_number": 6,
+      "title": "Structured Output Pipeline",
+      "subtitle": "Order the steps for reliable JSON from a local LLM",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "Grammar constraints (GBNF in llama.cpp) give 100% schema validity but cost 15–30% latency and require writing a grammar per schema. The layered approach — JSON mode → Pydantic validation → retry with error in the next prompt — achieves >99.5% reliability with far less overhead. Grammar constraint is your fallback for zero-tolerance systems (medical, financial).",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Structured Output Pipeline",
+          "content": {
+            "markdown": "Grammar-constrained generation guarantees schema compliance but adds ~15–30% latency. Instructor + Pydantic is the production standard: fast path uses JSON mode (95% reliable), Pydantic catches the remaining schema violations, and a retry loop with error feedback resolves the last 5%. This layered approach gives both speed and reliability."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Grammar constraints (GBNF in llama.cpp) give 100% schema validity but cost 15–30% latency and require writing a grammar per schema. The layered approach — JSON mode → Pydantic validation → retry with error in the next prompt — achieves >99.5% reliability with far less overhead. Grammar constraint is your fallback for zero-tolerance systems (medical, financial)."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "benchmarking-performance-tuning",
+      "level_number": 7,
+      "title": "Benchmarking & Performance Tuning",
+      "subtitle": "Configure a 7B deployment for optimal TTFT, throughput, and VRAM",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "TTFT (Time to First Token) is what users consciously feel — aim <200ms for interactive apps. TPS (Tokens per Second) determines throughput for document generation. For a 7B model on RTX 4090: optimal ",
+        "parameters": []
+      },
+      "key_insight": "Always offload all layers to GPU when VRAM allows — each CPU layer adds ~8ms latency penalty per generated token. Context length is the biggest VRAM consumer after model weights: 32K context on a 7B model costs ~16 MB of KV cache. Batch size >1 only helps throughput when handling concurrent requests; for single-user interactive use, keep it at 1 for lowest TTFT.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Benchmarking & Performance Tuning",
+          "content": {
+            "markdown": "TTFT (Time to First Token) is what users consciously feel — aim <200ms for interactive apps. TPS (Tokens per Second) determines throughput for document generation. For a 7B model on RTX 4090: optimal is all 33 layers on GPU, 8K context, threads equal to physical cores (not hyperthreaded)."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Always offload all layers to GPU when VRAM allows — each CPU layer adds ~8ms latency penalty per generated token. Context length is the biggest VRAM consumer after model weights: 32K context on a 7B model costs ~16 MB of KV cache. Batch size >1 only helps throughput when handling concurrent requests; for single-user interactive use, keep it at 1 for lowest TTFT."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "deployment-patterns",
+      "level_number": 8,
+      "title": "Deployment Patterns",
+      "subtitle": "Match the deployment scenario to the right architecture",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "The 80/20 deployment map: Ollama on localhost (solo dev), Ollama + Nginx + auth (team), vLLM on K8s (production >50 users). For enterprise interviews: demonstrate you know GPU scheduling in K8s — `resources.limits['nvidia.com/gpu']: 1`, nodeSelector with GPU node pool labels, and KEDA for autoscaling on queue depth. That's what separates ML engineers from ML practitioners.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Deployment Patterns",
+          "content": {
+            "markdown": "Your Docker + Kubernetes experience transfers directly to LLM serving. GPU scheduling in K8s uses nvidia.com/gpu resource requests, nvidia-container-toolkit for runtime, and toleration-based nodeSelector for GPU node pools. Horizontal scaling for stateless inference is identical to scaling a REST API."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "The 80/20 deployment map: Ollama on localhost (solo dev), Ollama + Nginx + auth (team), vLLM on K8s (production >50 users). For enterprise interviews: demonstrate you know GPU scheduling in K8s — `resources.limits['nvidia.com/gpu']: 1`, nodeSelector with GPU node pool labels, and KEDA for autoscaling on queue depth. That's what separates ML engineers from ML practitioners."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "privacy-security-audit",
+      "level_number": 9,
+      "title": "Privacy & Security Audit",
+      "subtitle": "Diagnose the critical vulnerability in this local LLM deployment",
+      "game_type": "DiagnosisLab",
+      "game_config": {
+        "cases": []
+      },
+      "key_insight": "The HIPAA local LLM checklist: (1) Never log raw prompts — scrub PHI first. (2) Encrypt model files at rest (AES-256) and verify SHA-256 checksums against model cards. (3) Prompt injection defense is mandatory — even local models follow injected instructions. (4) BAA (Business Associate Agreement) applies to cloud hosting of the LLM server even if the model is open-weight. (5) Audit logs of who queried what (without PHI content) are required.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Privacy & Security Audit",
+          "content": {
+            "markdown": "Local deployment doesn't automatically mean secure. Prompt injection attacks work identically on local models. Model supply chain attacks are real — malicious weights can be embedded in models uploaded to HuggingFace. For HIPAA-regulated workloads, the technical safeguards are explicit and non-negotiable."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "The HIPAA local LLM checklist: (1) Never log raw prompts — scrub PHI first. (2) Encrypt model files at rest (AES-256) and verify SHA-256 checksums against model cards. (3) Prompt injection defense is mandatory — even local models follow injected instructions. (4) BAA (Business Associate Agreement) applies to cloud hosting of the LLM server even if the model is open-weight. (5) Audit logs of who queried what (without PHI content) are required."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "interview-gauntlet-20-expert-questions",
+      "level_number": 10,
+      "title": "Interview Gauntlet — 20 Expert Questions",
+      "subtitle": "Score 12/20 (60%) to complete Chapter 2 and unlock Chapter 3",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": null,
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Interview Gauntlet — 20 Expert Questions",
+          "content": {
+            "markdown": "Final boss: 20 expert-level Local SLM questions. These are the exact questions that separate senior AI engineers from developers who just know how to run `ollama pull`. 45 seconds per question. Your knowledge of quantization, deployment architecture, and security will be tested."
+          }
+        }
+      ]
+    }
+  ]
+}

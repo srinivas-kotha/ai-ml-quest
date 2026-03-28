@@ -1,0 +1,458 @@
+{
+  "chapter": {
+    "slug": "multimodal-ai",
+    "title": "Real-Time Multimodal AI",
+    "subtitle": "Build sub-second voice, vision, and video pipelines",
+    "description": "Build real-time multimodal AI systems — from CLIP embeddings to voice assistants under 200ms latency, edge deployment with ONNX/TensorRT, and graceful degradation patterns.",
+    "icon": "🎯",
+    "accent_color": "#ef4444",
+    "sort_order": 5,
+    "is_published": true,
+    "prerequisites": []
+  },
+  "levels": [
+    {
+      "slug": "multimodal-landscape",
+      "level_number": 1,
+      "title": "Multimodal Landscape",
+      "subtitle": "Map the VLM ecosystem — know which model fits which job",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "LLaVA-style (encoder + projection + LLM) dominates open-source. Native multimodal (Gemini) is better but requires massive training compute. For production: Qwen-VL series is the best open-source multimodal family — Qwen2.5-VL for documents, Qwen3-VL for long context + tools, MiniCPM-o for edge.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Multimodal Landscape",
+          "content": {
+            "markdown": "LLaVA's simplicity (3 components: vision encoder + projection layer + LLM) spawned an entire VLM family. Native multimodal (Gemini) captures cross-modal interactions but costs vastly more to train. Open-source has closed the gap — Qwen-VL series dominates benchmarks while remaining self-hostable."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "LLaVA-style (encoder + projection + LLM) dominates open-source. Native multimodal (Gemini) is better but requires massive training compute. For production: Qwen-VL series is the best open-source multimodal family — Qwen2.5-VL for documents, Qwen3-VL for long context + tools, MiniCPM-o for edge."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "clip-deep-dive",
+      "level_number": 2,
+      "title": "CLIP Deep Dive",
+      "subtitle": "Match contrastive learning variants to their strengths",
+      "game_type": "ConceptMatcher",
+      "game_config": {
+        "pairs": []
+      },
+      "key_insight": "CLIP's magic: joint embedding space where image and text similarities are directly comparable. SigLIP replaces softmax with sigmoid loss — better for small batches, no need to normalize across the entire batch. OpenCLIP for custom domain training. CLIP + SAM = zero-shot segmentation of anything described in text.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: CLIP Deep Dive",
+          "content": {
+            "markdown": "CLIP enables zero-shot anything — image search, content moderation, similarity scoring — without task-specific training. Trained on 400M image-text pairs using InfoNCE contrastive loss: pull correct image-text pairs together, push wrong pairs apart in a shared embedding space."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "CLIP's magic: joint embedding space where image and text similarities are directly comparable. SigLIP replaces softmax with sigmoid loss — better for small batches, no need to normalize across the entire batch. OpenCLIP for custom domain training. CLIP + SAM = zero-shot segmentation of anything described in text."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "whisper-mastery",
+      "level_number": 3,
+      "title": "Whisper Mastery",
+      "subtitle": "Configure a production streaming speech-to-text pipeline",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "Distil-Whisper is the production standard: 6.3x faster than Whisper large-v3, 49% smaller, with fewer hallucinated repeating phrases. For real-time streaming: chunk audio with 2-second overlap to prev",
+        "parameters": []
+      },
+      "key_insight": "Streaming recipe: 10s chunks, 2s overlap, Silero VAD threshold 0.5, Distil-Whisper large-v3. WER ~3% at 6x real-time speed. The overlap window prevents word-boundary cuts that create transcription errors at chunk boundaries. VAD threshold 0.5 balances missed words vs processing empty audio.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Whisper Mastery",
+          "content": {
+            "markdown": "Distil-Whisper is the production standard: 6.3x faster than Whisper large-v3, 49% smaller, with fewer hallucinated repeating phrases. For real-time streaming: chunk audio with 2-second overlap to prevent word-boundary cuts, and use Silero VAD to skip silent segments entirely."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Streaming recipe: 10s chunks, 2s overlap, Silero VAD threshold 0.5, Distil-Whisper large-v3. WER ~3% at 6x real-time speed. The overlap window prevents word-boundary cuts that create transcription errors at chunk boundaries. VAD threshold 0.5 balances missed words vs processing empty audio."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "streaming-protocols",
+      "level_number": 4,
+      "title": "Streaming Protocols",
+      "subtitle": "Pick the right transport for every real-time AI use case",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "Decision matrix: Voice/real-time media → WebRTC (UDP, echo cancellation, jitter buffer). LLM token streaming → SSE (simplest, HTTP-native). Dashboards/notifications → SSE. Internal ML services → gRPC (binary, typed, 5-10x faster). Browser-to-browser → WebRTC only.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Streaming Protocols",
+          "content": {
+            "markdown": "WebRTC handles packet loss, echo cancellation, and jitter automatically — essential for voice AI. SSE is HTTP-native, perfect for LLM token streaming. gRPC dominates internal ML microservices with binary protocol and typed interfaces. Choose transport based on latency requirements, direction, and who's talking to whom."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Decision matrix: Voice/real-time media → WebRTC (UDP, echo cancellation, jitter buffer). LLM token streaming → SSE (simplest, HTTP-native). Dashboards/notifications → SSE. Internal ML services → gRPC (binary, typed, 5-10x faster). Browser-to-browser → WebRTC only."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "voice-assistant-architecture",
+      "level_number": 5,
+      "title": "Voice Assistant Architecture",
+      "subtitle": "Build the correct real-time voice AI pipeline in order",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "PersonaPlex achieves 205ms end-to-end latency with 100% interruption success. Pipecat is the standard open-source framework. Cost: $0.15-0.50/min (STT + LLM + TTS combined). VAD runs first to avoid transcribing silence. WebRTC transport handles jitter and echo cancellation before audio output reaches the speaker.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Voice Assistant Architecture",
+          "content": {
+            "markdown": "Voice assistant latency budget: VAD 10ms → STT 100-200ms → LLM 200-500ms → TTS 90-200ms → network 50-100ms = 450-1010ms total. Pipecat is the standard open-source framework. The hardest UX problem is barge-in: detecting user interruption while TTS is still playing."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "PersonaPlex achieves 205ms end-to-end latency with 100% interruption success. Pipecat is the standard open-source framework. Cost: $0.15-0.50/min (STT + LLM + TTS combined). VAD runs first to avoid transcribing silence. WebRTC transport handles jitter and echo cancellation before audio output reaches the speaker."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "edge-deployment",
+      "level_number": 6,
+      "title": "Edge Deployment",
+      "subtitle": "Optimize vision model deployment cost across cloud vs edge vs browser",
+      "game_type": "CostOptimizer",
+      "game_config": {
+        "scenario": "WebGPU achieved full browser support in early 2026 — running SLMs in-browser is now practical with zero inference cost. TensorRT consistently delivers 2-5x speedup over unoptimized PyTorch through ker",
+        "budget": 100,
+        "sliders": []
+      },
+      "key_insight": "TensorRT = 2-5x over PyTorch on NVIDIA GPUs (kernel fusion, quantization, graph optimization). ONNX Runtime = best cross-platform (CPU/GPU/mobile/browser). WebGPU = free inference in browser (full browser support 2026). Edge Jetson breaks even vs cloud GPU at ~3,000-5,000 requests/day. Hybrid: WebGPU for non-critical + cloud for precision-critical.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Edge Deployment",
+          "content": {
+            "markdown": "WebGPU achieved full browser support in early 2026 — running SLMs in-browser is now practical with zero inference cost. TensorRT consistently delivers 2-5x speedup over unoptimized PyTorch through kernel fusion and quantization. ONNX Runtime provides the best cross-platform compatibility."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "TensorRT = 2-5x over PyTorch on NVIDIA GPUs (kernel fusion, quantization, graph optimization). ONNX Runtime = best cross-platform (CPU/GPU/mobile/browser). WebGPU = free inference in browser (full browser support 2026). Edge Jetson breaks even vs cloud GPU at ~3,000-5,000 requests/day. Hybrid: WebGPU for non-critical + cloud for precision-critical."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "real-time-video-analysis",
+      "level_number": 7,
+      "title": "Real-Time Video Analysis",
+      "subtitle": "Build the correct camera-to-insight inference pipeline",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "YOLO26 detects in <10ms per frame (100+ FPS). SAM 2 segments at 44 FPS with video object tracking across frames. Grounded SAM 2 + DINO enables text-guided detection ('find all safety violations'). Video-LLMs (Qwen3-VL, InternVL) understand temporal context across frame sequences. Motion detection as early filter prevents YOLO from running on static frames — major GPU savings.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Real-Time Video Analysis",
+          "content": {
+            "markdown": "YOLO detects objects in <10ms per frame, SAM 2 segments anything at 44 FPS, Video-LLMs understand temporal context. Combined pipeline: detect what's there, segment precisely where it is, then describe what's happening — all in real-time video with natural language interfaces."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "YOLO26 detects in <10ms per frame (100+ FPS). SAM 2 segments at 44 FPS with video object tracking across frames. Grounded SAM 2 + DINO enables text-guided detection ('find all safety violations'). Video-LLMs (Qwen3-VL, InternVL) understand temporal context across frame sequences. Motion detection as early filter prevents YOLO from running on static frames — major GPU savings."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "gpu-multiplexing",
+      "level_number": 8,
+      "title": "GPU Multiplexing",
+      "subtitle": "Match GPU sharing strategies to the right production scenario",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "MIG = guaranteed SLA (hardware partition, memory isolation) — production models on A100/H100. Time-slicing = maximum density (90% savings, shared memory) — experiments and batch. MPS = lightweight sharing (concurrent CUDA kernels) — many small jobs. Your K8s knowledge transfers directly: nvidia.com/gpu resource requests, nodeSelector for GPU type, GPU Operator for MIG resource names.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: GPU Multiplexing",
+          "content": {
+            "markdown": "MIG (Multi-Instance GPU) partitions the GPU in hardware — up to 7 isolated instances on an A100, each with guaranteed memory and compute. Time-slicing shares GPU in software — up to 90% cost savings but no memory isolation. MPS enables concurrent CUDA kernels for lightweight embedding jobs."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "MIG = guaranteed SLA (hardware partition, memory isolation) — production models on A100/H100. Time-slicing = maximum density (90% savings, shared memory) — experiments and batch. MPS = lightweight sharing (concurrent CUDA kernels) — many small jobs. Your K8s knowledge transfers directly: nvidia.com/gpu resource requests, nodeSelector for GPU type, GPU Operator for MIG resource names."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "graceful-degradation",
+      "level_number": 9,
+      "title": "Graceful Degradation",
+      "subtitle": "Diagnose a cascading production failure in a live voice assistant",
+      "game_type": "DiagnosisLab",
+      "game_config": {
+        "cases": []
+      },
+      "key_insight": "GPU saturation (98%) caused queue buildup (847), which caused timeouts, which tripped circuit breakers. Correct fix: auto-scale GPU at 80% threshold (not 100%), alert on queue depth early, fallback chain: full model → smaller model → cached response → text-only → graceful error. Never let GPU hit 100% in production — you've lost the ability to drain the queue.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Graceful Degradation",
+          "content": {
+            "markdown": "Production AI systems MUST handle failures gracefully. Circuit breakers, fallback models, queue depth alerting — the same patterns as your microservices experience apply directly. The most common production failure mode: GPU saturation causes queue buildup, which causes timeouts, which trips circuit breakers."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "GPU saturation (98%) caused queue buildup (847), which caused timeouts, which tripped circuit breakers. Correct fix: auto-scale GPU at 80% threshold (not 100%), alert on queue depth early, fallback chain: full model → smaller model → cached response → text-only → graceful error. Never let GPU hit 100% in production — you've lost the ability to drain the queue."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "multimodal-interview-gauntlet",
+      "level_number": 10,
+      "title": "Multimodal Interview Gauntlet",
+      "subtitle": "20 expert-level multimodal AI questions — score 80% to advance",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": "You've mastered Multimodal AI. The differentiator: you understand the full stack from CLIP embeddings to WebRTC transport to GPU multiplexing to production failure patterns — not just 'I called the API'. That's the top 1% of AI engineers.",
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Multimodal Interview Gauntlet",
+          "content": {
+            "markdown": "20 expert questions covering the full multimodal stack. This is the format you'll face in Senior AI Engineer interviews. Score 80% (16/20) to complete the multimodal chapter. 45 seconds per question."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "You've mastered Multimodal AI. The differentiator: you understand the full stack from CLIP embeddings to WebRTC transport to GPU multiplexing to production failure patterns — not just 'I called the API'. That's the top 1% of AI engineers."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "capstone-systems-thinking",
+      "level_number": 11,
+      "title": "CAPSTONE: Systems Thinking",
+      "subtitle": "Design complete AI systems under real constraints — whiteboard style",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": "Systems thinking = understanding tradeoffs across the ENTIRE stack simultaneously. Cost vs latency vs quality vs scalability. The best AI engineers optimize the system, not individual components. Every architectural decision has downstream consequences — semantic cache affects model choice, model choice affects GPU requirements, GPU requirements affect SLA.",
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: CAPSTONE: Systems Thinking",
+          "content": {
+            "markdown": "Top 1% AI engineers understand from GPU kernels to user experience. This capstone tests your ability to design complete AI systems under real constraints — not just individual components. Every answer represents a system-level tradeoff decision you'll face in senior interviews."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Systems thinking = understanding tradeoffs across the ENTIRE stack simultaneously. Cost vs latency vs quality vs scalability. The best AI engineers optimize the system, not individual components. Every architectural decision has downstream consequences — semantic cache affects model choice, model choice affects GPU requirements, GPU requirements affect SLA."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "capstone-portfolio-differentiators",
+      "level_number": 12,
+      "title": "CAPSTONE: Portfolio Differentiators",
+      "subtitle": "Identify what actually makes an AI engineer portfolio stand out",
+      "game_type": "DiagnosisLab",
+      "game_config": {
+        "cases": []
+      },
+      "key_insight": "Candidate B wins because: monitoring (70% of real work), cost analysis (business awareness), before/after metrics (rigor), error handling (production experience). YOUR portfolio has all of this across 5 chapters: chunking benchmarks, semantic caching cost analysis, RAGAS evaluation, circuit breakers, GPU multiplexing, graceful degradation. That's top 1% — most candidates have none of it.",
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: CAPSTONE: Portfolio Differentiators",
+          "content": {
+            "markdown": "What hiring managers actually look for: production experience (monitoring, cost analysis, error handling), not tutorial completion. Most candidates have 10+ tutorial completions and zero production patterns. Your portfolio across these 5 chapters has ALL production patterns — most candidates have none."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Candidate B wins because: monitoring (70% of real work), cost analysis (business awareness), before/after metrics (rigor), error handling (production experience). YOUR portfolio has all of this across 5 chapters: chunking benchmarks, semantic caching cost analysis, RAGAS evaluation, circuit breakers, GPU multiplexing, graceful degradation. That's top 1% — most candidates have none of it."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "capstone-system-design-interview",
+      "level_number": 13,
+      "title": "CAPSTONE: System Design Interview",
+      "subtitle": "Final challenge — whiteboard-style questions testing all 5 chapters",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": null,
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: CAPSTONE: System Design Interview",
+          "content": {
+            "markdown": "Final challenge: 10 whiteboard-style system design questions that test everything you've learned across all 5 chapters. This is the real interview format at top AI companies. 60 seconds per question."
+          }
+        }
+      ]
+    }
+  ]
+}
