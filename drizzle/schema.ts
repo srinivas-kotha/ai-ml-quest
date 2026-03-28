@@ -1,3 +1,7 @@
+// NOTE: CHECK constraints for section_type and role are enforced by
+// postgres/migrations/001-quest-schema.sql, not in this Drizzle schema
+// (Drizzle ORM doesn't support CHECK constraints via pgTable).
+
 import {
   pgTable,
   serial,

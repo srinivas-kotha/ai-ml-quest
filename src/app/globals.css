@@ -25,6 +25,7 @@
   /* Semantic aliases */
   --background: var(--void);
   --foreground: var(--text-primary);
+  --border-hover: rgba(255, 255, 255, 0.12);
 }
 
 @theme inline {
@@ -52,10 +53,10 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+code,
+pre {
+  font-family: var(--font-mono), monospace;
 }

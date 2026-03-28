@@ -1,7 +1,21 @@
+# v1 static files — not part of Next.js build
+*.html
+shared.js
+shared.css
+.improvement-state.json
+
+# Project config
 .git
 .gitignore
-.claude
-.improvement-state.json
+.claude/
+docs/
+seed/
+postgres/
 README.md
 Dockerfile
 .dockerignore
+.env.example
+
+# Next.js build artifacts
+node_modules/
+.next/
