@@ -316,7 +316,7 @@ export default function GamePanel({
             onClick={handleRetry}
             className="mt-4 rounded-xl py-2.5 text-sm font-semibold w-full"
             style={{
-              backgroundColor: "rgba(255,255,255,0.05)",
+              backgroundColor: "var(--color-bg-surface)",
               color: "var(--color-text-secondary)",
               border: "1px solid var(--color-border)",
               transition:

@@ -68,11 +68,11 @@ export default function CodeDebugger({
       {/* Code block */}
       <div
         className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+        style={{ border: "1px solid var(--color-border)" }}
       >
         <div
           className="px-3 py-2 flex items-center gap-2"
-          style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+          style={{ backgroundColor: "var(--color-bg-surface)" }}
         >
           <span
             className="text-xs font-mono"
@@ -123,8 +123,8 @@ export default function CodeDebugger({
       {/* Options */}
       <div className="flex flex-col gap-2">
         {currentBug.options.map((opt, i) => {
-          let bg = "rgba(255,255,255,0.03)";
-          let border = "rgba(255,255,255,0.08)";
+          let bg = "var(--color-bg-surface)";
+          let border = "var(--color-border)";
           let textColor = "var(--text-secondary)";
 
           if (submitted) {

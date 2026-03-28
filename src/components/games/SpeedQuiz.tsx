@@ -111,7 +111,7 @@ export default function SpeedQuiz({
       {/* Timer bar */}
       <div
         className="h-1 rounded-full overflow-hidden"
-        style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+        style={{ backgroundColor: "var(--color-border)" }}
       >
         <div
           className="h-full rounded-full"
@@ -138,8 +138,8 @@ export default function SpeedQuiz({
       {/* Options */}
       <div className="flex flex-col gap-2">
         {currentQ.options.map((opt, i) => {
-          let bg = "rgba(255,255,255,0.03)";
-          let border = "rgba(255,255,255,0.08)";
+          let bg = "var(--color-bg-surface)";
+          let border = "var(--color-border)";
           let textColor = "var(--text-secondary)";
 
           if (answered) {
@@ -153,7 +153,7 @@ export default function SpeedQuiz({
               textColor = "var(--error)";
             }
           } else if (!answered) {
-            bg = "rgba(255,255,255,0.03)";
+            bg = "var(--color-bg-surface)";
           }
 
           return (
@@ -178,7 +178,7 @@ export default function SpeedQuiz({
                       ? "rgba(245,197,66,0.2)"
                       : i === selectedIdx
                         ? "rgba(239,68,68,0.2)"
-                        : "rgba(255,255,255,0.06)"
+                        : "var(--color-border)"
                     : `${accentColor}20`,
                   color: answered
                     ? i === currentQ.correct

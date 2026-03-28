@@ -58,12 +58,12 @@ export default function StepReveal({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {/* Header: step counter + progress bar */}
       <div
         className="px-5 pt-4 pb-3"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div className="flex items-center justify-between mb-2">
           <span
@@ -80,7 +80,7 @@ export default function StepReveal({
         {/* Thin progress bar */}
         <div
           className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+          style={{ backgroundColor: "var(--color-border)" }}
         >
           <div
             className="h-full rounded-full"
@@ -134,8 +134,8 @@ export default function StepReveal({
             <div
               className="mt-3 text-xs rounded-lg px-3 py-2"
               style={{
-                backgroundColor: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                backgroundColor: "var(--color-bg-surface)",
+                border: "1px solid var(--color-border)",
                 color: "var(--text-muted)",
               }}
             >
@@ -149,8 +149,8 @@ export default function StepReveal({
       <div
         className="flex items-center justify-between px-5 py-3"
         style={{
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          backgroundColor: "rgba(255,255,255,0.02)",
+          borderTop: "1px solid var(--color-border)",
+          backgroundColor: "var(--color-bg-surface)",
         }}
       >
         {/* Prev button */}
@@ -159,9 +159,9 @@ export default function StepReveal({
           disabled={current === 0}
           className="text-xs px-3 py-1.5 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           style={{
-            backgroundColor: "rgba(255,255,255,0.05)",
+            backgroundColor: "var(--color-bg-card)",
             color: "var(--text-secondary)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            border: "1px solid var(--color-border)",
           }}
           aria-label="Previous step"
         >
@@ -190,7 +190,7 @@ export default function StepReveal({
                     ? accentColor
                     : i < current
                       ? `rgba(${accentRgb}, 0.4)`
-                      : "rgba(255,255,255,0.15)",
+                      : "var(--color-text-muted)",
                 transition: "width 200ms ease, background-color 200ms ease",
               }}
             />
@@ -204,9 +204,9 @@ export default function StepReveal({
           className="text-xs px-3 py-1.5 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           style={{
             backgroundColor:
-              current === total - 1 ? "rgba(255,255,255,0.05)" : accentColor,
+              current === total - 1 ? "var(--color-bg-card)" : accentColor,
             color: current === total - 1 ? "var(--text-muted)" : "#fff",
-            border: `1px solid ${current === total - 1 ? "rgba(255,255,255,0.1)" : accentColor}`,
+            border: `1px solid ${current === total - 1 ? "var(--color-border)" : accentColor}`,
           }}
           aria-label={current === total - 1 ? "Last step" : "Next step"}
         >

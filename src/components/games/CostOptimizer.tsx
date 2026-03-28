@@ -69,8 +69,8 @@ export default function CostOptimizer({
           style={{
             backgroundColor: allOptimal
               ? "rgba(245,197,66,0.08)"
-              : "rgba(255,255,255,0.03)",
-            border: `1px solid ${allOptimal ? "rgba(245,197,66,0.3)" : "rgba(255,255,255,0.08)"}`,
+              : "var(--color-bg-surface)",
+            border: `1px solid ${allOptimal ? "rgba(245,197,66,0.3)" : "var(--color-border)"}`,
           }}
         >
           <span style={{ color: "var(--text-muted)" }}>Balance status</span>
@@ -123,7 +123,7 @@ export default function CostOptimizer({
               {/* Visual gauge */}
               <div
                 className="relative h-2 rounded-full"
-                style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                style={{ backgroundColor: "var(--color-border)" }}
               >
                 {/* Optimal target line */}
                 {submitted && (
@@ -213,8 +213,8 @@ export default function CostOptimizer({
         <div
           className="rounded-xl p-4 flex flex-col gap-2"
           style={{
-            backgroundColor: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border)",
           }}
         >
           <p

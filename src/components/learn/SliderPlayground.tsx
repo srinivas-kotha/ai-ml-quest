@@ -195,7 +195,8 @@ function CostCalculator({ values }: CostCalculatorProps) {
             <tr
               key={row.label}
               style={{
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                borderBottom:
+                  "1px solid var(--color-border-subtle, var(--color-border))",
                 backgroundColor: row.highlight
                   ? "rgba(245,197,66,0.06)"
                   : "transparent",
@@ -288,7 +289,7 @@ function DimensionPreview({ values, accentColor }: DimensionPreviewProps) {
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+              style={{ backgroundColor: "var(--color-border)" }}
             >
               <div
                 className="h-full rounded-full"
@@ -342,14 +343,14 @@ export default function SliderPlayground({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2.5"
         style={{
-          backgroundColor: "rgba(255,255,255,0.03)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          backgroundColor: "var(--color-bg-surface)",
+          borderBottom: "1px solid var(--color-border)",
         }}
       >
         <span
@@ -363,9 +364,9 @@ export default function SliderPlayground({
           disabled={!isDirty}
           className="text-xs px-2.5 py-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           style={{
-            backgroundColor: "rgba(255,255,255,0.05)",
+            backgroundColor: "var(--color-bg-card)",
             color: "var(--text-muted)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--color-border)",
           }}
           aria-label="Reset all sliders to defaults"
         >
@@ -378,8 +379,8 @@ export default function SliderPlayground({
         <div
           className="p-4 space-y-5 md:w-56 shrink-0"
           style={{
-            borderRight: "1px solid rgba(255,255,255,0.06)",
-            backgroundColor: "rgba(255,255,255,0.01)",
+            borderRight: "1px solid var(--color-border)",
+            backgroundColor: "var(--color-bg-surface)",
           }}
         >
           {sliders.map((slider) => {
@@ -408,7 +409,7 @@ export default function SliderPlayground({
                   {/* Track background */}
                   <div
                     className="absolute left-0 right-0 h-1.5 rounded-full"
-                    style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                    style={{ backgroundColor: "var(--color-border)" }}
                   />
                   {/* Track fill */}
                   <div

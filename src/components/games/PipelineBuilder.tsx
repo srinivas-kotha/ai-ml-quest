@@ -147,8 +147,8 @@ export default function PipelineBuilder({
       <div
         className="flex flex-wrap gap-2 p-3 rounded-xl min-h-[52px]"
         style={{
-          backgroundColor: "rgba(255,255,255,0.02)",
-          border: "1px dashed rgba(255,255,255,0.1)",
+          backgroundColor: "var(--color-bg-surface)",
+          border: "1px dashed var(--color-border)",
         }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDropPool}
@@ -211,10 +211,10 @@ export default function PipelineBuilder({
                       : isWrong
                         ? "rgba(239,68,68,0.12)"
                         : `${accentColor}10`
-                    : "rgba(255,255,255,0.03)",
+                    : "var(--color-bg-surface)",
                   border: slot
                     ? `1px solid ${isCorrect ? "var(--success)" : isWrong ? "var(--error)" : accentColor}60`
-                    : "1px dashed rgba(255,255,255,0.12)",
+                    : "1px dashed var(--color-text-muted)",
                   color: slot
                     ? isCorrect
                       ? "var(--success)"
@@ -260,7 +260,9 @@ export default function PipelineBuilder({
           onClick={checkPipeline}
           className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
-            backgroundColor: allFilled ? accentColor : "rgba(255,255,255,0.05)",
+            backgroundColor: allFilled
+              ? accentColor
+              : "var(--color-bg-surface)",
             color: allFilled ? "#0c0c14" : "var(--text-muted)",
             cursor: allFilled ? "pointer" : "not-allowed",
           }}

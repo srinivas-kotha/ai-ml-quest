@@ -86,7 +86,7 @@ export default function ArchitectureBattle({
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{
-                    backgroundColor: "rgba(255,255,255,0.05)",
+                    backgroundColor: "var(--color-bg-surface)",
                     color: "var(--text-muted)",
                   }}
                 >
@@ -106,7 +106,7 @@ export default function ArchitectureBattle({
                       ? "rgba(239,68,68,0.10)"
                       : isSelected
                         ? `${accentColor}15`
-                        : "rgba(255,255,255,0.03)",
+                        : "var(--color-bg-surface)",
                   border: `2px solid ${
                     isCorrect
                       ? "var(--success)"
@@ -114,7 +114,7 @@ export default function ArchitectureBattle({
                         ? "var(--error)"
                         : isSelected
                           ? accentColor
-                          : "rgba(255,255,255,0.08)"
+                          : "var(--color-border)"
                   }`,
                   cursor: submitted ? "default" : "pointer",
                   transform:
@@ -177,7 +177,7 @@ export default function ArchitectureBattle({
       <div className="flex sm:hidden items-center justify-center">
         <div
           className="h-px flex-1"
-          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+          style={{ backgroundColor: "var(--color-border)" }}
         />
         <span
           className="px-3 text-xs font-bold"
@@ -187,7 +187,7 @@ export default function ArchitectureBattle({
         </span>
         <div
           className="h-px flex-1"
-          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+          style={{ backgroundColor: "var(--color-border)" }}
         />
       </div>
 
@@ -202,7 +202,7 @@ export default function ArchitectureBattle({
           className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
             backgroundColor:
-              selected !== null ? accentColor : "rgba(255,255,255,0.05)",
+              selected !== null ? accentColor : "var(--color-bg-surface)",
             color: selected !== null ? "#0c0c14" : "var(--text-muted)",
             cursor: selected !== null ? "pointer" : "not-allowed",
           }}
