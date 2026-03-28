@@ -90,6 +90,18 @@ function CourseJsonLd({ chapters }: { chapters: ChapterWithCount[] }) {
   );
 }
 
+// Game types for showcase section
+const GAME_TYPES = [
+  { icon: "⚡", name: "Speed Quiz" },
+  { icon: "🔧", name: "Pipeline Builder" },
+  { icon: "🐛", name: "Code Debugger" },
+  { icon: "🔗", name: "Concept Matcher" },
+  { icon: "🎛️", name: "Parameter Tuner" },
+  { icon: "🔬", name: "Diagnosis Lab" },
+  { icon: "💰", name: "Cost Optimizer" },
+  { icon: "⚔️", name: "Architecture Battle" },
+];
+
 // Stagger delay class map
 const STAGGER = [
   "delay-1",
@@ -194,9 +206,172 @@ export default async function HubPage() {
         <StatPill value="8" label="Game Types" />
       </div>
 
+      {/* ── What is AI/ML Quest? ───────────────────────────────────── */}
+      <section className="py-16 max-w-4xl mx-auto">
+        <h2
+          className="text-3xl font-bold mb-8 text-center"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Not another course. An interactive challenge.
+        </h2>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div
+            className="p-6 rounded-2xl text-center animate-fade-up delay-1"
+            style={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div className="text-4xl mb-4">🎮</div>
+            <h3 className="text-lg font-semibold mb-2">Learn by Playing</h3>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              8 interactive game types — drag pipelines, debug code, tune
+              parameters, battle architectures. No passive video watching.
+            </p>
+          </div>
+          <div
+            className="p-6 rounded-2xl text-center animate-fade-up delay-2"
+            style={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div className="text-4xl mb-4">🏭</div>
+            <h3 className="text-lg font-semibold mb-2">
+              Production, Not Theory
+            </h3>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Real costs, real latencies, real architecture decisions. Every
+              concept includes production benchmarks and enterprise examples.
+            </p>
+          </div>
+          <div
+            className="p-6 rounded-2xl text-center animate-fade-up delay-3"
+            style={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div className="text-4xl mb-4">💼</div>
+            <h3 className="text-lg font-semibold mb-2">Interview Ready</h3>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Every level ends with a one-sentence insight you can use in
+              interviews. Built to help you land AI Engineering roles.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ──────────────────────────────────────────── */}
+      <section className="py-16 max-w-3xl mx-auto">
+        <h2
+          className="text-3xl font-bold mb-10 text-center"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          How it works
+        </h2>
+        <div className="space-y-8">
+          <div className="flex gap-6 items-start animate-fade-up delay-1">
+            <div
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
+                color: "white",
+              }}
+            >
+              1
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-1">Pick a chapter</h3>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                5 chapters covering the full AI/ML engineering stack — from RAG
+                pipelines to multimodal systems.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-6 items-start animate-fade-up delay-2">
+            <div
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
+                color: "white",
+              }}
+            >
+              2
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-1">Learn, then play</h3>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Each level starts with interactive explanations — animated
+                diagrams, annotated code, live sliders. Then test your knowledge
+                with a challenge.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-6 items-start animate-fade-up delay-3">
+            <div
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
+                color: "white",
+              }}
+            >
+              3
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-1">
+                Earn XP, track progress
+              </h3>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Complete challenges to earn XP. Sign in with GitHub to save
+                progress across devices and track your streak.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Game Types Showcase ────────────────────────────────────── */}
+      <section className="py-16 max-w-4xl mx-auto">
+        <h2
+          className="text-2xl font-bold mb-6 text-center"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          8 ways to learn
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {GAME_TYPES.map((game, i) => (
+            <div
+              key={game.name}
+              className={`p-3 rounded-xl text-center text-sm animate-fade-up ${STAGGER[i % STAGGER.length]}`}
+              style={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <span className="text-xl">{game.icon}</span>
+              <p
+                className="mt-1 font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {game.name}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Chapter Grid ──────────────────────────────────────────── */}
-      <section id="chapters">
-        <h2 className="sr-only">Chapters</h2>
+      <section id="chapters" className="pt-8">
+        <h2
+          className="text-3xl font-bold mb-8"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Chapters
+        </h2>
 
         {chapters.length === 0 ? (
           <EmptyState />
