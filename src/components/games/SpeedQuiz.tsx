@@ -114,7 +114,7 @@ export default function SpeedQuiz({
         style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
       >
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full rounded-full"
           style={{
             width: `${timerPct}%`,
             backgroundColor: timerColor,
@@ -162,7 +162,7 @@ export default function SpeedQuiz({
               type="button"
               disabled={answered}
               onClick={() => handleAnswer(i)}
-              className="flex items-center gap-3 rounded-xl p-3 text-sm text-left transition-all"
+              className="flex items-center gap-3 rounded-xl p-3 text-sm text-left transition-[background-color,border-color,color]"
               style={{
                 backgroundColor: bg,
                 border: `1px solid ${border}`,

@@ -98,7 +98,7 @@ export default function ArchitectureBattle({
                 type="button"
                 disabled={submitted}
                 onClick={() => handleSelect(i)}
-                className="w-full text-left rounded-xl p-4 flex flex-col gap-2 transition-all"
+                className="w-full text-left rounded-xl p-4 flex flex-col gap-2 transition-[background-color,border-color,transform]"
                 style={{
                   backgroundColor: isCorrect
                     ? "rgba(245,197,66,0.10)"
@@ -199,7 +199,7 @@ export default function ArchitectureBattle({
           type="button"
           disabled={selected === null}
           onClick={handleSubmit}
-          className="rounded-xl py-2.5 text-sm font-semibold transition-all"
+          className="rounded-xl py-2.5 text-sm font-semibold transition-[background-color,color]"
           style={{
             backgroundColor:
               selected !== null ? accentColor : "rgba(255,255,255,0.05)",

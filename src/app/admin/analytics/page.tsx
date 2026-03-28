@@ -193,7 +193,7 @@ export default async function AnalyticsPage() {
                   style={{ backgroundColor: "var(--card)" }}
                 >
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-[width]"
                     style={{
                       width: `${(ch.totalLevels / maxLevelCount) * 100}%`,
                       backgroundColor: "var(--rag)",

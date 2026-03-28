@@ -40,6 +40,8 @@ function ParticleBurst({
 
   useEffect(() => {
     if (!trigger) return;
+    // Respect prefers-reduced-motion — skip particle animation
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -125,6 +127,13 @@ function RollingXP({
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Respect prefers-reduced-motion — show final value immediately
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setDisplayed(target);
+      setGoldFlash(true);
+      setTimeout(() => setGoldFlash(false), 400);
+      return;
+    }
     const duration = 800;
     startRef.current = null;
     const tick = (now: number) => {
@@ -182,6 +191,11 @@ export default function LevelComplete({
   const passed = pct >= 60;
 
   useEffect(() => {
+    // Respect prefers-reduced-motion — skip entrance animation delay
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisible(true);
+      return;
+    }
     // Small delay to allow mount animation
     const t = setTimeout(() => setVisible(true), 50);
     return () => clearTimeout(t);
@@ -242,7 +256,7 @@ export default function LevelComplete({
             style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
           >
             <div
-              className="h-full rounded-full transition-all"
+              className="h-full rounded-full"
               style={{
                 width: `${pct}%`,
                 backgroundColor: accentColor,

@@ -181,7 +181,7 @@ export default function StepReveal({
               aria-selected={i === current}
               aria-label={`Step ${i + 1}: ${s.title}`}
               onClick={() => goTo(i)}
-              className="rounded-full cursor-pointer transition-all"
+              className="rounded-full cursor-pointer transition-[width,background-color]"
               style={{
                 width: i === current ? 20 : 6,
                 height: 6,

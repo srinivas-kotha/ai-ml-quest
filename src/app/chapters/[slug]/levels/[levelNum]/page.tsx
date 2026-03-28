@@ -502,7 +502,7 @@ export default async function LevelPage({
           {prevLevel ? (
             <Link
               href={`/chapters/${slug}/levels/${prevLevel.levelNumber}`}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[background-color,border-color,color] duration-150"
               style={{
                 backgroundColor: "var(--color-bg-card)",
                 border: "1px solid var(--color-border)",
@@ -530,7 +530,7 @@ export default async function LevelPage({
             // Back to chapter when on level 1
             <Link
               href={`/chapters/${slug}`}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[background-color,border-color,color] duration-150"
               style={{
                 backgroundColor: "var(--color-bg-card)",
                 border: "1px solid var(--color-border)",
@@ -558,7 +558,7 @@ export default async function LevelPage({
           {nextLevel ? (
             <Link
               href={`/chapters/${slug}/levels/${nextLevel.levelNumber}`}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[background-color,border-color,color] duration-150"
               style={{
                 backgroundColor: `${accentColor}18`,
                 border: `1px solid ${accentColor}35`,
@@ -586,7 +586,7 @@ export default async function LevelPage({
             // Chapter complete
             <Link
               href={`/chapters/${slug}`}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[background-color,border-color,color] duration-150"
               style={{
                 backgroundColor: `${accentColor}18`,
                 border: `1px solid ${accentColor}35`,
