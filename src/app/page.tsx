@@ -102,273 +102,127 @@ const GAME_TYPES = [
   { icon: "⚔️", name: "Architecture Battle" },
 ];
 
-// Stagger delay class map
-const STAGGER = [
-  "delay-1",
-  "delay-2",
-  "delay-3",
-  "delay-4",
-  "delay-5",
-  "delay-6",
+// Stagger class map — matches globals.css stagger-1..8
+const STAGGER: string[] = [
+  "stagger-1",
+  "stagger-2",
+  "stagger-3",
+  "stagger-4",
+  "stagger-5",
+  "stagger-6",
+  "stagger-7",
+  "stagger-8",
 ];
 
 export default async function HubPage() {
   const chapters = await getChaptersWithLevelCounts();
-
   const totalLevels = chapters.reduce((sum, ch) => sum + ch.levelCount, 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <CourseJsonLd chapters={chapters} />
 
-      {/* ── Hero Section ──────────────────────────────────────────── */}
+      {/* ── Hero ──────────────────────────────────────────────────── */}
       <section className="relative pt-20 pb-16 text-center">
-        {/* Ambient glow behind hero text */}
+        {/* Ambient gold glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
           style={{
             background:
-              "radial-gradient(ellipse 600px 400px at 50% 60%, rgba(79, 70, 229, 0.10) 0%, transparent 70%)",
+              "radial-gradient(ellipse 640px 420px at 50% 55%, rgba(255,184,0,0.07) 0%, transparent 70%)",
           }}
         />
 
         <div className="relative z-10">
+          {/* Eyebrow */}
           <p
-            className="text-xs font-semibold uppercase tracking-widest mb-4"
-            style={{ color: "var(--accent-teal)" }}
+            className="text-xs font-medium uppercase tracking-eyebrow mb-5"
+            style={{ color: "var(--color-accent-gold)" }}
           >
             Interactive Learning Platform
           </p>
 
+          {/* H1 */}
           <h1
-            className="text-5xl md:text-7xl font-extrabold tracking-display text-gradient mb-5"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="font-display mb-5"
+            style={{
+              fontSize: "clamp(40px, 5.5vw, 88px)",
+              fontWeight: 400,
+              letterSpacing: "-0.75px",
+              lineHeight: 1.05,
+              color: "var(--color-text-primary)",
+            }}
           >
-            AI/ML Quest
+            AI/ML{" "}
+            <em
+              style={{
+                fontStyle: "italic",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              Quest
+            </em>
           </h1>
 
+          {/* Subtitle */}
           <p
-            className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-2"
-            style={{ color: "var(--text-secondary)" }}
+            className="max-w-xl mx-auto mb-8"
+            style={{
+              fontSize: "1.25rem",
+              color: "var(--color-text-secondary)",
+              lineHeight: 1.5,
+            }}
           >
-            Master AI/ML Engineering through interactive challenges.
-          </p>
-          <p
-            className="text-base max-w-xl mx-auto"
-            style={{ color: "var(--text-muted)" }}
-          >
-            No prerequisites. No fluff. Built for engineers who ship.
+            The AI/ML course that doesn&apos;t start at &ldquo;what is a neural
+            network.&rdquo;
           </p>
 
-          <div className="mt-8 flex gap-3 justify-center flex-wrap">
-            <Link
-              href="#chapters"
-              className="px-6 py-3 rounded-xl font-semibold text-white text-sm transition-all duration-200"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
-                boxShadow: "0 0 24px rgba(20, 184, 166, 0.25)",
-              }}
-            >
-              Start Learning
+          {/* CTA row */}
+          <div className="flex gap-3 justify-center flex-wrap mb-10">
+            <Link href="#chapters" className="btn-3d">
+              Start Free →
             </Link>
-            <Link
-              href="/api/auth/signin"
-              className="px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200"
-              style={{
-                border: "1px solid var(--border-hover)",
-                color: "var(--text-secondary)",
-                backgroundColor: "rgba(255,255,255,0.02)",
-                textDecoration: "none",
-              }}
-            >
-              Sign in with GitHub
+            <Link href="#chapters" className="btn-ghost">
+              View Syllabus
             </Link>
           </div>
-        </div>
-      </section>
 
-      {/* ── Stats Row ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-10 md:gap-16 mb-16">
-        <StatPill value={String(totalLevels || 54)} label="Levels" />
-        <div
-          className="w-px h-8"
-          style={{ backgroundColor: "var(--border-hover)" }}
-          aria-hidden="true"
-        />
-        <StatPill value="5" label="Chapters" />
-        <div
-          className="w-px h-8"
-          style={{ backgroundColor: "var(--border-hover)" }}
-          aria-hidden="true"
-        />
-        <StatPill value="8" label="Game Types" />
-      </div>
+          {/* Stats */}
+          <div className="flex items-center justify-center gap-8 md:gap-12 mb-10">
+            <StatPill value={String(totalLevels || 54)} label="Levels" />
+            <div
+              className="w-px h-8 hidden sm:block"
+              style={{ backgroundColor: "var(--color-border)" }}
+              aria-hidden="true"
+            />
+            <StatPill value="5" label="Chapters" />
+            <div
+              className="w-px h-8 hidden sm:block"
+              style={{ backgroundColor: "var(--color-border)" }}
+              aria-hidden="true"
+            />
+            <StatPill value="8" label="Game Types" />
+          </div>
 
-      {/* ── What is AI/ML Quest? ───────────────────────────────────── */}
-      <section className="py-16 max-w-4xl mx-auto">
-        <h2
-          className="text-3xl font-bold mb-8 text-center"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Not another course. An interactive challenge.
-        </h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div
-            className="p-6 rounded-2xl text-center animate-fade-up delay-1"
-            style={{
-              backgroundColor: "var(--card)",
-              border: "1px solid var(--border)",
-            }}
+          {/* Logo strip */}
+          <p
+            className="text-xs tracking-wide"
+            style={{ color: "var(--color-text-muted)", opacity: 0.6 }}
           >
-            <div className="text-4xl mb-4">🎮</div>
-            <h3 className="text-lg font-semibold mb-2">Learn by Playing</h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              8 interactive game types — drag pipelines, debug code, tune
-              parameters, battle architectures. No passive video watching.
-            </p>
-          </div>
-          <div
-            className="p-6 rounded-2xl text-center animate-fade-up delay-2"
-            style={{
-              backgroundColor: "var(--card)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div className="text-4xl mb-4">🏭</div>
-            <h3 className="text-lg font-semibold mb-2">
-              Production, Not Theory
-            </h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Real costs, real latencies, real architecture decisions. Every
-              concept includes production benchmarks and enterprise examples.
-            </p>
-          </div>
-          <div
-            className="p-6 rounded-2xl text-center animate-fade-up delay-3"
-            style={{
-              backgroundColor: "var(--card)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div className="text-4xl mb-4">💼</div>
-            <h3 className="text-lg font-semibold mb-2">Interview Ready</h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Every level ends with a one-sentence insight you can use in
-              interviews. Built to help you land AI Engineering roles.
-            </p>
-          </div>
+            Built for engineers working with:{" "}
+            <span className="font-medium">
+              HuggingFace · LangChain · PyTorch · Ollama · pgvector
+            </span>
+          </p>
         </div>
       </section>
 
-      {/* ── How It Works ──────────────────────────────────────────── */}
-      <section className="py-16 max-w-3xl mx-auto">
+      {/* ── Chapter Bento Grid ────────────────────────────────────── */}
+      <section id="chapters" className="pt-6 pb-4">
         <h2
-          className="text-3xl font-bold mb-10 text-center"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          How it works
-        </h2>
-        <div className="space-y-8">
-          <div className="flex gap-6 items-start animate-fade-up delay-1">
-            <div
-              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
-                color: "white",
-              }}
-            >
-              1
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-1">Pick a chapter</h3>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                5 chapters covering the full AI/ML engineering stack — from RAG
-                pipelines to multimodal systems.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-6 items-start animate-fade-up delay-2">
-            <div
-              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
-                color: "white",
-              }}
-            >
-              2
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-1">Learn, then play</h3>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                Each level starts with interactive explanations — animated
-                diagrams, annotated code, live sliders. Then test your knowledge
-                with a challenge.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-6 items-start animate-fade-up delay-3">
-            <div
-              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--accent-teal), var(--accent-indigo))",
-                color: "white",
-              }}
-            >
-              3
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-1">
-                Earn XP, track progress
-              </h3>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                Complete challenges to earn XP. Sign in with GitHub to save
-                progress across devices and track your streak.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Game Types Showcase ────────────────────────────────────── */}
-      <section className="py-16 max-w-4xl mx-auto">
-        <h2
-          className="text-2xl font-bold mb-6 text-center"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          8 ways to learn
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {GAME_TYPES.map((game, i) => (
-            <div
-              key={game.name}
-              className={`p-3 rounded-xl text-center text-sm animate-fade-up ${STAGGER[i % STAGGER.length]}`}
-              style={{
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <span className="text-xl">{game.icon}</span>
-              <p
-                className="mt-1 font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                {game.name}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Chapter Grid ──────────────────────────────────────────── */}
-      <section id="chapters" className="pt-8">
-        <h2
-          className="text-3xl font-bold mb-8"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="font-display text-3xl mb-8"
+          style={{ fontWeight: 400, letterSpacing: "-0.02em" }}
         >
           Chapters
         </h2>
@@ -376,7 +230,7 @@ export default async function HubPage() {
         {chapters.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
+          <div className="chapter-bento-grid">
             {chapters.map((chapter, i) => {
               const accentColor =
                 CHAPTER_ACCENT[chapter.slug] ??
@@ -387,12 +241,16 @@ export default async function HubPage() {
                 : [];
               const isLocked = false;
               const isFeatured = i === 0;
+              // Last chapter (capstone) gets span-2 as well
+              const isCapstone =
+                i === chapters.length - 1 && chapters.length > 1;
 
               return (
                 <div
                   key={chapter.id}
-                  className={`animate-fade-up ${STAGGER[i] ?? ""}`}
-                  style={isFeatured ? { gridColumn: "span 2" } : undefined}
+                  className={`animate-fade-up ${STAGGER[i] ?? ""} ${
+                    isFeatured ? "bento-featured" : ""
+                  } ${isCapstone ? "bento-capstone" : ""}`}
                 >
                   <ChapterCard
                     chapter={chapter}
@@ -409,6 +267,127 @@ export default async function HubPage() {
         )}
       </section>
 
+      {/* ── Second CTA ────────────────────────────────────────────── */}
+      <div className="text-center py-12">
+        <Link href="#chapters" className="btn-3d">
+          Start Learning →
+        </Link>
+      </div>
+
+      {/* ── How It Works ──────────────────────────────────────────── */}
+      <section className="py-16 max-w-4xl mx-auto">
+        <h2
+          className="font-display text-center mb-12"
+          style={{
+            fontSize: "clamp(1.75rem, 3vw, 2.25rem)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          How it works
+        </h2>
+
+        <div className="how-it-works-grid">
+          {/* Step 1 */}
+          <HowItWorksStep
+            number="1"
+            title="Pick a Level"
+            body="Choose from 54 levels across 5 chapters covering the full AI/ML engineering stack — from RAG pipelines to multimodal systems."
+            delay="stagger-1"
+          />
+
+          {/* Dashed connector */}
+          <div className="how-it-works-connector" aria-hidden="true" />
+
+          {/* Step 2 */}
+          <HowItWorksStep
+            number="2"
+            title="Learn &amp; Play"
+            body="Each level teaches a concept with interactive diagrams, annotated code, and live sliders — then tests you with a hands-on challenge."
+            delay="stagger-2"
+          />
+
+          {/* Dashed connector */}
+          <div className="how-it-works-connector" aria-hidden="true" />
+
+          {/* Step 3 */}
+          <HowItWorksStep
+            number="3"
+            title="Master AI/ML"
+            body="Build real skills you can use in production and articulate in interviews. Every level ends with a one-sentence insight to own."
+            delay="stagger-3"
+          />
+        </div>
+      </section>
+
+      {/* ── 8 Ways to Learn ───────────────────────────────────────── */}
+      <section className="py-16 max-w-4xl mx-auto">
+        <h2
+          className="font-display text-center mb-8"
+          style={{
+            fontSize: "clamp(1.75rem, 3vw, 2.25rem)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          8 ways to learn
+        </h2>
+
+        <div className="game-types-grid">
+          {GAME_TYPES.map((game, i) => (
+            <div
+              key={game.name}
+              className={`game-type-tile animate-fade-up ${STAGGER[i]}`}
+            >
+              <span className="game-type-icon" aria-hidden="true">
+                {game.icon}
+              </span>
+              <p
+                className="text-sm font-medium mt-2"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                {game.name}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── What is AI/ML Quest? (Value Props) ────────────────────── */}
+      <section className="py-16 max-w-4xl mx-auto">
+        <h2
+          className="font-display text-center mb-10"
+          style={{
+            fontSize: "clamp(1.75rem, 3vw, 2.25rem)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Not another course. An interactive challenge.
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          <ValuePropCard
+            icon="🎮"
+            title="Learn by Playing"
+            body="8 interactive game types — drag pipelines, debug code, tune parameters, battle architectures. No passive video watching."
+            delay="stagger-1"
+          />
+          <ValuePropCard
+            icon="🏭"
+            title="Production, Not Theory"
+            body="Real costs, real latencies, real architecture decisions. Every concept includes production benchmarks and enterprise examples."
+            delay="stagger-2"
+          />
+          <ValuePropCard
+            icon="💼"
+            title="Interview Ready"
+            body="Every level ends with a one-sentence insight you can use in interviews. Built to help you land AI Engineering roles."
+            delay="stagger-3"
+          />
+        </div>
+      </section>
+
       {/* ── Guest sign-in banner ──────────────────────────────────── */}
       <GuestSignInBanner />
 
@@ -418,18 +397,102 @@ export default async function HubPage() {
   );
 }
 
+/* ── Sub-components ────────────────────────────────────────────── */
+
 function StatPill({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
       <div
-        className="text-3xl font-extrabold text-gradient"
-        style={{ fontFamily: "var(--font-display)" }}
+        className="font-display"
+        style={{
+          fontSize: "2rem",
+          fontWeight: 700,
+          color: "var(--color-accent-gold)",
+          lineHeight: 1,
+        }}
       >
         {value}
       </div>
-      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+      <div
+        className="text-xs mt-1"
+        style={{ color: "var(--color-text-muted)" }}
+      >
         {label}
       </div>
+    </div>
+  );
+}
+
+function HowItWorksStep({
+  number,
+  title,
+  body,
+  delay,
+}: {
+  number: string;
+  title: string;
+  body: string;
+  delay: string;
+}) {
+  return (
+    <div className={`how-it-works-step animate-fade-up ${delay}`}>
+      {/* Step badge */}
+      <div
+        className="font-display flex items-center justify-center w-12 h-12 rounded-full text-xl font-bold mb-4 mx-auto lg:mx-0 flex-shrink-0"
+        style={{
+          backgroundColor: "var(--color-accent-gold)",
+          color: "#1a1a2e",
+          fontWeight: 700,
+        }}
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: number }}
+      />
+      <h3
+        className="font-display text-lg mb-2 text-center lg:text-left"
+        style={{ fontWeight: 600, letterSpacing: "-0.01em" }}
+      >
+        {title}
+      </h3>
+      <p
+        className="text-sm text-center lg:text-left"
+        style={{ color: "var(--color-text-secondary)", lineHeight: 1.6 }}
+        dangerouslySetInnerHTML={{ __html: body }}
+      />
+    </div>
+  );
+}
+
+function ValuePropCard({
+  icon,
+  title,
+  body,
+  delay,
+}: {
+  icon: string;
+  title: string;
+  body: string;
+  delay: string;
+}) {
+  return (
+    <div
+      className={`value-prop-card animate-fade-up ${delay}`}
+      style={{
+        backgroundColor: "var(--color-bg-card)",
+        border: "1px solid var(--color-border)",
+      }}
+    >
+      <div className="value-prop-icon" aria-hidden="true">
+        {icon}
+      </div>
+      <h3
+        className="font-display text-lg mb-2"
+        style={{ fontWeight: 600, letterSpacing: "-0.01em" }}
+      >
+        {title}
+      </h3>
+      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+        {body}
+      </p>
     </div>
   );
 }
@@ -439,18 +502,18 @@ function EmptyState() {
     <div
       className="rounded-2xl p-16 text-center"
       style={{
-        backgroundColor: "var(--card)",
-        border: "1px solid var(--border)",
+        backgroundColor: "var(--color-bg-card)",
+        border: "1px solid var(--color-border)",
       }}
     >
       <div className="text-5xl mb-4">🚧</div>
       <h2
         className="text-lg font-semibold mb-2"
-        style={{ color: "var(--text-primary)" }}
+        style={{ color: "var(--color-text-primary)" }}
       >
         Content loading
       </h2>
-      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
         Chapters will appear once the database is seeded.
       </p>
     </div>
@@ -463,30 +526,34 @@ function GuestSignInBanner() {
       className="mt-12 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background:
-          "linear-gradient(135deg, rgba(20, 184, 166, 0.05) 0%, rgba(79, 70, 229, 0.05) 100%)",
-        border: "1px solid rgba(20, 184, 166, 0.15)",
+          "linear-gradient(135deg, rgba(255,184,0,0.06) 0%, rgba(79,70,229,0.06) 100%)",
+        border: "1px solid rgba(255,184,0,0.15)",
       }}
     >
       <div>
         <p
           className="text-sm font-semibold"
-          style={{ color: "var(--text-primary)" }}
+          style={{ color: "var(--color-text-primary)" }}
         >
           Sync your progress across devices
         </p>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+        <p
+          className="text-xs mt-1"
+          style={{ color: "var(--color-text-muted)" }}
+        >
           Sign in with GitHub — free forever, no tracking.
         </p>
       </div>
       <Link
         href="/api/auth/signin"
-        className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
+        className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold"
         style={{
           background:
-            "linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(79, 70, 229, 0.15))",
-          color: "var(--accent-teal)",
-          border: "1px solid rgba(20, 184, 166, 0.25)",
+            "linear-gradient(135deg, rgba(255,184,0,0.15), rgba(79,70,229,0.15))",
+          color: "var(--color-accent-gold)",
+          border: "1px solid rgba(255,184,0,0.25)",
           textDecoration: "none",
+          transition: "border-color 200ms ease-out, color 200ms ease-out",
         }}
       >
         Sign in free

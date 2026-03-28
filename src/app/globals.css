@@ -495,6 +495,173 @@ h3 {
 }
 
 /* ============================================================
+   GHOST BUTTON
+   ============================================================ */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  transition:
+    border-color 200ms ease-out,
+    color 200ms ease-out;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-accent-gold);
+  color: var(--color-accent-gold);
+}
+
+/* ============================================================
+   CHAPTER BENTO GRID
+   ============================================================ */
+.chapter-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .chapter-bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .chapter-bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .chapter-bento-grid .bento-featured {
+    grid-column: span 2;
+  }
+
+  .chapter-bento-grid .bento-capstone {
+    grid-column: span 2;
+  }
+}
+
+/* ============================================================
+   HOW IT WORKS LAYOUT
+   ============================================================ */
+.how-it-works-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.how-it-works-step {
+  text-align: center;
+  max-width: 260px;
+  width: 100%;
+}
+
+.how-it-works-connector {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .how-it-works-grid {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .how-it-works-step {
+    text-align: left;
+    flex: 1;
+    max-width: none;
+    padding: 0 1.5rem;
+  }
+
+  .how-it-works-connector {
+    display: block;
+    flex-shrink: 0;
+    width: 40px;
+    margin-top: 1.5rem;
+    border-top: 2px dashed var(--color-border);
+    align-self: flex-start;
+  }
+}
+
+/* ============================================================
+   GAME TYPES GRID
+   ============================================================ */
+.game-types-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .game-types-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.game-type-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0.75rem;
+  border-radius: 14px;
+  text-align: center;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  transition:
+    border-color 200ms ease-out,
+    background-color 200ms ease-out;
+}
+
+.game-type-tile:hover {
+  border-color: var(--color-accent-gold);
+}
+
+.game-type-tile:hover .game-type-icon {
+  transform: scale(1.1);
+}
+
+.game-type-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  display: block;
+  transition: transform 200ms ease-out;
+}
+
+/* ============================================================
+   VALUE PROP CARDS
+   ============================================================ */
+.value-prop-card {
+  padding: 1.5rem;
+  border-radius: 16px;
+  transition:
+    background-color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+
+.value-prop-card:hover {
+  background-color: var(--color-bg-card-hover) !important;
+  border-color: var(--color-border) !important;
+}
+
+.value-prop-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* ============================================================
    REDUCED MOTION
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
