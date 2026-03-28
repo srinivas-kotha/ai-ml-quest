@@ -144,7 +144,7 @@ function GameRenderer({
       );
     default:
       return (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
           Unknown game type: {gameType}
         </p>
       );
@@ -245,8 +245,13 @@ export default function GamePanel({
   return (
     <>
       <div
-        className="glass-panel p-6 flex flex-col"
-        style={{ borderTop: `2px solid ${color}` }}
+        className="p-6 flex flex-col"
+        style={{
+          backgroundColor: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "16px",
+          borderTop: `4px solid ${color}`,
+        }}
       >
         {/* Game type header */}
         <div className="flex items-center gap-3 mb-5">
@@ -262,13 +267,16 @@ export default function GamePanel({
           <div className="min-w-0">
             <h3
               className="font-semibold text-sm truncate"
-              style={{ color: "var(--text-primary)" }}
+              style={{ color: "var(--color-text-primary)" }}
             >
               {levelTitle ? `${levelTitle}` : label}
             </h3>
             <p
-              className="text-xs mt-0.5 line-clamp-1"
-              style={{ color: "var(--text-muted)" }}
+              className="text-xs mt-0.5 line-clamp-1 uppercase"
+              style={{
+                color: "var(--color-text-muted)",
+                letterSpacing: "1px",
+              }}
             >
               {description}
             </p>
@@ -306,11 +314,13 @@ export default function GamePanel({
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-4 rounded-xl py-2.5 text-sm font-semibold w-full transition-all"
+            className="mt-4 rounded-xl py-2.5 text-sm font-semibold w-full"
             style={{
               backgroundColor: "rgba(255,255,255,0.05)",
-              color: "var(--text-secondary)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              color: "var(--color-text-secondary)",
+              border: "1px solid var(--color-border)",
+              transition:
+                "background-color 150ms ease, border-color 150ms ease",
             }}
           >
             Try Again
