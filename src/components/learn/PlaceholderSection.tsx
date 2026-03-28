@@ -15,6 +15,9 @@ const SECTION_LABELS: Record<SectionType, string> = {
   steps: "Step-by-Step Reveal",
   playground: "Interactive Playground",
   callout: "Callout",
+  analogy: "Analogy Panel",
+  exploration: "Interactive Exploration",
+  prediction: "Prediction Prompt",
 };
 
 const SECTION_DESCRIPTIONS: Partial<Record<SectionType, string>> = {
