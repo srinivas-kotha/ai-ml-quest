@@ -77,11 +77,44 @@ async function getChaptersWithLevelCounts(): Promise<ChapterWithCount[]> {
   }
 }
 
+function CourseJsonLd({ chapters }: { chapters: ChapterWithCount[] }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: "AI/ML Quest",
+    description:
+      "Interactive AI/ML learning platform for enterprise engineers pivoting to AI. Master RAG, fine-tuning, local SLMs, monitoring, and multimodal AI through hands-on challenges.",
+    url: "https://quest.srinivaskotha.uk",
+    provider: {
+      "@type": "Person",
+      name: "Srinivas Kotha",
+      url: "https://srinivaskotha.uk",
+    },
+    educationalLevel: "Advanced",
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    hasCourseInstance: chapters.map((ch) => ({
+      "@type": "CourseInstance",
+      name: ch.title,
+      description: ch.subtitle ?? undefined,
+      url: `https://quest.srinivaskotha.uk/chapters/${ch.slug}`,
+    })),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
 export default async function HubPage() {
   const chapters = await getChaptersWithLevelCounts();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <CourseJsonLd chapters={chapters} />
       {/* Header */}
       <div className="mb-10">
         <h1 className="mb-2" style={{ color: "var(--text-primary)" }}>

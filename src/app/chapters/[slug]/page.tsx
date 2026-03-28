@@ -3,6 +3,7 @@ import { questChapters, questLevels } from "../../../../drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Badge from "@/components/ui/Badge";
 
 export const revalidate = 3600;
@@ -26,6 +27,47 @@ const GAME_TYPE_LABELS: Record<string, string> = {
   CostOptimizer: "Cost Optimizer",
   ArchitectureBattle: "Architecture Battle",
 };
+
+// Per-chapter metadata
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const [chapter] = await db
+      .select({
+        title: questChapters.title,
+        subtitle: questChapters.subtitle,
+        description: questChapters.description,
+      })
+      .from(questChapters)
+      .where(
+        and(eq(questChapters.slug, slug), eq(questChapters.isPublished, true)),
+      )
+      .limit(1);
+
+    if (!chapter) return {};
+
+    const description =
+      chapter.description ??
+      chapter.subtitle ??
+      `Learn ${chapter.title} through interactive challenges on AI/ML Quest.`;
+
+    return {
+      title: chapter.title,
+      description,
+      openGraph: {
+        title: `${chapter.title} | AI/ML Quest`,
+        description,
+        url: `https://quest.srinivaskotha.uk/chapters/${slug}`,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
 
 // Slugs of all published chapters (for generateStaticParams)
 export async function generateStaticParams() {

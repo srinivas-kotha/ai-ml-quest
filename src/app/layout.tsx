@@ -17,15 +17,34 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI/ML Quest",
-  description:
-    "Interactive AI/ML learning platform for enterprise engineers pivoting to AI. Master RAG, fine-tuning, monitoring, and more through hands-on challenges.",
-  openGraph: {
-    title: "AI/ML Quest",
-    description:
-      "Enterprise-framed AI/ML learning for engineers who already know backend systems.",
-    type: "website",
+  title: {
+    default: "AI/ML Quest — Interactive AI/ML Learning",
+    template: "%s | AI/ML Quest",
   },
+  description:
+    "Master AI/ML Engineering through interactive challenges. Built for enterprise engineers pivoting to AI.",
+  keywords: [
+    "AI",
+    "ML",
+    "machine learning",
+    "RAG",
+    "fine-tuning",
+    "LLM",
+    "interactive learning",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "AI/ML Quest",
+    title: "AI/ML Quest — Interactive AI/ML Learning",
+    description: "Master AI/ML Engineering through interactive challenges",
+    url: "https://quest.srinivaskotha.uk",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI/ML Quest",
+    description: "Master AI/ML Engineering through interactive challenges",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
