@@ -1,13 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { GameType, GameConfig } from "@/types/content";
+import { saveGuestProgress } from "@/lib/guest-progress";
+import LevelComplete from "@/components/hud/LevelComplete";
+
+// ── Individual game components ─────────────────────────────────────────────
+import SpeedQuiz from "./SpeedQuiz";
+import PipelineBuilder from "./PipelineBuilder";
+import CodeDebugger from "./CodeDebugger";
+import ConceptMatcher from "./ConceptMatcher";
+import ParameterTuner from "./ParameterTuner";
+import DiagnosisLab from "./DiagnosisLab";
+import CostOptimizer from "./CostOptimizer";
+import ArchitectureBattle from "./ArchitectureBattle";
+
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface GamePanelProps {
   gameType: GameType;
   gameConfig: GameConfig;
   accentColor?: string;
   levelTitle?: string;
+  // New props for completion flow (optional — backwards compatible)
+  levelId?: number;
+  chapterId?: number;
+  xpReward?: number;
+  keyInsight?: string | null;
+  chapterSlug?: string;
+  nextLevelUrl?: string | null;
+  backUrl?: string;
+  isAuthenticated?: boolean;
 }
 
 const GAME_TYPE_LABELS: Record<GameType, string> = {
@@ -24,7 +47,7 @@ const GAME_TYPE_LABELS: Record<GameType, string> = {
 const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
   SpeedQuiz: "Answer multiple-choice questions under the clock",
   PipelineBuilder: "Drag and drop pipeline steps into the correct order",
-  CodeDebugger: "Identify and fix bugs in production code snippets",
+  CodeDebugger: "Identify bugs in production code snippets",
   ConceptMatcher: "Match AI/ML concepts to their correct definitions",
   ParameterTuner: "Adjust model parameters and optimize for the target metric",
   DiagnosisLab: "Analyze metrics dashboards and diagnose system issues",
@@ -43,128 +66,273 @@ const GAME_TYPE_ICONS: Record<GameType, string> = {
   ArchitectureBattle: "⚔️",
 };
 
+// ── Game renderer switch ────────────────────────────────────────────────────
+
+interface GameRendererProps {
+  gameType: GameType;
+  gameConfig: GameConfig;
+  accentColor: string;
+  onComplete: (score: number, maxScore: number) => void;
+}
+
+function GameRenderer({
+  gameType,
+  gameConfig,
+  accentColor,
+  onComplete,
+}: GameRendererProps) {
+  const commonProps = { accentColor, onComplete };
+
+  switch (gameType) {
+    case "SpeedQuiz":
+      return (
+        <SpeedQuiz
+          config={gameConfig as import("@/types/content").SpeedQuizConfig}
+          {...commonProps}
+        />
+      );
+    case "PipelineBuilder":
+      return (
+        <PipelineBuilder
+          config={gameConfig as import("@/types/content").PipelineBuilderConfig}
+          {...commonProps}
+        />
+      );
+    case "CodeDebugger":
+      return (
+        <CodeDebugger
+          config={gameConfig as import("@/types/content").CodeDebuggerConfig}
+          {...commonProps}
+        />
+      );
+    case "ConceptMatcher":
+      return (
+        <ConceptMatcher
+          config={gameConfig as import("@/types/content").ConceptMatcherConfig}
+          {...commonProps}
+        />
+      );
+    case "ParameterTuner":
+      return (
+        <ParameterTuner
+          config={gameConfig as import("@/types/content").ParameterTunerConfig}
+          {...commonProps}
+        />
+      );
+    case "DiagnosisLab":
+      return (
+        <DiagnosisLab
+          config={gameConfig as import("@/types/content").DiagnosisLabConfig}
+          {...commonProps}
+        />
+      );
+    case "CostOptimizer":
+      return (
+        <CostOptimizer
+          config={gameConfig as import("@/types/content").CostOptimizerConfig}
+          {...commonProps}
+        />
+      );
+    case "ArchitectureBattle":
+      return (
+        <ArchitectureBattle
+          config={
+            gameConfig as import("@/types/content").ArchitectureBattleConfig
+          }
+          {...commonProps}
+        />
+      );
+    default:
+      return (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Unknown game type: {gameType}
+        </p>
+      );
+  }
+}
+
+// ── Main GamePanel ──────────────────────────────────────────────────────────
+
 export default function GamePanel({
   gameType,
   gameConfig,
   accentColor,
   levelTitle,
+  levelId,
+  chapterId,
+  xpReward = 100,
+  keyInsight,
+  chapterSlug,
+  nextLevelUrl,
+  backUrl,
+  isAuthenticated = false,
 }: GamePanelProps) {
-  const [showConfig, setShowConfig] = useState(false);
-
+  const color = accentColor ?? "var(--rag)";
   const label = GAME_TYPE_LABELS[gameType] ?? gameType;
   const description = GAME_TYPE_DESCRIPTIONS[gameType] ?? "";
   const icon = GAME_TYPE_ICONS[gameType] ?? "🎮";
-  const color = accentColor ?? "var(--rag)";
+
+  const [gameKey, setGameKey] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [finalMaxScore, setFinalMaxScore] = useState(1);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const startTimeRef = useRef<number>(Date.now());
+
+  const computedBackUrl =
+    backUrl ?? (chapterSlug ? `/chapters/${chapterSlug}` : "/");
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+  }, [gameKey]);
+
+  const handleComplete = async (score: number, maxScore: number) => {
+    if (completed) return;
+    setCompleted(true);
+    setFinalScore(score);
+    setFinalMaxScore(maxScore);
+
+    const timeSpentSeconds = Math.round(
+      (Date.now() - startTimeRef.current) / 1000,
+    );
+
+    // Save progress
+    if (levelId !== undefined) {
+      const progressData = {
+        levelId,
+        chapterId: chapterId ?? 0,
+        completed: true,
+        score,
+        maxScore,
+        attempts: 1,
+        timeSpentSeconds,
+        completedAt: new Date().toISOString(),
+      };
+
+      if (isAuthenticated) {
+        // POST to API for authenticated users
+        try {
+          await fetch("/api/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              level_id: levelId,
+              score,
+              max_score: maxScore,
+              time_spent_seconds: timeSpentSeconds,
+            }),
+          });
+        } catch {
+          // Silently fall back to guest storage
+          saveGuestProgress(progressData);
+        }
+      } else {
+        saveGuestProgress(progressData);
+      }
+    }
+
+    // Show completion modal with small delay for animation readiness
+    setTimeout(() => setShowCompletion(true), 300);
+  };
+
+  const handleRetry = () => {
+    setCompleted(false);
+    setShowCompletion(false);
+    setGameKey((k) => k + 1);
+    startTimeRef.current = Date.now();
+  };
 
   return (
-    <div
-      className="glass-panel p-6 flex flex-col h-full"
-      style={{ borderTop: `2px solid ${color}` }}
-    >
-      {/* Game type header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-          style={{
-            backgroundColor: `${color}18`,
-            border: `1px solid ${color}30`,
-          }}
-        >
-          {icon}
-        </div>
-        <div>
-          <h3
-            className="font-semibold text-sm"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {label}
-          </h3>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            {description}
-          </p>
-        </div>
-      </div>
-
-      {/* Coming soon card */}
+    <>
       <div
-        className="flex-1 rounded-xl flex flex-col items-center justify-center text-center p-6 gap-3"
-        style={{
-          backgroundColor: "rgba(255,255,255,0.02)",
-          border: "1px dashed rgba(255,255,255,0.12)",
-          minHeight: 220,
-        }}
+        className="glass-panel p-6 flex flex-col"
+        style={{ borderTop: `2px solid ${color}` }}
       >
-        <div className="text-4xl mb-1" aria-hidden="true">
-          🎮
-        </div>
-        <p
-          className="text-sm font-medium"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          {levelTitle ? `${levelTitle} — ` : ""}
-          {label}
-        </p>
-        <p
-          className="text-xs max-w-[240px]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Game components are being built in Phase 1C. Check back soon!
-        </p>
-        <div
-          className="mt-2 px-3 py-1 rounded-full text-xs font-medium"
-          style={{
-            backgroundColor: `${color}15`,
-            color,
-            border: `1px solid ${color}30`,
-          }}
-        >
-          Coming in Phase 1C
-        </div>
-      </div>
-
-      {/* Collapsible config preview */}
-      <div className="mt-4">
-        <button
-          type="button"
-          className="flex items-center gap-1.5 text-xs transition-colors"
-          style={{ color: "var(--text-muted)" }}
-          onClick={() => setShowConfig((v) => !v)}
-          aria-expanded={showConfig}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="transition-transform"
-            style={{ transform: showConfig ? "rotate(90deg)" : "rotate(0deg)" }}
-            aria-hidden="true"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-          {showConfig ? "Hide" : "View"} game config
-        </button>
-
-        {showConfig && (
-          <pre
-            className="mt-2 rounded-lg overflow-x-auto text-xs leading-relaxed p-3"
+        {/* Game type header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
             style={{
-              backgroundColor: "var(--code-bg)",
-              color: "#94a3b8",
-              fontFamily: "var(--font-mono), monospace",
-              border: "1px solid rgba(255,255,255,0.06)",
-              maxHeight: 300,
-              overflowY: "auto",
+              backgroundColor: `${color}18`,
+              border: `1px solid ${color}30`,
             }}
           >
-            {JSON.stringify(gameConfig, null, 2)}
-          </pre>
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <h3
+              className="font-semibold text-sm truncate"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {levelTitle ? `${levelTitle}` : label}
+            </h3>
+            <p
+              className="text-xs mt-0.5 line-clamp-1"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {description}
+            </p>
+          </div>
+        </div>
+
+        {/* Game content */}
+        <div className="flex-1">
+          {completed && !showCompletion ? (
+            // Brief "processing" state while we wait for modal
+            <div className="flex flex-col items-center justify-center gap-3 py-10">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                style={{ backgroundColor: `${color}15` }}
+              >
+                ✓
+              </div>
+              <p className="text-sm font-medium" style={{ color: color }}>
+                Calculating results…
+              </p>
+            </div>
+          ) : (
+            <GameRenderer
+              key={gameKey}
+              gameType={gameType}
+              gameConfig={gameConfig}
+              accentColor={color}
+              onComplete={handleComplete}
+            />
+          )}
+        </div>
+
+        {/* Retry button shown after completion is dismissed */}
+        {completed && !showCompletion && (
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="mt-4 rounded-xl py-2.5 text-sm font-semibold w-full transition-all"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.05)",
+              color: "var(--text-secondary)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            Try Again
+          </button>
         )}
       </div>
-    </div>
+
+      {/* Level completion modal */}
+      {showCompletion && (
+        <LevelComplete
+          score={finalScore}
+          maxScore={finalMaxScore}
+          xpEarned={xpReward}
+          keyInsight={keyInsight}
+          accentColor={color}
+          nextLevelUrl={nextLevelUrl}
+          backUrl={computedBackUrl}
+          onClose={() => {
+            setShowCompletion(false);
+          }}
+        />
+      )}
+    </>
   );
 }
