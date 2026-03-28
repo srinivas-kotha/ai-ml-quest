@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
 import TopNav from "@/components/nav/TopNav";
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -55,11 +62,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`dark ${jakarta.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body
         className="min-h-full flex flex-col"
-        style={{ backgroundColor: "var(--void)", color: "var(--text-primary)" }}
+        style={{ backgroundColor: "var(--base)", color: "var(--text-primary)" }}
       >
         <SessionProviderWrapper>
           <TopNav />

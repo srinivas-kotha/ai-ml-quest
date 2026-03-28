@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Badge from "@/components/ui/Badge";
 
 const GAME_TYPE_LABELS: Record<string, string> = {
   SpeedQuiz: "Speed Quiz",
@@ -11,7 +10,19 @@ const GAME_TYPE_LABELS: Record<string, string> = {
   ParameterTuner: "Parameter Tuner",
   DiagnosisLab: "Diagnosis Lab",
   CostOptimizer: "Cost Optimizer",
-  ArchitectureBattle: "Architecture Battle",
+  ArchitectureBattle: "Arch Battle",
+};
+
+// Game type → subtle tint color
+const GAME_TYPE_COLOR: Record<string, string> = {
+  SpeedQuiz: "#3b82f6",
+  PipelineBuilder: "#10b981",
+  CodeDebugger: "#ef4444",
+  ConceptMatcher: "#8b5cf6",
+  ParameterTuner: "#f59e0b",
+  DiagnosisLab: "#ec4899",
+  CostOptimizer: "#14b8a6",
+  ArchitectureBattle: "#4f46e5",
 };
 
 interface LevelCardProps {
@@ -35,6 +46,7 @@ export default function LevelCard({
   accentColor,
 }: LevelCardProps) {
   const gameLabel = GAME_TYPE_LABELS[level.gameType] ?? level.gameType;
+  const gameColor = GAME_TYPE_COLOR[level.gameType] ?? accentColor;
 
   return (
     <Link
@@ -42,7 +54,7 @@ export default function LevelCard({
       style={{ textDecoration: "none" }}
     >
       <div
-        className="flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-150 group"
+        className="flex items-center gap-4 rounded-xl px-4 py-3.5 transition-all duration-150 group"
         style={{
           backgroundColor: "var(--card)",
           border: "1px solid var(--border)",
@@ -50,21 +62,24 @@ export default function LevelCard({
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLDivElement;
           el.style.backgroundColor = "var(--card-hover)";
-          el.style.borderColor = "var(--border-hover)";
+          el.style.borderColor = accentColor + "40";
+          el.style.transform = "translateX(2px)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLDivElement;
           el.style.backgroundColor = "var(--card)";
           el.style.borderColor = "var(--border)";
+          el.style.transform = "";
         }}
       >
         {/* Level number badge */}
         <div
-          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold"
+          className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
           style={{
-            backgroundColor: `${accentColor}20`,
+            backgroundColor: `${accentColor}18`,
             color: accentColor,
             border: `1px solid ${accentColor}30`,
+            fontFamily: "var(--font-display)",
           }}
         >
           {level.levelNumber}
@@ -74,14 +89,25 @@ export default function LevelCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="text-sm font-medium"
-              style={{ color: "var(--text-primary)" }}
+              className="text-sm font-semibold"
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-display)",
+              }}
             >
               {level.title}
             </span>
-            <Badge variant="default" size="xs">
+            {/* Game type pill */}
+            <span
+              className="text-xs px-2 py-0.5 rounded-md font-medium"
+              style={{
+                backgroundColor: `${gameColor}12`,
+                color: gameColor,
+                border: `1px solid ${gameColor}25`,
+              }}
+            >
               {gameLabel}
-            </Badge>
+            </span>
           </div>
           {level.subtitle && (
             <p
@@ -104,17 +130,18 @@ export default function LevelCard({
             </span>
           )}
           {level.xpReward && (
-            <span className="font-medium" style={{ color: "var(--success)" }}>
+            <span className="font-semibold" style={{ color: "var(--xp-gold)" }}>
               +{level.xpReward} XP
             </span>
           )}
-          {/* Chevron */}
+          {/* Chevron — visible on hover */}
           <svg
-            className="w-4 h-4 opacity-30"
+            className="w-4 h-4 opacity-0 group-hover:opacity-50 transition-opacity duration-150"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             aria-hidden="true"
+            style={{ color: accentColor }}
           >
             <path
               strokeLinecap="round"

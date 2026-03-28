@@ -151,19 +151,43 @@ export default async function ChapterPage({
 
       {/* Chapter header */}
       <div
-        className="rounded-2xl p-6 mb-8"
+        className="relative overflow-hidden rounded-2xl p-6 mb-8"
         style={{
-          background: `linear-gradient(135deg, ${accentColor}14 0%, transparent 60%)`,
+          background: `linear-gradient(135deg, ${accentColor}10 0%, rgba(9,9,11,0) 60%)`,
           border: `1px solid ${accentColor}30`,
           borderLeft: `4px solid ${accentColor}`,
+          backgroundColor: "var(--card)",
         }}
       >
-        <div className="flex items-start gap-4">
-          <span className="text-3xl" aria-hidden="true">
+        {/* Ambient glow */}
+        <div
+          className="absolute top-0 right-0 w-72 h-40 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            background: `radial-gradient(ellipse 240px 160px at 80% 20%, ${accentColor}15 0%, transparent 70%)`,
+          }}
+        />
+        <div className="relative z-10 flex items-start gap-4">
+          <div
+            className="flex items-center justify-center w-12 h-12 rounded-xl text-2xl flex-shrink-0"
+            style={{
+              backgroundColor: `${accentColor}18`,
+              border: `1px solid ${accentColor}30`,
+            }}
+            aria-hidden="true"
+          >
             {chapter.icon ?? "🧠"}
-          </span>
-          <div>
-            <h1 style={{ color: "var(--text-primary)", fontSize: "1.75rem" }}>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1
+              style={{
+                color: "var(--text-primary)",
+                fontSize: "1.75rem",
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+              }}
+            >
               {chapter.title}
             </h1>
             {chapter.subtitle && (
@@ -182,8 +206,15 @@ export default async function ChapterPage({
                 {chapter.description}
               </p>
             )}
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <div className="flex items-center gap-3 mt-4">
+              <span
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium"
+                style={{
+                  backgroundColor: `${accentColor}15`,
+                  color: accentColor,
+                  border: `1px solid ${accentColor}25`,
+                }}
+              >
                 {levels.length} level{levels.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -206,13 +237,18 @@ export default async function ChapterPage({
         </div>
       ) : (
         <div className="space-y-2">
-          {levels.map((level) => (
-            <LevelCard
+          {levels.map((level, i) => (
+            <div
               key={level.id}
-              level={level}
-              chapterSlug={slug}
-              accentColor={accentColor}
-            />
+              className="animate-fade-up"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <LevelCard
+                level={level}
+                chapterSlug={slug}
+                accentColor={accentColor}
+              />
+            </div>
           ))}
         </div>
       )}

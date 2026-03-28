@@ -81,7 +81,7 @@ export default function Badge({
   return (
     <span
       className={`
-        inline-flex items-center rounded-full font-medium
+        inline-flex items-center rounded-lg font-medium
         ${size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs"}
         ${className}
       `}

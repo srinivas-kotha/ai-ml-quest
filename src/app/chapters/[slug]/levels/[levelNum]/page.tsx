@@ -201,24 +201,32 @@ function KeyInsightBanner({
 }) {
   return (
     <div
-      className="mt-8 rounded-xl p-4 flex items-start gap-3"
+      className="mt-8 rounded-xl p-5 flex items-start gap-4"
       style={{
-        background: `linear-gradient(135deg, ${accentColor}10 0%, transparent 70%)`,
-        border: `1px solid ${accentColor}30`,
+        background: `linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, ${accentColor}08 100%)`,
+        border: `1px solid rgba(124, 58, 237, 0.20)`,
       }}
     >
-      <span className="text-lg flex-shrink-0" aria-hidden="true">
-        💡
-      </span>
+      {/* Brain icon */}
+      <div
+        className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 text-lg"
+        style={{
+          backgroundColor: "rgba(124, 58, 237, 0.15)",
+          border: "1px solid rgba(124, 58, 237, 0.25)",
+        }}
+        aria-hidden="true"
+      >
+        🧠
+      </div>
       <div>
         <p
-          className="text-xs font-semibold uppercase tracking-wider mb-1"
-          style={{ color: accentColor }}
+          className="text-xs font-bold uppercase tracking-widest mb-1.5"
+          style={{ color: "var(--accent-violet)" }}
         >
           Key Insight
         </p>
         <p
-          className="text-sm leading-relaxed"
+          className="text-sm leading-relaxed font-medium"
           style={{ color: "var(--text-secondary)" }}
         >
           {insight}
@@ -322,15 +330,25 @@ export default async function LevelPage({
 
         {/* Level header */}
         <div
-          className="rounded-2xl p-5 mb-6"
+          className="relative overflow-hidden rounded-2xl p-5 mb-6"
           style={{
-            background: `linear-gradient(135deg, ${accentColor}10 0%, transparent 60%)`,
+            background: `linear-gradient(135deg, ${accentColor}10 0%, rgba(9,9,11,0) 60%)`,
             border: `1px solid ${accentColor}25`,
             borderLeft: `4px solid ${accentColor}`,
+            backgroundColor: "var(--card)",
           }}
         >
+          {/* Ambient glow */}
+          <div
+            className="absolute top-0 right-0 w-64 h-32 pointer-events-none"
+            aria-hidden="true"
+            style={{
+              background: `radial-gradient(ellipse 200px 120px at 80% 20%, ${accentColor}12 0%, transparent 70%)`,
+            }}
+          />
+
           {/* Level badge + hook */}
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="relative z-10 flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
               {/* Level number + title */}
               <div className="flex items-center gap-2.5 mb-1 flex-wrap">
@@ -345,11 +363,12 @@ export default async function LevelPage({
                   {level.levelNumber}
                 </span>
                 <h1
-                  className="text-xl font-bold"
+                  className="font-bold"
                   style={{
                     color: "var(--text-primary)",
                     fontSize: "1.25rem",
-                    letterSpacing: "-0.02em",
+                    fontFamily: "var(--font-display)",
+                    letterSpacing: "-0.025em",
                   }}
                 >
                   {level.title}
@@ -366,13 +385,15 @@ export default async function LevelPage({
                 </p>
               )}
 
-              {/* Hook (enterprise pain point) */}
+              {/* Hook (enterprise pain point) — styled as a callout quote */}
               {level.hook && (
                 <blockquote
-                  className="ml-9 mt-2 pl-3 text-sm italic leading-relaxed"
+                  className="ml-9 mt-3 pl-4 py-2 text-sm leading-relaxed rounded-r-lg"
                   style={{
                     color: "var(--text-secondary)",
-                    borderLeft: `2px solid ${accentColor}50`,
+                    borderLeft: `3px solid ${accentColor}`,
+                    backgroundColor: `${accentColor}08`,
+                    fontStyle: "italic",
                   }}
                 >
                   {level.hook}
@@ -382,21 +403,25 @@ export default async function LevelPage({
 
             {/* Meta: XP + time */}
             <div
-              className="flex items-center gap-3 text-xs flex-shrink-0"
+              className="flex flex-col items-end gap-1.5 text-xs flex-shrink-0"
               style={{ color: "var(--text-muted)" }}
             >
-              {level.estimatedMinutes && (
-                <span>{level.estimatedMinutes} min</span>
-              )}
               {level.xpReward && (
                 <span
-                  className="font-semibold"
-                  style={{ color: "var(--success)" }}
+                  className="font-bold px-2 py-0.5 rounded-lg"
+                  style={{
+                    color: "var(--xp-gold)",
+                    backgroundColor: "rgba(245, 158, 11, 0.10)",
+                    border: "1px solid rgba(245, 158, 11, 0.20)",
+                  }}
                 >
                   +{level.xpReward} XP
                 </span>
               )}
-              <span>
+              {level.estimatedMinutes && (
+                <span>{level.estimatedMinutes} min</span>
+              )}
+              <span style={{ color: "var(--text-muted)" }}>
                 {level.levelNumber} / {totalLevels}
               </span>
             </div>

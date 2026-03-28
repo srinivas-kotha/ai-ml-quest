@@ -13,27 +13,26 @@ export default function TopNav() {
     <nav
       className="sticky top-0 z-50 w-full"
       style={{
-        backgroundColor: "rgba(12, 12, 20, 0.85)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        backgroundColor: "rgba(9, 9, 11, 0.80)",
+        backdropFilter: "blur(16px) saturate(180%)",
+        WebkitBackdropFilter: "blur(16px) saturate(180%)",
         borderBottom: "1px solid var(--border)",
+        height: "56px",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-semibold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
+            className="flex items-center gap-2 transition-opacity duration-150"
+            style={{ textDecoration: "none" }}
           >
             <span
-              className="text-base font-bold"
+              className="font-extrabold tracking-tight text-gradient"
               style={{
-                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                fontFamily: "var(--font-display)",
+                fontSize: "1.05rem",
               }}
             >
               AI/ML Quest
@@ -175,27 +174,23 @@ export default function TopNav() {
               /* Not signed in */
               <button
                 onClick={() => signIn("github")}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150"
                 style={{
                   color: "var(--text-secondary)",
                   border: "1px solid var(--border)",
                   backgroundColor: "transparent",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "var(--surface)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "var(--border-hover)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "var(--text-primary)";
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.backgroundColor = "rgba(20, 184, 166, 0.08)";
+                  btn.style.borderColor = "rgba(20, 184, 166, 0.35)";
+                  btn.style.color = "var(--accent-teal)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "transparent";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "var(--border)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "var(--text-secondary)";
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.backgroundColor = "transparent";
+                  btn.style.borderColor = "var(--border)";
+                  btn.style.color = "var(--text-secondary)";
                 }}
               >
                 <svg
