@@ -1,0 +1,354 @@
+{
+  "chapter": {
+    "slug": "ml-monitoring",
+    "title": "ML Monitoring & Observability",
+    "subtitle": "Detect drift, explain decisions, and prevent silent model failure",
+    "description": "Build production-grade ML monitoring systems — data drift detection, model explainability, LLM observability, and CI/CD quality gates that catch regressions before users do.",
+    "icon": "📊",
+    "accent_color": "#10b981",
+    "sort_order": 3,
+    "is_published": true,
+    "prerequisites": []
+  },
+  "levels": [
+    {
+      "slug": "why-monitoring-matters",
+      "level_number": 1,
+      "title": "Why Monitoring Matters",
+      "subtitle": "The 70% Rule — What Nobody Shows in Their Portfolio",
+      "game_type": "DiagnosisLab",
+      "game_config": {
+        "cases": []
+      },
+      "key_insight": "Data drift (PSI 0.38 > 0.2 threshold) degraded retrieval quality (0.51 vs 0.80 target). Azure Monitor catches infra issues — ML monitoring catches model degradation. That's the career differentiator.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Why Monitoring Matters",
+          "content": {
+            "markdown": "Most AI portfolios show model building. NOBODY shows monitoring. It's 70% of real production work — and your career differentiator. Think Azure Monitor for ML: infra metrics get you to the door, model metrics win you the role."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Data drift (PSI 0.38 > 0.2 threshold) degraded retrieval quality (0.51 vs 0.80 target). Azure Monitor catches infra issues — ML monitoring catches model degradation. That's the career differentiator."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "data-drift-detection",
+      "level_number": 2,
+      "title": "Data Drift Detection",
+      "subtitle": "Statistical Methods — KS, PSI, and Wasserstein",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "KS test detects 0.5% drift at 100K observations — dangerously oversensitive in production! PSI misses subtle but real drift on small windows. Wasserstein distance is the production compromise: stable ",
+        "parameters": []
+      },
+      "key_insight": "KS test is dangerously sensitive at large N — it detects statistically significant but operationally irrelevant noise. Production standard: Wasserstein distance for numerical features (threshold 0.1), Jensen-Shannon divergence for categorical (threshold 0.1). PSI (threshold 0.2) works well for business-familiar reporting.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Data Drift Detection",
+          "content": {
+            "markdown": "KS test detects 0.5% drift at 100K observations — dangerously oversensitive in production! PSI misses subtle but real drift on small windows. Wasserstein distance is the production compromise: stable across sample sizes, measures actual magnitude of shift."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "KS test is dangerously sensitive at large N — it detects statistically significant but operationally irrelevant noise. Production standard: Wasserstein distance for numerical features (threshold 0.1), Jensen-Shannon divergence for categorical (threshold 0.1). PSI (threshold 0.2) works well for business-familiar reporting."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "types-of-drift",
+      "level_number": 3,
+      "title": "Types of Drift",
+      "subtitle": "Taxonomy — Know the Difference to Fix the Right Thing",
+      "game_type": "ConceptMatcher",
+      "game_config": {
+        "pairs": []
+      },
+      "key_insight": "Data drift: inputs changed, P(X) shifted — retrain on recent data. Concept drift: the X→Y relationship itself changed — re-label and rethink features. Feature drift: preprocessing bug — fix the pipeline first before assuming distribution shift.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Types of Drift",
+          "content": {
+            "markdown": "Different drift types need completely different remedies. Data drift → retrain on recent data. Concept drift → re-label and rethink features entirely. Feature drift → fix your pipeline bug. Misdiagnose and you'll spend weeks retraining a model that didn't need it."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Data drift: inputs changed, P(X) shifted — retrain on recent data. Concept drift: the X→Y relationship itself changed — re-label and rethink features. Feature drift: preprocessing bug — fix the pipeline first before assuming distribution shift."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "evidently-ai-in-cicd",
+      "level_number": 4,
+      "title": "Evidently AI in CI/CD",
+      "subtitle": "Test Suites as Quality Gates — The pytest Trick",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "Evidently's killer feature: assert test_suite.as_dict()['summary']['all_passed'] inside a pytest test that runs in CI. Fail the PR before bad data reaches production. Exactly like your .NET quality gates — same mental model, different layer.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Evidently AI in CI/CD",
+          "content": {
+            "markdown": "Evidently AI test suites inside CI/CD = automated drift quality gates. Fail the PR if drift is detected in the staging data snapshot. Same pattern as your Azure DevOps test gates — just for model data health instead of unit tests."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Evidently's killer feature: assert test_suite.as_dict()['summary']['all_passed'] inside a pytest test that runs in CI. Fail the PR before bad data reaches production. Exactly like your .NET quality gates — same mental model, different layer."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "model-explainability",
+      "level_number": 5,
+      "title": "Model Explainability",
+      "subtitle": "SHAP, LIME, and EU AI Act Legal Requirements",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "TreeSHAP = production standard for tabular ML (millisecond latency). For LLMs, attention visualisation + token attribution replace SHAP. EU AI Act makes explainability a legal requirement for high-risk decisions — this is now a compliance topic, not just a nice-to-have.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Model Explainability",
+          "content": {
+            "markdown": "TreeSHAP runs in milliseconds per prediction on tree models — production-ready. KernelSHAP is O(2^M) and too slow for real-time inference beyond ~30 features. EU AI Act Article 86 mandates explanations for high-risk automated decisions in credit, hiring, and healthcare."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "TreeSHAP = production standard for tabular ML (millisecond latency). For LLMs, attention visualisation + token attribution replace SHAP. EU AI Act makes explainability a legal requirement for high-risk decisions — this is now a compliance topic, not just a nice-to-have."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "llm-specific-monitoring",
+      "level_number": 6,
+      "title": "LLM-Specific Monitoring",
+      "subtitle": "Tokens, Hallucinations, Latency — The New Monitoring Frontier",
+      "game_type": "CostOptimizer",
+      "game_config": {
+        "scenario": "LLM monitoring is completely different from traditional ML monitoring. Token costs, latency percentiles, hallucination detection, prompt injection, and semantic drift — none of this exists in scikit-l",
+        "budget": 100,
+        "sliders": []
+      },
+      "key_insight": "LLM latency SLOs: p50 semantic entropy (cheapest, no extra API call), faithfulness scoring (most accurate, one extra LLM call), self-consistency (sample 3–5 outputs, check agreement). Semantic caching on similar queries (cosine > 0.95) is usually the highest-ROI optimisation.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: LLM-Specific Monitoring",
+          "content": {
+            "markdown": "LLM monitoring is completely different from traditional ML monitoring. Token costs, latency percentiles, hallucination detection, prompt injection, and semantic drift — none of this exists in scikit-learn land. Optimise the budget below without sacrificing quality."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "LLM latency SLOs: p50 semantic entropy (cheapest, no extra API call), faithfulness scoring (most accurate, one extra LLM call), self-consistency (sample 3–5 outputs, check agreement). Semantic caching on similar queries (cosine > 0.95) is usually the highest-ROI optimisation."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "tracing-observability-tools",
+      "level_number": 7,
+      "title": "Tracing & Observability Tools",
+      "subtitle": "Langfuse + OpenTelemetry — Distributed Tracing for LLM Apps",
+      "game_type": "PipelineBuilder",
+      "game_config": {
+        "steps": [],
+        "correctOrder": []
+      },
+      "key_insight": "Langfuse self-hosted on your existing PostgreSQL = zero extra infrastructure. Key OTel gen_ai span attributes: gen_ai.system, gen_ai.request.model, gen_ai.usage.input_tokens, gen_ai.usage.output_tokens. Safety check runs before LLM generation to prevent prompt injection costs.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Tracing & Observability Tools",
+          "content": {
+            "markdown": "Langfuse (open-source, self-hosted on PostgreSQL) is the best fit for your existing stack — zero extra infrastructure cost. OpenTelemetry gen_ai semantic conventions standardise LLM tracing just like distributed tracing spans. Your distributed systems experience transfers 1:1."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Langfuse self-hosted on your existing PostgreSQL = zero extra infrastructure. Key OTel gen_ai span attributes: gen_ai.system, gen_ai.request.model, gen_ai.usage.input_tokens, gen_ai.usage.output_tokens. Safety check runs before LLM generation to prevent prompt injection costs."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "cicd-for-ml-regression-gating",
+      "level_number": 8,
+      "title": "CI/CD for ML — Regression Gating",
+      "subtitle": "Shadow Mode, Canary Deployments, and Golden Datasets",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 35,
+        "questions": []
+      },
+      "key_insight": "'Monitoring without runbooks is theater.' Every alert needs: (1) rollback procedure, (2) escalation path, (3) root-cause investigation template. This is SRE incident response applied to ML — the same discipline, a different failure domain.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: CI/CD for ML — Regression Gating",
+          "content": {
+            "markdown": "LinkedIn's shadow mode deployment caught 91% of model issues before users saw them. Amazon's canary deployments prevented 73 production failures in one year. Monitoring without runbooks is theater — every alert needs a documented response."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "'Monitoring without runbooks is theater.' Every alert needs: (1) rollback procedure, (2) escalation path, (3) root-cause investigation template. This is SRE incident response applied to ML — the same discipline, a different failure domain."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "ab-testing-for-ml",
+      "level_number": 9,
+      "title": "A/B Testing for ML",
+      "subtitle": "Sample Sizes, Guardrail Metrics, and Thompson Sampling",
+      "game_type": "ParameterTuner",
+      "game_config": {
+        "scenario": "Thompson Sampling (multi-armed bandit) automatically allocates more traffic to the winning variant — no waiting for a fixed test to end. But guardrail metrics (latency, cost, error rate) must NEVER de",
+        "parameters": []
+      },
+      "key_insight": "Interleaving for ranking is 10–100× more efficient than standard A/B (both models answer the same query, user clicks reveal preference). Guardrail metrics: latency p95, cost per query, and error rate must NOT degrade. If ANY guardrail breaches, auto-rollback fires — even if the primary conversion metric improved.",
+      "xp_reward": 100,
+      "estimated_minutes": 5,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: A/B Testing for ML",
+          "content": {
+            "markdown": "Thompson Sampling (multi-armed bandit) automatically allocates more traffic to the winning variant — no waiting for a fixed test to end. But guardrail metrics (latency, cost, error rate) must NEVER degrade — auto-rollback fires if ANY guardrail breaches, regardless of primary metric improvement."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "callout",
+          "title": "Key Insight",
+          "content": {
+            "variant": "insight",
+            "title": "Enterprise Insight",
+            "content": "Interleaving for ranking is 10–100× more efficient than standard A/B (both models answer the same query, user clicks reveal preference). Guardrail metrics: latency p95, cost per query, and error rate must NOT degrade. If ANY guardrail breaches, auto-rollback fires — even if the primary conversion metric improved."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "chapter-boss-interview-gauntlet",
+      "level_number": 10,
+      "title": "Chapter Boss: Interview Gauntlet",
+      "subtitle": "20 Expert Monitoring Questions — Score 80% to Unlock Chapter 4",
+      "game_type": "SpeedQuiz",
+      "game_config": {
+        "timePerQuestion": 25,
+        "questions": []
+      },
+      "key_insight": null,
+      "xp_reward": 200,
+      "estimated_minutes": 8,
+      "is_published": true,
+      "learn_sections": [
+        {
+          "sort_order": 1,
+          "section_type": "text",
+          "title": "Overview: Chapter Boss: Interview Gauntlet",
+          "content": {
+            "markdown": "20 expert-level monitoring questions across drift detection, explainability, LLM observability, CI/CD, and A/B testing. This chapter alone separates you from 95% of AI portfolio projects. Nobody shows monitoring — now you can speak to ALL of it."
+          }
+        }
+      ]
+    }
+  ]
+}
