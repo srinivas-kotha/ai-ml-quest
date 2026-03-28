@@ -475,7 +475,7 @@ Each `section_type` in `quest_learn_sections` has a defined JSONB structure for 
 |  /api/analytics/*(aggregated stats - admin only)  |
 +-------------------+------------------------------+
                     |
-                    | parameterized queries (pg / drizzle)
+                    | parameterized queries (Drizzle ORM)
                     |
 +-------------------v------------------------------+
 |           PostgreSQL (Shared Instance)             |
@@ -636,7 +636,7 @@ ai-ml-quest/
 │   │       ├── ChapterNav.tsx          # Side nav within a chapter
 │   │       └── BreadcrumbNav.tsx       # Breadcrumb trail
 │   ├── lib/
-│   │   ├── db.ts                       # Postgres connection pool (pg or drizzle)
+│   │   ├── db.ts                       # Drizzle ORM connection + schema
 │   │   ├── auth.ts                     # NextAuth.js configuration
 │   │   ├── syntax.ts                   # CSS-based syntax highlighting utilities
 │   │   ├── sounds.ts                   # Web Audio API sound manager
@@ -644,7 +644,7 @@ ai-ml-quest/
 │   │   └── guest-progress.ts           # localStorage progress for guest mode
 │   └── styles/
 │       └── globals.css                 # Tailwind config + design tokens + animations
-├── drizzle/                            # Drizzle ORM schema (if using drizzle)
+├── drizzle/                            # Drizzle ORM schema
 │   └── schema.ts
 ├── postgres/
 │   └── migrations/
@@ -985,9 +985,11 @@ Follow Tailwind defaults: 4px base unit. Key spacing values: `p-4` (16px) for ca
 - Create `Dockerfile` (multi-stage, standalone output)
 - Create `docker-compose.yml` for local dev (Next.js + Postgres)
 - Create `.env.example` with all required env vars
+- Run `docker stats --no-stream` to baseline current VPS memory usage (~7.8GB total, 13 services). Verify Next.js standalone output fits within remaining headroom (~200-400MB expected). If headroom < 300MB, stop Ollama or Mem0 to free capacity.
+- Before applying `001-quest-schema.sql` to the shared Postgres instance, take a backup (`pg_dump`) and dry-run the migration on a local Postgres to verify no conflicts with existing `kokilla_*`, `sv_*`, `km_*` table prefixes.
 - Verify: `docker compose up` starts the app, connects to Postgres, seed data is queryable
 
-### Phase 1: Core Platform (2-3 sessions, ~8 hours)
+### Phase 1: Core Platform (2-3 sessions, ~9-10 hours)
 
 **Goal:** Fully functional platform with auth, progress tracking, all game types, and basic learn content rendering.
 
@@ -1008,10 +1010,11 @@ Follow Tailwind defaults: 4px base unit. Key spacing values: `p-4` (16px) for ca
 - CalloutBox renderer (callout sections)
 - Placeholder renderers for code, diagram, comparison, steps, playground (render JSON as formatted preview until Phase 2 components are built)
 
-**1C: Game Types (~3 hours)**
+**1C: Game Types (~4-5 hours)**
 
 - GamePanel orchestrator (selects component by `game_type`)
 - Port all 8 game types from vanilla JS to React components
+- Budget extra time for drag-and-drop (PipelineBuilder, ConceptMatcher) and Canvas particle effects (LevelComplete). Port one game type at a time, testing against v1 behavior before proceeding.
 - Game completion callback: POST to `/api/progress` (or localStorage for guests)
 - XP counter animation on completion
 - Particle burst on level complete
@@ -1128,7 +1131,7 @@ No fixed timeline. Prioritize based on user feedback and analytics.
 
 - **Authentication:** NextAuth.js handles OAuth securely. JWT session strategy (no DB sessions to leak).
 - **Authorization:** Admin routes check `role === 'admin'` via middleware. Public routes serve only published content.
-- **Database:** All queries use parameterized inputs via Drizzle ORM or `pg` parameterized queries. No raw string concatenation.
+- **Database:** All queries use parameterized inputs via Drizzle ORM. No raw string concatenation.
 - **Input validation:** All API inputs validated with Zod schemas before processing.
 - **CSRF:** NextAuth.js includes CSRF protection by default.
 - **Secrets:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` in `.env` (gitignored). `.env.example` documents all required variables.
