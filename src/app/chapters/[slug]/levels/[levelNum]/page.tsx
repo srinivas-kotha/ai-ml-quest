@@ -204,6 +204,7 @@ function KeyInsightBanner({
       style={{
         backgroundColor: "rgba(255, 184, 0, 0.08)",
         border: "1px solid rgba(255, 184, 0, 0.20)",
+        borderLeft: "4px solid var(--color-accent-gold)",
       }}
     >
       {/* Lightbulb icon */}
