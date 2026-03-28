@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 export default function TopNav() {
   const { data: session, status } = useSession();
@@ -13,11 +14,11 @@ export default function TopNav() {
     <nav
       className="sticky top-0 z-50 w-full"
       style={{
-        backgroundColor: "rgba(9, 9, 11, 0.80)",
+        backgroundColor: "var(--color-bg-overlay)",
         backdropFilter: "blur(16px) saturate(180%)",
         WebkitBackdropFilter: "blur(16px) saturate(180%)",
-        borderBottom: "1px solid var(--border)",
-        height: "56px",
+        borderBottom: "1px solid var(--color-border)",
+        height: "60px",
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
@@ -29,9 +30,8 @@ export default function TopNav() {
             style={{ textDecoration: "none" }}
           >
             <span
-              className="font-extrabold tracking-tight text-gradient"
+              className="font-display font-extrabold tracking-tight text-gradient"
               style={{
-                fontFamily: "var(--font-display)",
                 fontSize: "1.05rem",
               }}
             >
@@ -39,12 +39,16 @@ export default function TopNav() {
             </span>
           </Link>
 
-          {/* Auth controls */}
+          {/* Right controls */}
           <div className="flex items-center gap-3">
+            {/* Theme toggle */}
+            <ThemeToggle />
+
+            {/* Auth controls */}
             {status === "loading" ? (
               <div
                 className="h-8 w-20 rounded-md animate-pulse"
-                style={{ backgroundColor: "var(--surface)" }}
+                style={{ backgroundColor: "var(--color-bg-surface)" }}
               />
             ) : session ? (
               /* Signed-in state */
@@ -53,14 +57,14 @@ export default function TopNav() {
                   onClick={() => setDropdownOpen((v) => !v)}
                   className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors"
                   style={{
-                    color: "var(--text-secondary)",
-                    border: "1px solid var(--border)",
+                    color: "var(--color-text-secondary)",
+                    border: "1px solid var(--color-border)",
                     backgroundColor: "transparent",
                   }}
                   onMouseEnter={(e) => {
                     (
                       e.currentTarget as HTMLButtonElement
-                    ).style.backgroundColor = "var(--surface)";
+                    ).style.backgroundColor = "var(--color-bg-surface)";
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
                       "var(--border-hover)";
                   }}
@@ -69,7 +73,7 @@ export default function TopNav() {
                       e.currentTarget as HTMLButtonElement
                     ).style.backgroundColor = "transparent";
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "var(--border)";
+                      "var(--color-border)";
                   }}
                   aria-haspopup="true"
                   aria-expanded={dropdownOpen}
@@ -85,7 +89,10 @@ export default function TopNav() {
                   ) : (
                     <span
                       className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
-                      style={{ backgroundColor: "var(--rag)", color: "#fff" }}
+                      style={{
+                        backgroundColor: "var(--chapter-rag)",
+                        color: "#fff",
+                      }}
                     >
                       {(session.user?.name ?? "?")[0].toUpperCase()}
                     </span>
@@ -119,24 +126,24 @@ export default function TopNav() {
                     <div
                       className="absolute right-0 mt-1 w-48 rounded-xl py-1 z-20 shadow-xl"
                       style={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--color-bg-card)",
+                        border: "1px solid var(--color-border)",
                       }}
                     >
                       <div
                         className="px-3 py-2 border-b"
-                        style={{ borderColor: "var(--border)" }}
+                        style={{ borderColor: "var(--color-border)" }}
                       >
                         <p
                           className="text-xs font-medium truncate"
-                          style={{ color: "var(--text-primary)" }}
+                          style={{ color: "var(--color-text-primary)" }}
                         >
                           {session.user?.name}
                         </p>
                         {session.user?.email && (
                           <p
                             className="text-xs truncate"
-                            style={{ color: "var(--text-muted)" }}
+                            style={{ color: "var(--color-text-muted)" }}
                           >
                             {session.user.email}
                           </p>
@@ -148,20 +155,20 @@ export default function TopNav() {
                           signOut({ callbackUrl: "/" });
                         }}
                         className="w-full text-left px-3 py-2 text-xs transition-colors"
-                        style={{ color: "var(--text-secondary)" }}
+                        style={{ color: "var(--color-text-secondary)" }}
                         onMouseEnter={(e) => {
                           (
                             e.currentTarget as HTMLButtonElement
-                          ).style.backgroundColor = "var(--surface)";
+                          ).style.backgroundColor = "var(--color-bg-surface)";
                           (e.currentTarget as HTMLButtonElement).style.color =
-                            "var(--text-primary)";
+                            "var(--color-text-primary)";
                         }}
                         onMouseLeave={(e) => {
                           (
                             e.currentTarget as HTMLButtonElement
                           ).style.backgroundColor = "transparent";
                           (e.currentTarget as HTMLButtonElement).style.color =
-                            "var(--text-secondary)";
+                            "var(--color-text-secondary)";
                         }}
                       >
                         Sign out
@@ -176,21 +183,21 @@ export default function TopNav() {
                 onClick={() => signIn("github")}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150"
                 style={{
-                  color: "var(--text-secondary)",
-                  border: "1px solid var(--border)",
+                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--color-border)",
                   backgroundColor: "transparent",
                 }}
                 onMouseEnter={(e) => {
                   const btn = e.currentTarget as HTMLButtonElement;
-                  btn.style.backgroundColor = "rgba(20, 184, 166, 0.08)";
-                  btn.style.borderColor = "rgba(20, 184, 166, 0.35)";
-                  btn.style.color = "var(--accent-teal)";
+                  btn.style.backgroundColor = "rgba(0, 201, 167, 0.08)";
+                  btn.style.borderColor = "rgba(0, 201, 167, 0.35)";
+                  btn.style.color = "var(--color-accent-teal)";
                 }}
                 onMouseLeave={(e) => {
                   const btn = e.currentTarget as HTMLButtonElement;
                   btn.style.backgroundColor = "transparent";
-                  btn.style.borderColor = "var(--border)";
-                  btn.style.color = "var(--text-secondary)";
+                  btn.style.borderColor = "var(--color-border)";
+                  btn.style.color = "var(--color-text-secondary)";
                 }}
               >
                 <svg
