@@ -1,0 +1,106 @@
+[
+  {
+    "level_slug": "what-is-rag",
+    "asset_type": "d2",
+    "title": "RAG Architecture Overview",
+    "description": "High-level view of the RAG pipeline showing the Retrieve-Augment-Generate flow",
+    "source_prompt": "RAG pipeline overview with 3 labeled sections: R (retrieve), A (augment), G (generate)",
+    "source_file": "content/diagrams/rag-architecture-overview.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/rag-architecture-overview.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  },
+  {
+    "level_slug": "what-is-rag",
+    "asset_type": "d2",
+    "title": "RAG vs Fine-Tuning Decision Tree",
+    "description": "Decision tree helping choose between RAG, fine-tuning, and prompt engineering",
+    "source_prompt": "Decision tree for RAG vs fine-tuning vs prompt engineering based on knowledge and behavior needs",
+    "source_file": "content/diagrams/rag-vs-finetuning-decision-tree.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/rag-vs-finetuning-decision-tree.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 2
+  },
+  {
+    "level_slug": "chunking-strategies",
+    "asset_type": "d2",
+    "title": "Chunking Strategies Comparison",
+    "description": "Side-by-side comparison of fixed-size, recursive, and semantic chunking",
+    "source_prompt": "Three-column comparison of chunking strategies with pros, cons, and best-for recommendations",
+    "source_file": "content/diagrams/chunking-strategies-comparison.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/chunking-strategies-comparison.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  },
+  {
+    "level_slug": "vector-databases",
+    "asset_type": "d2",
+    "title": "Vector Search Visualization",
+    "description": "How vector similarity search finds nearest neighbors in embedding space",
+    "source_prompt": "Vector space with query vector, document dots, cosine similarity scores, and top-K selection",
+    "source_file": "content/diagrams/vector-search-visualization.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/vector-search-visualization.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  },
+  {
+    "level_slug": "hybrid-search-retrieval",
+    "asset_type": "d2",
+    "title": "Production RAG Stack",
+    "description": "Full production RAG architecture showing tools at each layer",
+    "source_prompt": "5-layer production stack: client, orchestration, retrieval, generation, data pipeline with tool names and costs",
+    "source_file": "content/diagrams/production-rag-stack.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/production-rag-stack.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  },
+  {
+    "level_slug": "hybrid-search-retrieval",
+    "asset_type": "d2",
+    "title": "Hybrid Retrieval Flow",
+    "description": "How keyword (BM25) and semantic search combine via Reciprocal Rank Fusion",
+    "source_prompt": "Dual-path flow: keyword search + semantic search merging at RRF with comparison callout",
+    "source_file": "content/diagrams/hybrid-retrieval-flow.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/hybrid-retrieval-flow.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 2
+  },
+  {
+    "level_slug": "evaluation-cicd",
+    "asset_type": "d2",
+    "title": "RAG Evaluation Pipeline",
+    "description": "Three-stage evaluation flow: retrieval quality, generation quality, end-to-end metrics",
+    "source_prompt": "Evaluation pipeline with Recall@K, Faithfulness, F1 metrics and feedback loop to parameter tuning",
+    "source_file": "content/diagrams/rag-evaluation-pipeline.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/rag-evaluation-pipeline.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  },
+  {
+    "level_slug": "production-rag-cost-latency",
+    "asset_type": "d2",
+    "title": "Cost-Latency Tradeoff Matrix",
+    "description": "Comparison grid of embedding models, vector DBs, and LLMs with cost and latency",
+    "source_prompt": "Grid comparing embedding models, vector DBs, LLMs with budget and production build paths highlighted",
+    "source_file": "content/diagrams/cost-latency-tradeoff.d2",
+    "metadata": {
+      "rendered_svg": "/diagrams/cost-latency-tradeoff.svg",
+      "theme": "dark-mauve"
+    },
+    "sort_order": 1
+  }
+]

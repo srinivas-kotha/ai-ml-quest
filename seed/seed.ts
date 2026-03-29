@@ -200,10 +200,66 @@ async function seed() {
       totalSections += sectionCount;
     }
 
+    // Seed visual assets
+    const visualAssetsPath = path.resolve(__dirname, "visual-assets.json");
+    let totalAssets = 0;
+
+    if (fs.existsSync(visualAssetsPath)) {
+      console.log("\nSeeding: visual-assets.json");
+
+      const assets: Array<{
+        level_slug: string;
+        asset_type: string;
+        title: string;
+        description: string;
+        source_prompt: string;
+        source_file: string;
+        metadata: Record<string, unknown>;
+        sort_order: number;
+      }> = JSON.parse(fs.readFileSync(visualAssetsPath, "utf-8"));
+
+      for (const asset of assets) {
+        // Look up level ID by slug
+        const levelResult = await client.query(
+          `SELECT id FROM quest_levels WHERE slug = $1`,
+          [asset.level_slug],
+        );
+
+        if (levelResult.rows.length === 0) {
+          console.warn(
+            `  WARNING: Level '${asset.level_slug}' not found, skipping asset '${asset.title}'`,
+          );
+          continue;
+        }
+
+        const levelId = levelResult.rows[0].id;
+
+        await client.query(
+          `INSERT INTO quest_visual_assets (level_id, asset_type, title, description, source_prompt, source_file, metadata, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT DO NOTHING`,
+          [
+            levelId,
+            asset.asset_type,
+            asset.title,
+            asset.description,
+            asset.source_prompt,
+            asset.source_file,
+            JSON.stringify(asset.metadata),
+            asset.sort_order,
+          ],
+        );
+
+        totalAssets++;
+      }
+
+      console.log(`  ${totalAssets} visual assets seeded`);
+    }
+
     await client.query("COMMIT");
 
     console.log(
-      `\n✓ Seed complete: ${seedFiles.length} chapters, ${totalLevels} levels, ${totalSections} learn sections`,
+      `\n✓ Seed complete: ${seedFiles.length} chapters, ${totalLevels} levels, ${totalSections} learn sections, ${totalAssets} visual assets`,
     );
   } catch (err) {
     await client.query("ROLLBACK");

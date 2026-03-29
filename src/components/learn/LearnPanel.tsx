@@ -12,6 +12,7 @@ import type {
   AnalogyContent,
   ExplorationContent,
   PredictionContent,
+  D2DiagramContent,
 } from "@/types/content";
 import dynamic from "next/dynamic";
 import MarkdownText from "./MarkdownText";
@@ -70,6 +71,11 @@ const ExplorationWrapper = dynamic(() => import("./ExplorationWrapper"), {
 });
 
 const PredictionPrompt = dynamic(() => import("./PredictionPrompt"), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
+
+const DiagramViewer = dynamic(() => import("./DiagramViewer"), {
   loading: () => <SectionSkeleton />,
   ssr: false,
 });
@@ -216,6 +222,19 @@ function SectionRenderer({
           question={predictionContent.question ?? ""}
           options={predictionContent.options}
           reveal={predictionContent.reveal ?? ""}
+          accentColor={accentColor}
+        />
+      );
+    }
+
+    case "d2_diagram": {
+      const d2Content = content as D2DiagramContent;
+      return (
+        <DiagramViewer
+          svgPath={d2Content.svgPath ?? ""}
+          title={title ?? "Diagram"}
+          altText={d2Content.altText ?? "Architecture diagram"}
+          caption={d2Content.caption}
           accentColor={accentColor}
         />
       );

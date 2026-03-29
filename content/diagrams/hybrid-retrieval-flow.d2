@@ -1,0 +1,271 @@
+# Hybrid Retrieval Flow — Keyword + Semantic Search Combined
+# AI/ML Quest - Chapter 1: Why one search method is never enough
+
+direction: down
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  accent: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  container: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  keyword: {
+    shape: rectangle
+    style: {
+      fill: "#1a3a4a"
+      stroke: "#38bdf8"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  semantic: {
+    shape: rectangle
+    style: {
+      fill: "#2a1a4a"
+      stroke: "#a78bfa"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  fusion: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  output: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  callout: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#8a8aa8"
+      stroke-width: 1
+      font-color: "#c4c4dc"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+  speed: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#5a5a7a"
+      font-color: "#8a8aa8"
+      font-size: 10
+      border-radius: 8
+    }
+  }
+}
+
+# ============================================
+# Input
+# ============================================
+query: "User Query\npython memory leak debugging" {
+  class: accent
+}
+
+# ============================================
+# Dual Path
+# ============================================
+keyword_path: "Path 1: Keyword Search" {
+  class: container
+
+  bm25: "BM25 Algorithm\nExact word matching\nTF-IDF scoring" {
+    class: keyword
+  }
+  k_results: "Exact Matches\nDocs containing 'python'\n'memory' and 'leak'" {
+    class: node
+  }
+  k_speed: "Latency: ~5ms" {
+    class: speed
+  }
+
+  bm25 -> k_results: {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+    }
+  }
+  bm25 -> k_speed: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-dash: 3
+    }
+  }
+}
+
+semantic_path: "Path 2: Semantic Search" {
+  class: container
+
+  vector: "Vector Similarity\nMeaning-based matching\nCosine distance" {
+    class: semantic
+  }
+  s_results: "Meaning Matches\nDocs about 'garbage collection'\n'resource exhaustion' 'OOM'" {
+    class: node
+  }
+  s_speed: "Latency: ~30ms" {
+    class: speed
+  }
+
+  vector -> s_results: {
+    style: {
+      stroke: "#a78bfa"
+      stroke-width: 2
+    }
+  }
+  vector -> s_speed: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-dash: 3
+    }
+  }
+}
+
+# ============================================
+# Fusion
+# ============================================
+rrf: "Reciprocal Rank Fusion (RRF)\nMerge both ranked lists\nScore = sum(1 / (k + rank))" {
+  class: fusion
+}
+
+# ============================================
+# Output
+# ============================================
+ranked: "Re-ranked Results\nBest of both worlds" {
+  class: output
+}
+
+context: "LLM Context Window\nTop 5 chunks inserted into prompt" {
+  class: node
+}
+
+# ============================================
+# Why Hybrid callout
+# ============================================
+comparison: "Why Hybrid Wins" {
+  class: container
+
+  alone_kw: "Keyword alone: misses synonyms\n'garbage collection' never matched" {
+    class: callout
+  }
+  alone_sem: "Semantic alone: misses exact terms\n'python' matched 'java' docs too" {
+    class: callout
+  }
+  hybrid: "Hybrid: catches exact terms\nAND related concepts" {
+    class: callout
+    style: {
+      stroke: "#4ade80"
+      font-color: "#4ade80"
+    }
+  }
+}
+
+# ============================================
+# Connections
+# ============================================
+query -> keyword_path.bm25: "tokenize" {
+  style: {
+    stroke: "#38bdf8"
+    stroke-width: 2
+    font-color: "#38bdf8"
+    font-size: 11
+  }
+}
+query -> semantic_path.vector: "embed" {
+  style: {
+    stroke: "#a78bfa"
+    stroke-width: 2
+    font-color: "#a78bfa"
+    font-size: 11
+  }
+}
+
+keyword_path.k_results -> rrf: "ranked list A" {
+  style: {
+    stroke: "#38bdf8"
+    stroke-width: 2
+    font-color: "#38bdf8"
+    font-size: 11
+  }
+}
+semantic_path.s_results -> rrf: "ranked list B" {
+  style: {
+    stroke: "#a78bfa"
+    stroke-width: 2
+    font-color: "#a78bfa"
+    font-size: 11
+  }
+}
+
+rrf -> ranked: "fused ranking" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+ranked -> context: "top-k" {
+  style: {
+    stroke: "#4ade80"
+    stroke-width: 2
+    font-color: "#4ade80"
+    font-size: 11
+  }
+}

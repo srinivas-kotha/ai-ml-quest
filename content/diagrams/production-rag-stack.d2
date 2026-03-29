@@ -1,0 +1,323 @@
+# Production RAG Architecture Stack
+# AI/ML Quest - Chapter 1: Production RAG Pipeline
+
+direction: down
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  layer: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  highlight: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  cost: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#8a8aa8"
+      font-color: "#c4c4dc"
+      font-size: 10
+      border-radius: 8
+    }
+  }
+  sub: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#5a5a7a"
+      font-color: "#c4c4dc"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+  pipeline-node: {
+    shape: rectangle
+    style: {
+      fill: "#1a3a4a"
+      stroke: "#38bdf8"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 12
+      border-radius: 12
+    }
+  }
+  output: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+}
+
+# ============================================
+# Layer 1: Client Layer
+# ============================================
+client: "1. Client Layer" {
+  class: layer
+
+  user: "User Query" {
+    class: highlight
+  }
+  gateway: "API Gateway\n(FastAPI / Express)" {
+    class: node
+  }
+
+  user -> gateway: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-width: 2
+    }
+  }
+}
+
+# ============================================
+# Layer 2: Orchestration Layer
+# ============================================
+orchestration: "2. Orchestration Layer" {
+  class: layer
+
+  framework: "LangChain / LlamaIndex" {
+    class: highlight
+  }
+  router: "Query Router" {
+    class: sub
+  }
+  reranker: "Reranker\n(Cohere / cross-encoder)" {
+    class: sub
+  }
+  citation: "Citation Generator" {
+    class: sub
+  }
+
+  framework -> router: {
+    style.stroke: "#8a8aa8"
+  }
+  framework -> reranker: {
+    style.stroke: "#8a8aa8"
+  }
+  framework -> citation: {
+    style.stroke: "#8a8aa8"
+  }
+}
+
+# ============================================
+# Layer 3: Retrieval Layer
+# ============================================
+retrieval: "3. Retrieval Layer" {
+  class: layer
+
+  vectordb: "Vector DB\n(pgvector / Pinecone)" {
+    class: highlight
+  }
+  embedding: "Embedding Model\n(text-embedding-3-small)" {
+    class: node
+  }
+  chunks: "Document Chunks\n(500-1000 tokens each)" {
+    class: node
+  }
+
+  chunks -> embedding: "encode" {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+      font-color: "#38bdf8"
+      font-size: 11
+    }
+  }
+  embedding -> vectordb: "store vectors" {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+      font-color: "#38bdf8"
+      font-size: 11
+    }
+  }
+
+  cost-embed: "0.02 / 1M tokens" {
+    class: cost
+  }
+  embedding -> cost-embed: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-dash: 3
+    }
+  }
+}
+
+# ============================================
+# Layer 4: Generation Layer
+# ============================================
+generation: "4. Generation Layer" {
+  class: layer
+
+  llm: "LLM\n(GPT-4o / Claude 3.5 Sonnet)" {
+    class: highlight
+  }
+  response: "Response + Citations" {
+    class: output
+  }
+
+  llm -> response: "generate" {
+    style: {
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#4ade80"
+      font-size: 11
+    }
+  }
+
+  cost-llm: "2.50-3.00 / 1M input tokens" {
+    class: cost
+  }
+  llm -> cost-llm: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-dash: 3
+    }
+  }
+}
+
+# ============================================
+# Layer 5: Data Pipeline (feeds retrieval)
+# ============================================
+pipeline: "5. Data Ingestion Pipeline" {
+  class: layer
+
+  ingest: "Document Ingestion\n(PDF, HTML, Markdown)" {
+    class: pipeline-node
+  }
+  chunk: "Chunking\n(recursive / semantic)" {
+    class: pipeline-node
+  }
+  embed: "Embedding\n(batch processing)" {
+    class: pipeline-node
+  }
+  index: "Index & Store\n(upsert to vector DB)" {
+    class: pipeline-node
+  }
+
+  ingest -> chunk: {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+    }
+  }
+  chunk -> embed: {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+    }
+  }
+  embed -> index: {
+    style: {
+      stroke: "#38bdf8"
+      stroke-width: 2
+    }
+  }
+}
+
+# ============================================
+# Cross-layer connections
+# ============================================
+
+# Client -> Orchestration
+client.gateway -> orchestration.framework: "route query" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+# Orchestration -> Retrieval (search)
+orchestration.router -> retrieval.vectordb: "similarity search\n(top-k=5)" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+# Retrieval -> Orchestration (results)
+retrieval.vectordb -> orchestration.reranker: "candidate chunks" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+# Orchestration -> Generation
+orchestration.reranker -> generation.llm: "query + top chunks\n(context window)" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+# Generation -> Orchestration (for citation)
+generation.llm -> orchestration.citation: "raw response" {
+  style: {
+    stroke: "#8a8aa8"
+    stroke-width: 1
+    stroke-dash: 5
+    font-color: "#8a8aa8"
+    font-size: 10
+  }
+}
+
+# Pipeline feeds into retrieval
+pipeline.index -> retrieval.vectordb: "vectors + metadata" {
+  style: {
+    stroke: "#38bdf8"
+    stroke-width: 2
+    stroke-dash: 5
+    font-color: "#38bdf8"
+    font-size: 11
+  }
+}

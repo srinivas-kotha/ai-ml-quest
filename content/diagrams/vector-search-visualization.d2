@@ -1,0 +1,253 @@
+# Vector Similarity Search Visualization
+# AI/ML Quest - Chapter 1: How machines find "similar" text
+
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  accent: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  container: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  dot-far: {
+    shape: circle
+    style: {
+      fill: "#3d3560"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+  dot-near: {
+    shape: circle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 11
+      bold: true
+    }
+  }
+  query-dot: {
+    shape: circle
+    style: {
+      fill: "#4a1a2e"
+      stroke: "#f87171"
+      stroke-width: 2
+      font-color: "#f87171"
+      font-size: 11
+      bold: true
+    }
+  }
+  result: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 12
+      bold: true
+      border-radius: 12
+    }
+  }
+  score: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#ffb800"
+      stroke-width: 1
+      font-color: "#ffb800"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+}
+
+# ============================================
+# Left: Query encoding
+# ============================================
+input: "Query Encoding" {
+  class: container
+
+  query: "User Question\nHow do I cancel my subscription?" {
+    class: accent
+  }
+  model: "Embedding Model\ntext-embedding-3-small" {
+    class: node
+  }
+  vector: "Query Vector\n[0.82, -0.15, 0.43, ...]" {
+    class: node
+  }
+
+  query -> model: "encode" {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 11
+    }
+  }
+  model -> vector: "1536 dimensions" {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 11
+    }
+  }
+}
+
+# ============================================
+# Middle: Vector space
+# ============================================
+space: "Vector Space (your document chunks)" {
+  class: container
+
+  q: "Q" {
+    class: query-dot
+  }
+
+  d1: "Cancellation\npolicy" {
+    class: dot-near
+  }
+  d2: "Refund\nprocess" {
+    class: dot-near
+  }
+  d3: "Account\nsettings" {
+    class: dot-near
+  }
+  d4: "Pricing\ntiers" {
+    class: dot-far
+  }
+  d5: "Team\nmanagement" {
+    class: dot-far
+  }
+  d6: "API\ndocs" {
+    class: dot-far
+  }
+  d7: "Release\nnotes" {
+    class: dot-far
+  }
+
+  q -> d1: "0.94" {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 12
+      bold: true
+    }
+  }
+  q -> d2: "0.87" {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 12
+      bold: true
+    }
+  }
+  q -> d3: "0.81" {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 11
+    }
+  }
+}
+
+# ============================================
+# Right: Top-K Results
+# ============================================
+results: "Top-K = 3 Results" {
+  class: container
+
+  r1: "1. Cancellation policy\nScore: 0.94" {
+    class: result
+  }
+  r2: "2. Refund process\nScore: 0.87" {
+    class: score
+  }
+  r3: "3. Account settings\nScore: 0.81" {
+    class: score
+  }
+
+  r1 -> r2: {
+    style.stroke: "#8a8aa8"
+  }
+  r2 -> r3: {
+    style.stroke: "#8a8aa8"
+  }
+}
+
+# ============================================
+# Cross-section connections
+# ============================================
+input.vector -> space.q: "cosine similarity" {
+  style: {
+    stroke: "#f87171"
+    stroke-width: 2
+    font-color: "#f87171"
+    font-size: 11
+  }
+}
+
+space.d1 -> results.r1: "nearest" {
+  style: {
+    stroke: "#4ade80"
+    stroke-width: 2
+    font-color: "#4ade80"
+    font-size: 11
+  }
+}
+space.d2 -> results.r2: {
+  style: {
+    stroke: "#4ade80"
+    stroke-width: 1
+  }
+}
+space.d3 -> results.r3: {
+  style: {
+    stroke: "#4ade80"
+    stroke-width: 1
+  }
+}

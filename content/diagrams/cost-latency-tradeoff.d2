@@ -1,0 +1,328 @@
+# Cost vs Latency Tradeoff Matrix for RAG Components
+# AI/ML Quest - Chapter 1: Production RAG Pipeline
+
+direction: down
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  section-header: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 15
+      bold: true
+      border-radius: 12
+    }
+  }
+  cell: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 12
+      border-radius: 12
+    }
+  }
+  cell-gold: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 12
+      border-radius: 12
+    }
+  }
+  badge-budget: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#4ade80"
+      font-size: 11
+      bold: true
+      border-radius: 8
+    }
+  }
+  badge-prod: {
+    shape: rectangle
+    style: {
+      fill: "#4a3a1a"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffb800"
+      font-size: 11
+      bold: true
+      border-radius: 8
+    }
+  }
+  connector: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-width: 1
+    }
+  }
+  path-budget: {
+    style: {
+      stroke: "#4ade80"
+      stroke-width: 3
+      stroke-dash: 0
+    }
+  }
+  path-prod: {
+    style: {
+      stroke: "#ffb800"
+      stroke-width: 3
+      stroke-dash: 0
+    }
+  }
+}
+
+# ============================================
+# Title
+# ============================================
+title: "RAG Component Cost vs Latency Tradeoffs" {
+  shape: rectangle
+  style: {
+    fill: "#1c1535"
+    stroke: "#3d3560"
+    font-color: "#ffffff"
+    font-size: 18
+    bold: true
+    border-radius: 12
+  }
+}
+
+# ============================================
+# Embedding Models Row
+# ============================================
+embed-header: "Embedding Models" {
+  class: section-header
+}
+
+embed-small: |md
+  **text-embedding-3-small**
+  Latency: ~15ms
+  Cost: $0.02 / 1M tokens
+  Dims: 1536
+  _Fast and cheap_
+| {
+  class: cell-gold
+}
+
+embed-large: |md
+  **text-embedding-3-large**
+  Latency: ~30ms
+  Cost: $0.13 / 1M tokens
+  Dims: 3072
+  _Higher accuracy, 6.5x cost_
+| {
+  class: cell
+}
+
+embed-cohere: |md
+  **Cohere embed-v3**
+  Latency: ~20ms
+  Cost: $0.10 / 1M tokens
+  Dims: 1024
+  _Multilingual, good accuracy_
+| {
+  class: cell
+}
+
+title -> embed-header: {
+  style.stroke: "#3d3560"
+}
+
+embed-header -> embed-small: {
+  class: connector
+}
+embed-header -> embed-large: {
+  class: connector
+}
+embed-header -> embed-cohere: {
+  class: connector
+}
+
+# ============================================
+# Vector DB Row
+# ============================================
+vdb-header: "Vector Databases" {
+  class: section-header
+}
+
+vdb-pgvector: |md
+  **pgvector**
+  Latency: ~50ms (p95)
+  Cost: Free (self-hosted)
+  Scale: ~1M vectors
+  _Use existing Postgres_
+| {
+  class: cell-gold
+}
+
+vdb-pinecone: |md
+  **Pinecone**
+  Latency: ~20ms (p95)
+  Cost: $70/mo (s1.x1)
+  Scale: ~5M vectors
+  _Managed, fastest_
+| {
+  class: cell
+}
+
+vdb-weaviate: |md
+  **Weaviate**
+  Latency: ~30ms (p95)
+  Cost: Free (self-hosted)
+  Scale: ~10M vectors
+  _Hybrid search built-in_
+| {
+  class: cell
+}
+
+embed-header -> vdb-header: {
+  style.stroke: "#3d3560"
+  style.stroke-dash: 5
+}
+
+vdb-header -> vdb-pgvector: {
+  class: connector
+}
+vdb-header -> vdb-pinecone: {
+  class: connector
+}
+vdb-header -> vdb-weaviate: {
+  class: connector
+}
+
+# ============================================
+# LLM Row
+# ============================================
+llm-header: "LLM Generation" {
+  class: section-header
+}
+
+llm-mini: |md
+  **GPT-4o-mini**
+  Latency: ~300ms TTFT
+  Cost: $0.15 / 1M input
+  Output: $0.60 / 1M
+  _Best value for RAG_
+| {
+  class: cell-gold
+}
+
+llm-4o: |md
+  **GPT-4o**
+  Latency: ~500ms TTFT
+  Cost: $2.50 / 1M input
+  Output: $10.00 / 1M
+  _Highest reasoning quality_
+| {
+  class: cell
+}
+
+llm-claude: |md
+  **Claude 3.5 Sonnet**
+  Latency: ~400ms TTFT
+  Cost: $3.00 / 1M input
+  Output: $15.00 / 1M
+  _Best long-context handling_
+| {
+  class: cell
+}
+
+vdb-header -> llm-header: {
+  style.stroke: "#3d3560"
+  style.stroke-dash: 5
+}
+
+llm-header -> llm-mini: {
+  class: connector
+}
+llm-header -> llm-4o: {
+  class: connector
+}
+llm-header -> llm-claude: {
+  class: connector
+}
+
+# ============================================
+# Budget Build Path
+# ============================================
+budget: "Budget Build\n~5/mo + API costs" {
+  class: badge-budget
+}
+
+budget -> embed-small: "embedding" {
+  class: path-budget
+  style.font-color: "#4ade80"
+  style.font-size: 11
+}
+budget -> vdb-pgvector: "storage" {
+  class: path-budget
+  style.font-color: "#4ade80"
+  style.font-size: 11
+}
+budget -> llm-mini: "generation" {
+  class: path-budget
+  style.font-color: "#4ade80"
+  style.font-size: 11
+}
+
+# ============================================
+# Production Build Path
+# ============================================
+prod: "Production Build\n~100/mo + API costs" {
+  class: badge-prod
+}
+
+prod -> embed-small: "embedding" {
+  class: path-prod
+  style.font-color: "#ffb800"
+  style.font-size: 11
+}
+prod -> vdb-pinecone: "storage" {
+  class: path-prod
+  style.font-color: "#ffb800"
+  style.font-size: 11
+}
+prod -> llm-4o: "generation" {
+  class: path-prod
+  style.font-color: "#ffb800"
+  style.font-size: 11
+}
+
+# ============================================
+# Total Cost Estimates
+# ============================================
+estimate: "Per-Query Cost Estimate (1K token query, top-5 retrieval)\n\nBudget: ~0.001/query (embed 0.00002 + retrieval 0 + gen 0.0006)\nProduction: ~0.013/query (embed 0.00002 + retrieval 0.003 + gen 0.01)\n\nAt 10K queries/day: Budget = 10/mo vs Production = 130/mo" {
+  shape: rectangle
+  style: {
+    fill: "#2d2550"
+    stroke: "#3d3560"
+    stroke-width: 1
+    font-color: "#c4c4dc"
+    font-size: 12
+    border-radius: 12
+  }
+}
+
+llm-header -> estimate: {
+  style.stroke: "#3d3560"
+  style.stroke-dash: 5
+}

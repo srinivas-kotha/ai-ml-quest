@@ -54,7 +54,8 @@ export type SectionType =
   | "callout"
   | "analogy"
   | "exploration"
-  | "prediction";
+  | "prediction"
+  | "d2_diagram";
 
 export interface LearnSection {
   id: number;
@@ -198,6 +199,15 @@ export interface PredictionContent {
   reveal: string;
 }
 
+// ----------------------------------------------------------
+// D2 diagram content schema
+// ----------------------------------------------------------
+export interface D2DiagramContent {
+  svgPath: string; // path relative to public/, e.g. "/diagrams/rag-architecture-overview.svg"
+  altText: string;
+  caption?: string;
+}
+
 export type LearnSectionContent =
   | TextContent
   | CodeContent
@@ -208,7 +218,8 @@ export type LearnSectionContent =
   | CalloutContent
   | AnalogyContent
   | ExplorationContent
-  | PredictionContent;
+  | PredictionContent
+  | D2DiagramContent;
 
 // ----------------------------------------------------------
 // Game types

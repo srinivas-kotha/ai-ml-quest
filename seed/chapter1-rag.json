@@ -95,7 +95,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 6,
           "section_type": "text",
           "title": "What is Retrieval-Augmented Generation?",
           "content": {
@@ -103,7 +103,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 1,
           "section_type": "diagram",
           "title": "The RAG Pipeline",
           "content": {
@@ -150,7 +150,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 7,
           "section_type": "comparison",
           "title": "Keyword Search vs Semantic Search (RAG)",
           "content": {
@@ -165,7 +165,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 8,
           "section_type": "callout",
           "title": "Enterprise Skills Bridge",
           "content": {
@@ -175,7 +175,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "RAG Concepts You Already Know",
           "content": {
@@ -274,7 +274,7 @@
           }
         },
         {
-          "sort_order": 6,
+          "sort_order": 5,
           "section_type": "prediction",
           "title": "Predict: Keyword vs Semantic",
           "content": {
@@ -289,7 +289,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 2,
           "section_type": "exploration",
           "title": "RAG Pipeline Data Flow",
           "content": {
@@ -387,7 +387,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 9,
           "section_type": "prediction",
           "title": "Predict: What Happens with Bad Chunks?",
           "content": {
@@ -402,7 +402,7 @@
           }
         },
         {
-          "sort_order": 9,
+          "sort_order": 10,
           "section_type": "prediction",
           "title": "Predict: Updating Knowledge",
           "content": {
@@ -414,6 +414,26 @@
               "Neither — you need to wait for the next model version from OpenAI"
             ],
             "reveal": "RAG wins decisively for dynamic knowledge updates. Re-indexing a document into a vector store takes seconds to minutes: chunk the document, compute embeddings, upsert into pgvector. Fine-tuning takes hours minimum: prepare training data, run training (30min-6hrs depending on model size), evaluate, deploy. For knowledge that changes weekly or faster, RAG is the only practical choice. Fine-tuning is for when you need to change the model's behavior or style — not its factual knowledge."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "d2_diagram",
+          "title": "RAG Architecture Overview",
+          "content": {
+            "svgPath": "/diagrams/rag-architecture-overview.svg",
+            "altText": "Architecture diagram showing the complete RAG pipeline: user query flows through embedding model, vector database retrieval, prompt augmentation, and LLM generation, with a parallel indexing pipeline showing document ingestion, chunking, embedding, and vector storage.",
+            "caption": "The full RAG architecture has two pipelines: an offline indexing pipeline (documents to vectors) and an online query pipeline (question to grounded answer). Understanding both is essential for production debugging."
+          }
+        },
+        {
+          "sort_order": 11,
+          "section_type": "d2_diagram",
+          "title": "RAG vs Fine-Tuning Decision Tree",
+          "content": {
+            "svgPath": "/diagrams/rag-vs-finetuning-decision-tree.svg",
+            "altText": "Decision tree showing when to use RAG, fine-tuning, or prompt engineering based on knowledge requirements and update frequency. Starts with 'Do you need external knowledge?' — if yes and data updates frequently, use RAG; if you need style or behavior changes, use fine-tuning; if neither, prompt engineering may suffice.",
+            "caption": "This decision tree helps you choose the right approach. Start with 'Do you need external knowledge?' — if yes and the data changes regularly, RAG is usually the answer. Fine-tuning is for behavioral changes like style, tone, or classification into proprietary categories."
           }
         }
       ]
@@ -546,6 +566,16 @@
             "variant": "insight",
             "title": "The Hierarchy of Chunking Decisions",
             "content": "Parse format first → choose chunk size based on your query type (512 for point lookups, 128 for keyword-heavy, 1024 for summarization) → always add overlap → always add metadata. Semantic chunking adds 100-300ms per document and underperforms recursive splitting on technical text. Reserve it for narrative prose like books or articles."
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "d2_diagram",
+          "title": "Chunking Strategies Comparison",
+          "content": {
+            "svgPath": "/diagrams/chunking-strategies-comparison.svg",
+            "altText": "Comparison diagram showing four chunking strategies side by side: fixed-size splitting (uniform blocks), recursive character splitting (respects paragraph and sentence boundaries), semantic splitting (groups by meaning similarity), and document-aware splitting (follows document structure like headings and sections). Each strategy shows example output chunks from the same source document.",
+            "caption": "Not all chunking strategies are equal. Recursive character splitting at 512 tokens is the production default because it respects natural text boundaries while maintaining consistent chunk sizes. Semantic splitting sounds smarter but underperforms on dense technical text."
           }
         }
       ]
@@ -790,6 +820,16 @@
             "title": "Vector Indexes = B-Trees for Meaning",
             "content": "You've spent years tuning B-tree indexes on SQL Server and Oracle. HNSW is the same concept applied to high-dimensional space: trade storage and write overhead for fast reads. The tuning discipline transfers: monitor index build time, watch for index bloat on high-write workloads, and benchmark recall vs query latency trade-offs the same way you'd benchmark SQL index selectivity."
           }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "d2_diagram",
+          "title": "Vector Search Visualization",
+          "content": {
+            "svgPath": "/diagrams/vector-search-visualization.svg",
+            "altText": "Visualization of vector similarity search in 2D space: a query vector (arrow) points into a cloud of document embedding points. The nearest K points are highlighted, showing how cosine similarity finds semantically related documents. An HNSW graph overlay shows the hierarchical index structure with navigable small-world connections between nodes at multiple layers.",
+            "caption": "Vector search finds documents by meaning, not keywords. Each document chunk becomes a point in high-dimensional space. The query is also a point, and the database returns the K nearest neighbors. HNSW indexes make this O(log n) instead of comparing every vector."
+          }
         }
       ]
     },
@@ -877,6 +917,26 @@
             "variant": "tip",
             "title": "Hybrid Search Requires Zero Extra Infrastructure on PostgreSQL",
             "content": "If you run pgvector, you already have hybrid search built-in. PostgreSQL's full-text search (tsvector + GIN index) provides BM25-equivalent lexical search. Add CREATE INDEX ON documents USING GIN (to_tsvector('english', content)); and write a single CTE query with RRF. No Elasticsearch, no extra service, no data sync. Your ops cost stays the same."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "d2_diagram",
+          "title": "Production RAG Stack",
+          "content": {
+            "svgPath": "/diagrams/production-rag-stack.svg",
+            "altText": "Full production RAG stack diagram showing the complete system architecture: client application sends queries to an API gateway, which routes to the RAG service. The RAG service orchestrates embedding (via embedding model), retrieval (via vector database with HNSW index and BM25 full-text index), re-ranking (via cross-encoder with conditional skip), semantic caching (via Redis), and generation (via LLM with model routing between GPT-4o and GPT-4o-mini). A separate indexing pipeline shows document ingestion, parsing, chunking, and embedding into the vector store.",
+            "caption": "A production RAG system is more than retrieve-and-generate. This diagram shows all the components you need at scale: semantic caching for cost, model routing for budget optimization, hybrid retrieval for precision, and conditional re-ranking for latency control."
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "d2_diagram",
+          "title": "Hybrid Retrieval Flow",
+          "content": {
+            "svgPath": "/diagrams/hybrid-retrieval-flow.svg",
+            "altText": "Flow diagram showing hybrid retrieval: a user query branches into two parallel paths — dense vector search (embedding model to ANN search returning ranked results) and sparse BM25 search (tokenization to inverted index returning ranked results). Both result lists feed into a Reciprocal Rank Fusion (RRF) merge step that produces a single re-ranked list, which then passes to the LLM for generation.",
+            "caption": "Hybrid search runs dense (semantic) and sparse (keyword) retrieval in parallel, then merges results with Reciprocal Rank Fusion. Documents appearing in both lists get boosted. This pushes precision from ~62% to ~84% with zero extra infrastructure on PostgreSQL."
           }
         }
       ]
@@ -1108,6 +1168,16 @@
             "variant": "enterprise",
             "title": "Evals Are Integration Tests for AI",
             "content": "You've written integration tests for APIs your whole career. RAGAS evals are integration tests for your RAG pipeline — the golden dataset is your test suite, faithfulness >= 0.80 is your test threshold, and a PR that drops faithfulness is a failing build. The discipline is identical. The only new concept is the judge LLM, and the rule is simple: it must be from a different model family than your generator."
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "d2_diagram",
+          "title": "RAG Evaluation Pipeline",
+          "content": {
+            "svgPath": "/diagrams/rag-evaluation-pipeline.svg",
+            "altText": "CI/CD pipeline diagram for RAG evaluation: a pull request triggers the pipeline, which runs the RAG chain against a golden dataset of 50+ question-answer pairs. The RAGAS framework evaluates four metrics — faithfulness, answer relevancy, context precision, and context recall — using a cross-family judge LLM. Results pass through quality gates: faithfulness >= 0.80 is a hard deploy blocker, answer relevancy >= 0.75 and context precision >= 0.60 are secondary gates. Pass leads to merge; fail blocks the PR with actionable error messages.",
+            "caption": "RAG evaluation belongs in CI/CD, not manual review. Every PR that touches prompts, chunking, or retrieval config runs the golden dataset through RAGAS. Faithfulness >= 0.80 is the hard gate — a failing build means you are about to ship hallucinations."
           }
         }
       ]
@@ -1395,6 +1465,16 @@
             "variant": "enterprise",
             "title": "Production Latency Budget",
             "content": "Budget your latency by component: **Embedding: 50-100ms** (async, off the critical path for queries) → **Vector search: 8-50ms** (HNSW, scales with index size) → **Re-rank: 0-180ms** (conditional skip saves 63%) → **LLM generation: 300-800ms** (the dominant term). Target: **p50 under 800ms**, **p95 under 1.5s** for customer-facing RAG. Redis semantic cache brings cache hits to **8-15ms** — sub-50ms is achievable for 30-70% of queries."
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "d2_diagram",
+          "title": "Cost-Latency Tradeoff Matrix",
+          "content": {
+            "svgPath": "/diagrams/cost-latency-tradeoff.svg",
+            "altText": "Matrix diagram plotting RAG optimization strategies on two axes: cost reduction (vertical) and latency impact (horizontal). Semantic caching is top-left (highest cost savings, lowest latency on cache hits). Model routing is mid-left (high savings, minimal latency increase). Matryoshka truncation is mid-center (moderate savings on storage, no latency impact). Conditional re-ranking skip is mid-right (moderate savings, significant latency improvement). Self-hosted embeddings is bottom-left (high savings but requires ops investment). Each strategy shows its production impact numbers.",
+            "caption": "Not all optimizations are equal. Semantic caching delivers the biggest bang for your buck — eliminating the entire LLM call for 30-70% of queries. Model routing is second. Start from the top-left corner and work your way down based on your system's bottleneck."
           }
         }
       ]
