@@ -1,0 +1,260 @@
+# Chunking Strategies Comparison
+# AI/ML Quest - Chapter 1: How documents become searchable pieces
+
+direction: down
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  header: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 15
+      bold: true
+      border-radius: 12
+    }
+  }
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 12
+      border-radius: 12
+    }
+  }
+  container: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  pro: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 1
+      font-color: "#c4ffd0"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+  con: {
+    shape: rectangle
+    style: {
+      fill: "#4a1a2e"
+      stroke: "#f87171"
+      stroke-width: 1
+      font-color: "#ffc4c4"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+  bestfor: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#ffb800"
+      stroke-width: 1
+      font-color: "#ffb800"
+      font-size: 12
+      bold: true
+      border-radius: 8
+    }
+  }
+  chunk: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#5a5a7a"
+      font-color: "#c4c4dc"
+      font-size: 10
+      border-radius: 8
+    }
+  }
+}
+
+# ============================================
+# Column 1: Fixed-Size Chunking
+# ============================================
+fixed: "Fixed-Size Chunking" {
+  class: container
+
+  title: "Split every N tokens" {
+    class: header
+  }
+  c1: "Chunk 1 (512 tokens)" {
+    class: chunk
+  }
+  overlap: "overlap zone (50 tokens)" {
+    class: chunk
+    style: {
+      stroke: "#ffb800"
+      font-color: "#ffb800"
+    }
+  }
+  c2: "Chunk 2 (512 tokens)" {
+    class: chunk
+  }
+  c3: "Chunk 3 (512 tokens)" {
+    class: chunk
+  }
+
+  title -> c1: {
+    style.stroke: "#8a8aa8"
+  }
+  c1 -> overlap: {
+    style.stroke: "#ffb800"
+  }
+  overlap -> c2: {
+    style.stroke: "#ffb800"
+  }
+  c2 -> c3: {
+    style.stroke: "#8a8aa8"
+  }
+
+  good: "Pro: Simple and fast" {
+    class: pro
+  }
+  bad: "Con: Breaks mid-sentence" {
+    class: con
+  }
+  use: "Best for: Logs, code, CSVs" {
+    class: bestfor
+  }
+}
+
+# ============================================
+# Column 2: Recursive Chunking
+# ============================================
+recursive: "Recursive Chunking" {
+  class: container
+
+  title: "Split at natural boundaries" {
+    class: header
+  }
+  p1: "Paragraph 1 (280 tokens)" {
+    class: chunk
+  }
+  p2: "Paragraph 2 (410 tokens)" {
+    class: chunk
+  }
+  s1: "Sentence group (190 tokens)" {
+    class: chunk
+  }
+  p3: "Paragraph 3 (350 tokens)" {
+    class: chunk
+  }
+
+  title -> p1: {
+    style.stroke: "#8a8aa8"
+  }
+  p1 -> p2: "paragraph break" {
+    style: {
+      stroke: "#8a8aa8"
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+  p2 -> s1: "sentence break" {
+    style: {
+      stroke: "#8a8aa8"
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+  s1 -> p3: "paragraph break" {
+    style: {
+      stroke: "#8a8aa8"
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+
+  good: "Pro: Respects doc structure" {
+    class: pro
+  }
+  bad: "Con: Variable chunk sizes" {
+    class: con
+  }
+  use: "Best for: Docs, articles, wikis" {
+    class: bestfor
+  }
+}
+
+# ============================================
+# Column 3: Semantic Chunking
+# ============================================
+semantic: "Semantic Chunking" {
+  class: container
+
+  title: "Split by topic similarity" {
+    class: header
+  }
+  t1: "Topic A cluster (620 tokens)" {
+    class: chunk
+    style: {
+      stroke: "#38bdf8"
+    }
+  }
+  t2: "Topic B cluster (380 tokens)" {
+    class: chunk
+    style: {
+      stroke: "#a78bfa"
+    }
+  }
+  t3: "Topic C cluster (510 tokens)" {
+    class: chunk
+    style: {
+      stroke: "#fb923c"
+    }
+  }
+
+  title -> t1: "high similarity" {
+    style: {
+      stroke: "#38bdf8"
+      font-color: "#38bdf8"
+      font-size: 10
+    }
+  }
+  t1 -> t2: "topic shift detected" {
+    style: {
+      stroke: "#8a8aa8"
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+  t2 -> t3: "topic shift detected" {
+    style: {
+      stroke: "#8a8aa8"
+      font-color: "#8a8aa8"
+      font-size: 10
+    }
+  }
+
+  good: "Pro: Best retrieval quality" {
+    class: pro
+  }
+  bad: "Con: Expensive, needs embeddings" {
+    class: con
+  }
+  use: "Best for: Complex reports, research" {
+    class: bestfor
+  }
+}

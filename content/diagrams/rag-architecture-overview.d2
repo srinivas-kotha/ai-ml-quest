@@ -1,0 +1,160 @@
+# RAG Architecture Overview — The 30-Second Mental Model
+# AI/ML Quest - Chapter 1: What is RAG?
+
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  accent: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  container: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  output: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+}
+
+# ============================================
+# Input
+# ============================================
+question: "User Question\nWhat does the contract say about termination?" {
+  class: accent
+}
+
+# ============================================
+# The R in RAG — Retrieval
+# ============================================
+retrieval: "The R in RAG  --  RETRIEVAL" {
+  class: container
+
+  embed: "Embedding Model\nConvert text to numbers" {
+    class: node
+  }
+  search: "Vector Search\nFind similar chunks in DB" {
+    class: node
+  }
+  topk: "Top-K Results\nReturn 3-5 best matches" {
+    class: node
+  }
+
+  embed -> search: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-width: 2
+    }
+  }
+  search -> topk: {
+    style: {
+      stroke: "#8a8aa8"
+      stroke-width: 2
+    }
+  }
+}
+
+# ============================================
+# The A in RAG — Augmentation
+# ============================================
+augmentation: "The A in RAG  --  AUGMENTATION" {
+  class: container
+
+  prompt: "Prompt Assembly\nPaste retrieved chunks into\nthe LLM prompt as context" {
+    class: accent
+  }
+}
+
+# ============================================
+# The G in RAG — Generation
+# ============================================
+generation: "The G in RAG  --  GENERATION" {
+  class: container
+
+  llm: "Large Language Model\nRead context, write answer" {
+    class: node
+  }
+  answer: "Grounded Answer\nBacked by real documents" {
+    class: output
+  }
+
+  llm -> answer: "generate" {
+    style: {
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#4ade80"
+      font-size: 11
+    }
+  }
+}
+
+# ============================================
+# Connections between stages
+# ============================================
+question -> retrieval.embed: "encode query" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+retrieval.topk -> augmentation.prompt: "retrieved chunks" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+augmentation.prompt -> generation.llm: "enriched prompt" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}

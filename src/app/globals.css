@@ -688,3 +688,12 @@ h3 {
     transition: none;
   }
 }
+
+/* ============================================================
+   D2 DIAGRAM VIEWER — inline SVG sizing
+   ============================================================ */
+.diagram-svg-container svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}

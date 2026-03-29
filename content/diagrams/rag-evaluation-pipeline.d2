@@ -1,0 +1,278 @@
+# RAG Evaluation Pipeline — How to Measure RAG Quality
+# AI/ML Quest - Chapter 1: You built a RAG, but is it good?
+
+direction: down
+
+vars: {
+  d2-config: {
+    theme-id: 200
+    dark-theme-id: 200
+  }
+}
+
+classes: {
+  node: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#e2e8f0"
+      font-size: 13
+      border-radius: 12
+    }
+  }
+  accent: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  container: {
+    style: {
+      fill: "#1c1535"
+      stroke: "#3d3560"
+      stroke-width: 1
+      font-color: "#8a8aa8"
+      font-size: 11
+      border-radius: 12
+    }
+  }
+  metric: {
+    shape: rectangle
+    style: {
+      fill: "#3d3560"
+      stroke: "#5a5a7a"
+      stroke-width: 1
+      font-color: "#c4c4dc"
+      font-size: 11
+      border-radius: 8
+    }
+  }
+  stage: {
+    shape: rectangle
+    style: {
+      fill: "#2d2550"
+      stroke: "#ffb800"
+      stroke-width: 2
+      font-color: "#ffffff"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  output: {
+    shape: rectangle
+    style: {
+      fill: "#1a4a2e"
+      stroke: "#4ade80"
+      stroke-width: 2
+      font-color: "#e2e8f0"
+      font-size: 14
+      bold: true
+      border-radius: 12
+    }
+  }
+  tool: {
+    shape: rectangle
+    style: {
+      fill: "#1a3a4a"
+      stroke: "#38bdf8"
+      stroke-width: 1
+      font-color: "#38bdf8"
+      font-size: 12
+      border-radius: 8
+    }
+  }
+  tune: {
+    shape: rectangle
+    style: {
+      fill: "#4a3a1a"
+      stroke: "#ffb800"
+      stroke-width: 1
+      font-color: "#ffb800"
+      font-size: 12
+      border-radius: 12
+    }
+  }
+}
+
+# ============================================
+# Input: Test Dataset
+# ============================================
+input: "Test Dataset\n50-200 gold questions\nwith expected answers" {
+  class: accent
+}
+
+# ============================================
+# Stage 1: Retrieval Quality
+# ============================================
+stage1: "Stage 1: Retrieval Quality" {
+  class: container
+
+  title: "Did we find the right chunks?" {
+    class: stage
+  }
+
+  recall: "Recall at K\nOf all relevant docs, how\nmany did we retrieve?" {
+    class: metric
+  }
+  mrr: "MRR\nMean Reciprocal Rank\nHow high is the first hit?" {
+    class: metric
+  }
+  ndcg: "NDCG\nNormalized Discounted\nCumulative Gain" {
+    class: metric
+  }
+
+  title -> recall: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> mrr: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> ndcg: {
+    style.stroke: "#8a8aa8"
+  }
+}
+
+# ============================================
+# Stage 2: Generation Quality
+# ============================================
+stage2: "Stage 2: Generation Quality" {
+  class: container
+
+  title: "Is the LLM answer trustworthy?" {
+    class: stage
+  }
+
+  faithful: "Faithfulness\nDoes the answer stick\nto retrieved context?" {
+    class: metric
+  }
+  relevance: "Answer Relevance\nDoes it actually answer\nthe question asked?" {
+    class: metric
+  }
+  halluc: "Hallucination Rate\nDid the LLM invent\nfacts not in context?" {
+    class: metric
+  }
+
+  title -> faithful: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> relevance: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> halluc: {
+    style.stroke: "#8a8aa8"
+  }
+}
+
+# ============================================
+# Stage 3: End-to-End
+# ============================================
+stage3: "Stage 3: End-to-End Quality" {
+  class: container
+
+  title: "Is the full pipeline working?" {
+    class: stage
+  }
+
+  em: "Exact Match (EM)\nDoes answer match\ngold answer exactly?" {
+    class: metric
+  }
+  f1: "F1 Score\nToken-level overlap\nwith gold answer" {
+    class: metric
+  }
+  human: "Human Evaluation\nDomain expert review\n(sample 10-20%)" {
+    class: metric
+  }
+
+  title -> em: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> f1: {
+    style.stroke: "#8a8aa8"
+  }
+  title -> human: {
+    style.stroke: "#8a8aa8"
+  }
+}
+
+# ============================================
+# Feedback Loop
+# ============================================
+tune: "Tune Parameters\nchunk_size, top_k, overlap,\nprompt template, model" {
+  class: tune
+}
+
+# ============================================
+# Tools callout
+# ============================================
+tools: "Evaluation Tools" {
+  class: container
+
+  ragas: "RAGAS\nOpen-source RAG eval" {
+    class: tool
+  }
+  deepeval: "DeepEval\nUnit tests for LLMs" {
+    class: tool
+  }
+  langsmith: "LangSmith\nTracing and monitoring" {
+    class: tool
+  }
+}
+
+# ============================================
+# Connections
+# ============================================
+input -> stage1.title: "run retrieval" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+stage1.title -> stage2.title: "pass chunks to LLM" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+stage2.title -> stage3.title: "compare output" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+  }
+}
+
+stage3.title -> tune: "low scores trigger tuning" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 2
+    font-color: "#ffb800"
+    font-size: 11
+    stroke-dash: 5
+  }
+}
+
+tune -> input: "re-evaluate with new params" {
+  style: {
+    stroke: "#ffb800"
+    stroke-width: 1
+    font-color: "#ffb800"
+    font-size: 10
+    stroke-dash: 5
+  }
+}

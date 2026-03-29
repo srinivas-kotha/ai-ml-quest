@@ -18,6 +18,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   analogy: "Analogy Panel",
   exploration: "Interactive Exploration",
   prediction: "Prediction Prompt",
+  d2_diagram: "Architecture Diagram",
 };
 
 const SECTION_DESCRIPTIONS: Partial<Record<SectionType, string>> = {
