@@ -768,6 +768,99 @@
               }
             ]
           }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Database Sharding",
+                "familiarIcon": "🗃️",
+                "newConcept": "Document Chunking",
+                "newIcon": "✂️",
+                "bridgeText": "Database sharding splits a large table across multiple servers by partition key (range, hash, or directory). Document chunking splits a large document across multiple vector store entries by split strategy (fixed-size, recursive, or semantic). Both decisions control how data is distributed and how efficiently you can retrieve the piece you need.",
+                "breakPoint": "Sharding is about distributing load across servers — the data within each shard is complete and queryable independently. Chunks are fragments that may be meaningless alone — a chunk that starts mid-sentence loses context. Sharding preserves data integrity; chunking trades it for retrieval granularity."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Log Rotation",
+                "familiarIcon": "📜",
+                "newConcept": "Chunk Size Strategy",
+                "newIcon": "📏",
+                "bridgeText": "Log rotation splits growing log files by size (100MB), time (daily), or content (per-service). Chunking splits growing documents by token count (fixed 512), structure (recursive on paragraphs/sentences), or meaning (semantic similarity boundaries). Both face the same tradeoff: split too large and retrieval is slow, split too small and you lose context.",
+                "breakPoint": "Log rotation preserves complete log entries — each rotated file contains whole lines. Naive chunking can split mid-sentence, corrupting the meaning. Log rotation is lossless; chunking without overlap is lossy at boundaries."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Code Splitting (Webpack)",
+                "familiarIcon": "📦",
+                "newConcept": "Recursive Text Splitting",
+                "newIcon": "🔀",
+                "bridgeText": "Webpack code splitting breaks your bundle into chunks: entry points, dynamic imports, and shared vendors. It tries to split at natural boundaries (module boundaries) before falling back to size limits. Recursive text splitting does the same — it tries paragraphs first, then sentences, then words, then characters. Both optimize for meaningful boundaries over arbitrary size cuts.",
+                "breakPoint": "Code splitting produces independently executable chunks — each chunk is a valid JavaScript module. Text chunks are not independently meaningful — a chunk starting with 'However, this approach...' needs the previous chunk for context. This is why overlap exists in text chunking but not in code splitting."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Breakpoints",
+                "familiarIcon": "📱",
+                "newConcept": "Semantic vs Fixed Chunking",
+                "newIcon": "🎯",
+                "bridgeText": "CSS breakpoints can be fixed pixel values (768px, 1024px, 1440px) or content-based (where the layout actually breaks). Fixed chunking uses a fixed token count (512 tokens) regardless of content. Semantic chunking finds natural topic boundaries — where the meaning actually shifts. Just as content-based breakpoints produce better layouts, semantic chunking can produce more coherent chunks.",
+                "breakPoint": "Content-based breakpoints always produce better layouts. Semantic chunking does NOT always produce better retrieval — the FloTorch benchmark showed recursive splitting (fixed strategy) beat semantic splitting 69% vs 54% on dense technical text. The overhead of semantic boundary detection is not always worth it."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Docker Image Layers",
+                "familiarIcon": "🐳",
+                "newConcept": "Chunk Overlap",
+                "newIcon": "🔗",
+                "bridgeText": "Docker layers share content between images — layer N+1 builds on layer N, and changing one layer does not invalidate earlier layers. Chunk overlap shares content between adjacent chunks — the last 50 tokens of chunk N appear as the first 50 tokens of chunk N+1. Both ensure that boundaries do not create gaps in coverage.",
+                "breakPoint": "Docker layers are hierarchical — each layer depends on all layers below it. Chunk overlap is flat — chunks are independent entries in the vector store with no parent-child relationship. Docker layers are deduplicated; overlapping chunk tokens are stored twice, increasing storage cost."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Git Commits (Atomic vs Squash)",
+                "familiarIcon": "📝",
+                "newConcept": "Chunking Granularity",
+                "newIcon": "🔍",
+                "bridgeText": "Atomic commits capture one logical change each — easy to bisect and revert but many commits to review. Squash commits merge multiple changes — fewer commits but harder to isolate issues. Small chunks (128 tokens) capture precise facts — easy to retrieve exactly what you need but may lack context. Large chunks (1024 tokens) capture full sections — rich context but may dilute the answer with irrelevant content.",
+                "breakPoint": "Git history is append-only and traversable — you can always expand a squash commit by looking at the branch. Chunks are independent in the vector store — there is no 'expand this chunk' operation unless you implement parent-child retrieval. The granularity decision is harder to change after indexing."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: The Perfect Chunk Size",
+          "content": {
+            "question": "You set chunk size to 512 tokens with no overlap. Retrieval recall is great (0.85) — the right chunk is almost always in the top-5. But users complain answers are incomplete. What is happening?",
+            "options": [
+              "The embedding model is too small — upgrade to 3072 dimensions",
+              "512 tokens is too large — the LLM cannot process that much context",
+              "The answer spans two adjacent chunks, and without overlap the second half is missing from retrieval",
+              "The vector database index needs rebuilding — stale data"
+            ],
+            "reveal": "The answer spans two adjacent chunks. With 0.85 recall, the system finds the chunk containing the START of the answer, but the conclusion lives in the next chunk — which was not retrieved because it has different embedding similarity. Fix: add 10-15% overlap (50-75 tokens) so boundary content appears in both chunks, OR implement parent-child retrieval where retrieving a child chunk also returns its parent (larger context window). This is the most common production chunking bug."
+          }
+        },
+        {
+          "sort_order": 10,
+          "section_type": "prediction",
+          "title": "Predict: Code Documentation RAG",
+          "content": {
+            "question": "You are building a RAG system over a 500K-line Python codebase. Your recursive text splitter chunks the code files at 512 tokens. Engineers complain that retrieved chunks often contain a function signature without its docstring, or a docstring without its function body. What is the best fix?",
+            "options": [
+              "Increase chunk size to 2048 tokens to capture more code",
+              "Switch to AST-based chunking using tree-sitter — split at function/class boundaries",
+              "Add 50% overlap so every function appears in at least two chunks",
+              "Use semantic chunking — it will find natural code boundaries"
+            ],
+            "reveal": "AST-based chunking via tree-sitter is the correct answer for code. It parses the code into an abstract syntax tree and splits at function/class boundaries — each chunk is a complete, semantically meaningful unit. Increasing chunk size wastes tokens on unrelated code. 50% overlap doubles storage without solving the boundary problem. Semantic chunking uses embedding similarity to detect boundaries — it works on prose but cannot reliably detect code structure (a docstring and its function body may have very different embeddings). Tools: tree-sitter (multi-language), ast module (Python-only), ts-morph (TypeScript)."
+          }
         }
       ]
     },
@@ -896,6 +989,231 @@
             "variant": "tip",
             "title": "The Embedding Model Decision Tree",
             "content": "**< 1M queries/month:** text-embedding-3-small at $0.02/MTok — best quality-per-dollar, zero ops.\n\n**> 5K queries/day:** Self-host BGE-M3 on a $20/mo GPU — same MTEB performance, 97% cost reduction.\n\n**Privacy requirement:** Self-host — your documents never leave your infrastructure.\n\n**Always:** Use 256-512 dims via Matryoshka truncation — 98% quality at 25-33% of full-dim storage cost."
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "exploration",
+          "title": "Embedding Models — From Text to Vectors",
+          "content": {
+            "title": "Embedding Models — From Text to Vectors",
+            "description": "Click each node to see how text transforms into a vector that captures meaning. Follow the data from raw text through the neural network to the final embedding.",
+            "nodes": [
+              {
+                "id": "raw-text",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Raw Text",
+                  "icon": "📝",
+                  "details": "Input: \"How do I implement retry logic for API calls?\"\n\nThis is the raw user query or document chunk — natural language that needs to become a mathematical object the computer can compare.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "tokenizer",
+                "type": "concept",
+                "position": {
+                  "x": 280,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Tokenizer",
+                  "icon": "✂️",
+                  "details": "Algorithm: BPE (Byte Pair Encoding)\nVocabulary: cl100k_base (100K tokens, used by OpenAI)\n\nTokens: [\"How\", \" do\", \" I\", \" implement\", \" retry\", \" logic\", \" for\", \" API\", \" calls\", \"?\"]\nToken IDs: [4438, 656, 358, 4305, 23261, 12496, 369, 5765, 6880, 30]\n\nEach word (or subword) becomes an integer ID. Rare words get split: \"tokenization\" → [\"token\", \"ization\"].",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "transformer",
+                "type": "concept",
+                "position": {
+                  "x": 560,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Transformer Encoder",
+                  "icon": "🧠",
+                  "details": "Architecture: 12-24 layers of self-attention\n\nEach token attends to every other token:\n- \"retry\" attends strongly to \"API calls\" (context)\n- \"logic\" attends to \"implement\" (intent)\n- \"How\" attends to \"?\" (question pattern)\n\nAfter 12+ layers, each token's representation encodes its meaning IN CONTEXT — not just dictionary definition.\n\nModel sizes: text-embedding-3-small (62M params) vs text-embedding-3-large (335M params)",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "embedding-vector",
+                "type": "concept",
+                "position": {
+                  "x": 840,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Embedding Vector",
+                  "icon": "📐",
+                  "details": "Output: [0.023, -0.041, 0.089, ..., 0.012]\n\nDimensions by model:\n- text-embedding-3-small: 1536 floats\n- text-embedding-3-large: 3072 floats\n- Cohere embed-v3: 1024 floats\n\nStorage: 1536 dims × 4 bytes = 6.1 KB per vector\nAt 1M docs: ~6.1 GB just for embeddings\n\nThis single vector captures the ENTIRE meaning of the input text as a point in high-dimensional space.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "matryoshka",
+                "type": "concept",
+                "position": {
+                  "x": 840,
+                  "y": 0
+                },
+                "data": {
+                  "label": "Matryoshka Trick",
+                  "icon": "🪆",
+                  "details": "Matryoshka Representation Learning (MRL):\nThe model is trained so the FIRST N dimensions carry the most information.\n\nTruncation results (text-embedding-3-large):\n- 3072 dims: 100% quality (baseline)\n- 1536 dims: 98.2% quality, 50% storage\n- 1024 dims: 97.1% quality, 33% storage\n- 512 dims: 96.0% quality, 17% storage\n- 256 dims: 93.8% quality, 8% storage\n\nNo re-training needed — just slice the vector.\nSame model, same API call, just truncate the output.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "cost-comparison",
+                "type": "concept",
+                "position": {
+                  "x": 560,
+                  "y": 0
+                },
+                "data": {
+                  "label": "Cost Comparison",
+                  "icon": "💰",
+                  "details": "Embedding cost per 1M tokens:\n\n- text-embedding-3-small: $0.02 (1536 dims)\n- text-embedding-3-large: $0.13 (3072 dims)\n- Cohere embed-v3: $0.10 (1024 dims)\n- Voyage AI v3: $0.06 (1024 dims)\n- jina-embeddings-v3: $0.02 (1024 dims)\n- Open-source (local): $0 (GPU cost only)\n\nAt 1M documents (~500M tokens):\n- OpenAI small: $10 one-time\n- OpenAI large: $65 one-time\n- Local (RTX 4090): ~$2 in electricity\n\nEmbedding is a one-time cost per document — only re-embed when content changes.",
+                  "accentColor": "#3b82f6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-text-token",
+                "source": "raw-text",
+                "target": "tokenizer",
+                "label": "split into tokens",
+                "animated": true
+              },
+              {
+                "id": "e-token-transformer",
+                "source": "tokenizer",
+                "target": "transformer",
+                "label": "token IDs → attention",
+                "animated": true
+              },
+              {
+                "id": "e-transformer-embed",
+                "source": "transformer",
+                "target": "embedding-vector",
+                "label": "mean pooling",
+                "animated": true
+              },
+              {
+                "id": "e-embed-matryoshka",
+                "source": "embedding-vector",
+                "target": "matryoshka",
+                "label": "truncate dims"
+              },
+              {
+                "id": "e-cost-transformer",
+                "source": "cost-comparison",
+                "target": "transformer",
+                "label": "model choice"
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 7,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Hash Function (SHA-256)",
+                "familiarIcon": "#️⃣",
+                "newConcept": "Embedding Model",
+                "newIcon": "📐",
+                "bridgeText": "A hash function maps arbitrary input to a fixed-size output — SHA-256 always produces 256 bits regardless of input size. An embedding model maps arbitrary text to a fixed-size vector — text-embedding-3-small always produces 1536 floats regardless of input length. Both are deterministic: same input always produces the same output.",
+                "breakPoint": "Hash functions are designed so similar inputs produce wildly different outputs (avalanche effect). Embedding models are the opposite — similar meanings produce nearby vectors. 'retry logic' and 'backoff strategy' hash to completely different values but embed to vectors with 0.89 cosine similarity. Embeddings preserve semantic relationships; hashes destroy them."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Column Types",
+                "familiarIcon": "🗂️",
+                "newConcept": "Embedding Dimensions",
+                "newIcon": "📊",
+                "bridgeText": "Choosing INT vs BIGINT vs NUMERIC for a column is a storage-precision tradeoff — more bytes gives more range. Choosing 512 vs 1536 vs 3072 embedding dimensions is the same tradeoff — more dimensions capture more semantic nuance but cost more storage and computation. Just as you would not use NUMERIC(38,18) for a simple counter, you should not use 3072 dims for a simple FAQ search.",
+                "breakPoint": "Column types have exact semantics — INT always stores integers up to 2^31. Embedding dimensions have no interpretable meaning — dimension 847 does not represent any specific concept. You cannot inspect a single dimension to understand what it captures."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Color Spaces (RGB vs HSL vs LAB)",
+                "familiarIcon": "🎨",
+                "newConcept": "Embedding Spaces",
+                "newIcon": "🌐",
+                "bridgeText": "RGB, HSL, and LAB all represent colors, but in different coordinate systems. Two colors close in LAB space look similar to humans, while colors close in RGB space may look very different. Similarly, different embedding models create different vector spaces — text-embedding-3 and Cohere embed-v3 represent meaning in different coordinate systems. You cannot compare vectors from different models, just as you cannot mix RGB and HSL values.",
+                "breakPoint": "Color spaces have well-defined axes (red, green, blue or hue, saturation, lightness). Embedding dimensions have no human-interpretable axes — they are learned features from training data. You can convert between color spaces deterministically; you cannot convert between embedding spaces without a trained mapping model."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Image Compression (JPEG Quality)",
+                "familiarIcon": "🖼️",
+                "newConcept": "Matryoshka Embeddings",
+                "newIcon": "🪆",
+                "bridgeText": "JPEG quality 100 preserves all detail at maximum file size. Quality 80 loses imperceptible detail at 60% file size. Quality 50 shows artifacts at 20% file size. Matryoshka embeddings work the same way — 3072 dims is quality 100, 1536 dims is quality 98 at 50% storage, 512 dims is quality 96 at 17% storage. You choose the quality-storage tradeoff for your use case.",
+                "breakPoint": "JPEG compression is lossy and irreversible — you cannot recover detail from a quality-50 image. Matryoshka truncation is also irreversible, but the key insight is that the model was TRAINED to front-load important information into early dimensions. JPEG quality is post-hoc compression; Matryoshka quality is architecturally designed."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Log Levels (DEBUG → ERROR)",
+                "familiarIcon": "📊",
+                "newConcept": "Embedding Dimensions as Detail Levels",
+                "newIcon": "🔍",
+                "bridgeText": "Setting log level to ERROR shows only critical issues (compact, fast to scan). Setting to DEBUG shows everything (detailed, slow to process). Using 256 embedding dimensions captures only the coarsest semantic meaning (is this about code or cooking?). Using 3072 dimensions captures fine-grained distinctions (is this about Python retry logic or JavaScript retry logic?).",
+                "breakPoint": "Log levels are categorical — DEBUG contains all INFO messages plus more. Embedding dimensions are not nested — dimension 257 is not 'more detail on dimension 256'. Each additional dimension adds an independent axis of meaning. The analogy holds for the precision tradeoff but not the containment relationship."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Container Registry Layers & Versioning",
+                "familiarIcon": "🐳",
+                "newConcept": "Embedding Model Versioning",
+                "newIcon": "🔄",
+                "bridgeText": "When you push a new Docker image version, all containers using that image must be redeployed. When you switch embedding models (e.g., text-embedding-ada-002 → text-embedding-3-small), ALL documents must be re-embedded — old vectors are incompatible with new model vectors, just as old container images are incompatible with new runtime expectations.",
+                "breakPoint": "Docker images can be rolled back instantly — just point to the old tag. Embedding model rollback requires re-embedding your entire corpus with the old model, which can take hours for millions of documents. There is no 'image tag' for embeddings — you must re-index from scratch."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "prediction",
+          "title": "Predict: The Dimension Dilemma",
+          "content": {
+            "question": "You have 1M documents embedded with text-embedding-3-large at 3072 dimensions. Your vector database needs 24GB RAM. The budget only covers 8GB. What is the fastest fix that preserves quality?",
+            "options": [
+              "Switch to text-embedding-3-small and re-embed all 1M documents",
+              "Use Matryoshka truncation — slice vectors from 3072 to 512 dimensions (same model, no re-embedding)",
+              "Delete 2/3 of the documents to fit in 8GB",
+              "Add disk-based indexing to spill vectors to SSD"
+            ],
+            "reveal": "Matryoshka truncation is the right answer. text-embedding-3-large supports MRL — you can truncate the stored vectors from 3072 to 512 dimensions by simply slicing the first 512 values. This reduces storage from 24GB to ~4GB (83% reduction) while retaining 96% of retrieval quality. No re-embedding needed — just update the stored vectors in place. Switching models requires re-embedding 1M documents ($65 + hours of processing). Disk-based indexing adds 10-50x latency. Deleting documents is never the answer."
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: The Wrong Metric",
+          "content": {
+            "question": "You switch from cosine similarity to dot product distance in your vector database. Suddenly, longer documents always rank higher than short ones, even when the short documents are more relevant. What went wrong?",
+            "options": [
+              "Dot product is fundamentally incompatible with text embeddings",
+              "The embedding model produces unnormalized vectors — longer texts have larger magnitude, inflating dot product scores",
+              "The vector database has a bug in its dot product implementation",
+              "Longer documents contain more keywords, naturally making them more relevant"
+            ],
+            "reveal": "The embeddings are unnormalized. Cosine similarity divides by vector magnitudes, so it measures angle (direction = meaning) regardless of length. Dot product does NOT normalize — it equals cosine similarity multiplied by both magnitudes. If longer documents produce larger-magnitude vectors, dot product is biased toward them. Fix: L2-normalize all vectors before storage (divide each vector by its magnitude). After normalization, dot product equals cosine similarity. Most embedding APIs return normalized vectors, but some open-source models do not — always check."
           }
         }
       ]
@@ -1154,6 +1472,99 @@
               }
             ]
           }
+        },
+        {
+          "sort_order": 7,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "B-tree Index",
+                "familiarIcon": "🌳",
+                "newConcept": "HNSW Index",
+                "newIcon": "🕸️",
+                "bridgeText": "A B-tree organizes data in a sorted tree for O(log n) exact lookups and range queries. HNSW (Hierarchical Navigable Small World) organizes vectors in a layered graph for O(log n) approximate nearest neighbor search. Both are index structures that trade write speed and storage for fast reads. B-tree for scalar values; HNSW for high-dimensional vectors.",
+                "breakPoint": "B-tree gives exact results — every matching row is returned. HNSW gives approximate results — it may miss the true nearest neighbor in exchange for 100x faster search. B-tree recall is always 100%; HNSW recall is typically 95-99% depending on index parameters (ef_construction, M). There is no 'exact mode' for HNSW at scale."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Redis Cache",
+                "familiarIcon": "⚡",
+                "newConcept": "In-Memory Vector Index",
+                "newIcon": "🧠",
+                "bridgeText": "Redis keeps data in RAM for microsecond lookups — fast but expensive at scale. In-memory vector indexes (HNSW in Qdrant, pgvector with shared_buffers) keep vectors in RAM for millisecond similarity search — also fast but expensive at scale. Both follow the same pattern: pay more for RAM to avoid disk latency.",
+                "breakPoint": "Redis lookups are exact (hash table O(1)). Vector similarity search is approximate and involves scanning graph neighbors — even in-memory, a query over 10M vectors takes 5-50ms, not microseconds. Also, Redis data can be trivially sharded by key; vector indexes require careful partitioning to maintain search quality."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Flexbox/Grid (Multi-Dimensional Positioning)",
+                "familiarIcon": "📐",
+                "newConcept": "Vector Space Search",
+                "newIcon": "🗺️",
+                "bridgeText": "CSS Grid positions elements in 2D space (row, column). Vector databases position documents in 1536D space (embedding dimensions). In both cases, proximity matters — elements near each other in the space are related. Grid uses pixels for distance; vector databases use cosine similarity or Euclidean distance.",
+                "breakPoint": "CSS Grid is 2D with human-interpretable axes (x, y). Vector spaces have 1536 dimensions with no interpretable axes. You cannot visualize a vector space directly — dimensionality reduction (t-SNE, UMAP) projects to 2D for visualization but distorts distances. CSS Grid distances are exact; projected vector distances are approximate."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Search Autocomplete (Fuzzy Matching)",
+                "familiarIcon": "🔤",
+                "newConcept": "Approximate Nearest Neighbor (ANN)",
+                "newIcon": "🎯",
+                "bridgeText": "Search autocomplete shows results that fuzzy-match your typing — 'auhtentic' still shows 'authentication'. It sacrifices exactness for speed and usability. ANN search shows vectors that approximately match your query vector — it might miss the absolute closest vector but returns 95-99% of true neighbors in milliseconds instead of scanning every vector.",
+                "breakPoint": "Fuzzy text matching has interpretable similarity (edit distance: 'cat' → 'bat' = 1 character). ANN similarity is a floating-point cosine score with no intuitive meaning — 0.87 vs 0.85 may or may not matter depending on the domain. Also, autocomplete operates on a vocabulary of thousands; ANN operates on millions of high-dimensional vectors."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "DNS Resolution (Hierarchical Lookup)",
+                "familiarIcon": "🌐",
+                "newConcept": "HNSW Graph Navigation",
+                "newIcon": "🗺️",
+                "bridgeText": "DNS resolves a domain by traversing a hierarchy: root → .com → google.com → docs.google.com, narrowing the search at each level. HNSW searches by traversing graph layers: top layer (few nodes, long jumps) → middle layers → bottom layer (all nodes, short jumps), narrowing the search at each level. Both use hierarchical navigation to avoid exhaustive search.",
+                "breakPoint": "DNS traversal is deterministic — the same domain always resolves the same way. HNSW traversal is greedy and non-deterministic — different entry points may lead to different (approximate) results. DNS has guaranteed correctness; HNSW trades correctness for speed."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Load Balancer (Nearest Healthy Server)",
+                "familiarIcon": "⚖️",
+                "newConcept": "Vector Similarity Search",
+                "newIcon": "🔍",
+                "bridgeText": "A load balancer routes requests to the nearest healthy server — it measures latency/distance and picks the closest one. A vector database routes queries to the nearest document vectors — it measures cosine distance and picks the closest ones. Both select the best match from a pool of candidates based on a distance metric.",
+                "breakPoint": "Load balancers select ONE best server. Vector search returns top-K nearest neighbors (typically 5-20). Load balancer distance is network latency (milliseconds); vector distance is cosine similarity (0 to 1). Also, load balancers consider server health/capacity; vector databases consider only mathematical distance."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "prediction",
+          "title": "Predict: The Index Choice",
+          "content": {
+            "question": "You have 10M documents in pgvector using an IVF (Inverted File) index. Average query latency is 200ms. Your SLA requires <50ms. What should you do?",
+            "options": [
+              "Increase IVF probe count from 10 to 50 — scan more clusters for better accuracy",
+              "Switch from IVF to HNSW index — graph-based search is faster at this scale",
+              "Add more RAM — IVF is slow because vectors are spilling to disk",
+              "Reduce embedding dimensions from 1536 to 256 — smaller vectors are faster to compare"
+            ],
+            "reveal": "Switch to HNSW. IVF partitions vectors into Voronoi cells and scans the nearest cells at query time — more probes = better recall but higher latency. At 10M documents, IVF with reasonable probe counts (10-20) achieves ~200ms. HNSW builds a navigable graph and traverses it in O(log n) — typical latency is 5-20ms at 10M scale. The tradeoff: HNSW uses 2-3x more memory (graph edges) and has slower index build time. For read-heavy production workloads under 50ms SLA, HNSW is the standard choice. pgvector supports both — change the index type, rebuild, done."
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: Cosine vs Dot Product",
+          "content": {
+            "question": "You migrate from Qdrant (cosine similarity) to pgvector (dot product via <#> operator). Recall drops from 0.92 to 0.71 even though the same embeddings and same queries are used. What is the most likely cause?",
+            "options": [
+              "pgvector has lower quality search algorithms than Qdrant",
+              "Dot product and cosine similarity always produce different rankings",
+              "The embeddings are unnormalized — dot product scores are biased by vector magnitude",
+              "The pgvector HNSW index needs higher ef_search parameter"
+            ],
+            "reveal": "The embeddings are unnormalized. Cosine similarity normalizes by dividing by vector magnitudes: cos(a,b) = (a·b) / (|a|·|b|). The dot product is just a·b — no normalization. If vectors have different magnitudes (common with some open-source models), dot product ranks longer vectors higher regardless of relevance. Fix: L2-normalize all vectors before inserting into pgvector. After normalization, dot product equals cosine similarity, and you get the same rankings. Alternatively, use pgvector's cosine distance operator <=> instead of <#>."
+          }
         }
       ]
     },
@@ -1402,6 +1813,99 @@
               }
             ]
           }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Query Optimizer (Index Scan vs Seq Scan)",
+                "familiarIcon": "🔧",
+                "newConcept": "Hybrid Search (BM25 + Vector)",
+                "newIcon": "🔀",
+                "bridgeText": "A SQL query optimizer chooses between an index scan (fast for selective queries) and a sequential scan (fast for broad queries) based on the data distribution. Hybrid search combines BM25 (keyword-exact, like an index scan for specific terms) and vector search (semantic, like a seq scan over meaning space). The optimizer picks the best strategy; hybrid search combines both strategies and merges the results.",
+                "breakPoint": "The query optimizer picks ONE strategy per query. Hybrid search runs BOTH strategies and fuses the results (typically via Reciprocal Rank Fusion). This means hybrid search always does more work than either strategy alone — the bet is that the combined result quality justifies the extra computation."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "API Rate Limiting (Token Bucket + Sliding Window)",
+                "familiarIcon": "🚦",
+                "newConcept": "Complementary Search Strategies",
+                "newIcon": "🤝",
+                "bridgeText": "Production rate limiting often combines two strategies: a token bucket for burst control and a sliding window for sustained rate. Neither alone covers all abuse patterns. Hybrid search combines BM25 for exact-match precision and vector search for semantic recall. Neither alone covers all query types — acronyms and error codes need BM25; paraphrased questions need vectors.",
+                "breakPoint": "Rate limiting strategies are applied sequentially (request must pass both). Hybrid search strategies are applied in parallel and results are merged. Also, rate limiting is binary (allow/deny); search ranking is a continuous score."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Specificity (ID + Class + Element)",
+                "familiarIcon": "🎯",
+                "newConcept": "Hybrid Scoring (Keyword + Semantic)",
+                "newIcon": "📊",
+                "bridgeText": "CSS resolves style conflicts by combining specificity scores: ID selectors (exact match, high weight) beat class selectors (pattern match, medium weight) beat element selectors (broad match, low weight). Hybrid search resolves ranking by combining scores: BM25 (exact keyword match, high precision) is fused with vector similarity (semantic match, high recall) via RRF to produce a final ranking.",
+                "breakPoint": "CSS specificity is deterministic — the rules are fixed and universal. Hybrid search fusion weights are tunable — you choose how much to weight keyword vs semantic scores. The optimal weights depend on your data and query patterns. There is no universally correct fusion formula."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "TypeScript Type Narrowing (typeof + structural)",
+                "familiarIcon": "🔍",
+                "newConcept": "Keyword + Semantic Filtering",
+                "newIcon": "🔎",
+                "bridgeText": "TypeScript narrows types using multiple strategies: typeof (exact runtime check) and structural matching (shape-based). Similarly, hybrid search narrows documents using BM25 (exact token match — does 'error 429' appear literally?) and vector similarity (meaning-based — are these semantically related to rate limiting?). Both combine exact and fuzzy matching for better precision.",
+                "breakPoint": "Type narrowing is compile-time and binary (type is narrowed or not). Search scoring is runtime and continuous (document is more or less relevant). TypeScript guarantees soundness; hybrid search provides probabilistic relevance."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Multi-Cloud Strategy",
+                "familiarIcon": "☁️",
+                "newConcept": "Multi-Signal Retrieval",
+                "newIcon": "📡",
+                "bridgeText": "Multi-cloud deploys to AWS + GCP so each provider covers the other's weaknesses — AWS for managed services, GCP for ML infrastructure. Hybrid search uses BM25 + vector search so each strategy covers the other's weaknesses — BM25 for exact terms and acronyms (where vector search fails), vector search for paraphrases and synonyms (where BM25 fails).",
+                "breakPoint": "Multi-cloud adds operational complexity (different APIs, different billing, different monitoring). Hybrid search also adds complexity — you need both a keyword index (Elasticsearch/OpenSearch) and a vector index (pgvector/Qdrant), plus a fusion algorithm. Some databases (Qdrant, Weaviate) bundle both; others require separate infrastructure."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Monitoring (Metrics + Logs)",
+                "familiarIcon": "📈",
+                "newConcept": "Keyword + Semantic Search",
+                "newIcon": "🔍",
+                "bridgeText": "Metrics give you numbers (CPU at 95%, p99 latency 800ms) — great for known patterns. Logs give you context (the actual error message) — great for unknown issues. You need both. BM25 keyword search finds exact terms (error code 'ECONNREFUSED') — great for known patterns. Vector search finds meaning ('why is my database connection failing?') — great for exploratory queries. You need both.",
+                "breakPoint": "Metrics and logs are consumed differently (dashboards vs search). Hybrid search results are fused into a single ranked list — the user does not see keyword results and semantic results separately. The fusion is invisible to the end user."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: The Keyword Trap",
+          "content": {
+            "question": "Users search your internal docs for 'error 429 rate limit'. Your docs have a page titled 'HTTP 429 Too Many Requests — Rate Limiting Guide' with the exact text. But vector-only search ranks it #7 because other pages about API errors are semantically similar. What fixes this?",
+            "options": [
+              "Switch entirely to BM25 keyword search — it will find the exact match",
+              "Use hybrid search (BM25 + vector) — BM25 will boost the exact keyword match while vector search adds semantic results",
+              "Increase the number of retrieved documents from 5 to 20",
+              "Fine-tune the embedding model on your internal docs"
+            ],
+            "reveal": "Hybrid search is the answer. Vector search scores documents by semantic similarity — pages about 'API throttling', 'request quotas', and 'backoff strategies' are all semantically close to 'error 429 rate limit', diluting the exact match. BM25 scores by exact term frequency — 'error 429 rate limit' matches 'HTTP 429 Too Many Requests — Rate Limiting Guide' with a high BM25 score because the tokens appear literally. Reciprocal Rank Fusion (RRF) combines both lists: the exact match gets a high BM25 rank AND a decent vector rank, pushing it to #1. This is the canonical case for hybrid search — exact terms plus semantic understanding."
+          }
+        },
+        {
+          "sort_order": 10,
+          "section_type": "prediction",
+          "title": "Predict: RRF Parameter Tuning",
+          "content": {
+            "question": "Your hybrid search (BM25 + vector, RRF fusion) returns results that are 'too averaged' — they are okay on both keyword and semantic relevance but never great on either. Users want more precise top results. What is the best improvement?",
+            "options": [
+              "Increase the RRF k parameter from 60 to 120 to smooth out ranking differences",
+              "Decrease the RRF k parameter from 60 to 20 to amplify ranking differences",
+              "Add a cross-encoder re-ranker after RRF fusion to re-score the top candidates with deeper analysis",
+              "Switch to weighted fusion with 80% keyword, 20% semantic to prioritize precision"
+            ],
+            "reveal": "Add a cross-encoder re-ranker. The problem is not the fusion formula — it is that BOTH BM25 and vector search are bi-encoders that score query and document independently. A cross-encoder reads query AND document TOGETHER through a transformer, capturing nuanced interactions. Pipeline: retrieve top-100 via hybrid search (fast, high recall) → re-rank with cross-encoder (slow but precise, top-10). Tuning RRF k or weights is a marginal improvement. The cross-encoder is a qualitative improvement — it can understand that 'rate limit' in the query relates specifically to the '429' section of a page about HTTP errors, not just to HTTP errors generally."
+          }
         }
       ]
     },
@@ -1548,6 +2052,231 @@
             "variant": "insight",
             "title": "ColBERT: The Best of Both Worlds",
             "content": "ColBERT (Contextualized Late Interaction over BERT) pre-computes per-token embeddings for all documents at index time. At query time, it computes max-sim scores between query tokens and document tokens — 2-5x faster than full cross-encoder while maintaining comparable accuracy. Used in production at Databricks for semantic search over Databricks documentation (millions of docs). If you need the accuracy of cross-encoder without the full latency penalty, ColBERT is the pattern."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Re-ranking — The Quality Multiplier",
+          "content": {
+            "title": "Re-ranking — The Quality Multiplier",
+            "description": "Click each node to see how re-ranking transforms raw retrieval results into precise, LLM-ready context. Follow the quality metrics at each stage.",
+            "nodes": [
+              {
+                "id": "initial-retrieval",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Initial Retrieval",
+                  "icon": "🔍",
+                  "details": "Method: Bi-encoder (embed query + embed docs independently)\nRetrieve: top-100 candidates from vector store\n\nRecall@100: 0.95 (95% of relevant docs are in the top-100)\nPrecision@100: 0.15 (only 15 out of 100 are actually relevant)\n\nBi-encoders are FAST (~5ms for 1M docs) because query and doc embeddings are pre-computed. But they miss nuanced query-document interactions.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "cross-encoder",
+                "type": "concept",
+                "position": {
+                  "x": 300,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Cross-Encoder",
+                  "icon": "🔬",
+                  "details": "How it works: Reads query + document TOGETHER through a single transformer\n\nUnlike bi-encoders (encode separately, compare vectors), cross-encoders see both texts simultaneously — capturing word-level interactions.\n\nModels:\n- Cohere Rerank v3: $2/1K queries (API)\n- bge-reranker-v2-m3: Free, open-source\n- ms-marco-MiniLM: Free, fast, good baseline\n\nLatency: 50-150ms for 100 candidates\nThis is 10-50x slower than bi-encoder per pair, but we only score 100 docs, not 1M.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "reranked-results",
+                "type": "concept",
+                "position": {
+                  "x": 600,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Re-ranked Top-10",
+                  "icon": "🏆",
+                  "details": "After re-ranking 100 candidates → top-10:\n\nPrecision@10: 0.70 (7 out of 10 are relevant)\nCompare: without re-ranking, Precision@10 was 0.40\n\nImprovement: +75% precision\n\nThe cross-encoder pushed truly relevant docs to the top and demoted false positives that had high embedding similarity but low actual relevance.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "llm-context",
+                "type": "concept",
+                "position": {
+                  "x": 900,
+                  "y": 150
+                },
+                "data": {
+                  "label": "LLM Context Window",
+                  "icon": "📋",
+                  "details": "Send top-5 re-ranked docs to LLM:\n\nLost in the Middle (Liu et al., 2023):\n- Positions 1-3: HIGH attention (LLM reads carefully)\n- Position 4: MEDIUM attention\n- Position 5: HIGH attention (recency effect)\n- Positions 6-10: LOW attention (if sent)\n\nRe-ranking ensures the most relevant docs land in positions 1-3 where the LLM pays most attention.\n\nTotal context: ~2,500 tokens (5 chunks × 512 tokens)\nLLM answer quality: 4.1/5.0 (up from 3.2/5.0 without re-ranking)",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "without-reranker",
+                "type": "concept",
+                "position": {
+                  "x": 300,
+                  "y": 0
+                },
+                "data": {
+                  "label": "Without Re-ranker",
+                  "icon": "⚠️",
+                  "details": "Skip re-ranking — send top-5 from bi-encoder directly to LLM:\n\nPrecision@5: 0.40 (only 2 of 5 docs are relevant)\n3 irrelevant docs dilute the context\n\nLLM may:\n- Get confused by contradictory irrelevant info\n- Hallucinate by combining relevant + irrelevant context\n- Give a vague answer because it cannot distinguish signal from noise\n\nAnswer quality: 3.2/5.0\n\nThe $2/1K query cost of Cohere Rerank pays for itself in answer quality.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "when-to-skip",
+                "type": "concept",
+                "position": {
+                  "x": 600,
+                  "y": 0
+                },
+                "data": {
+                  "label": "When to Skip Re-ranking",
+                  "icon": "🎯",
+                  "details": "Re-ranking is not always needed:\n\n1. Latency budget <100ms total — re-ranking adds 50-150ms\n2. Corpus <10K documents — bi-encoder precision is already high\n3. Curated knowledge base — if every document is relevant, re-ranking adds no value\n4. Simple factoid queries — 'what is the API rate limit?' needs one doc, not ranking\n\nRule of thumb: If bi-encoder Precision@5 is already >0.70, re-ranking gives diminishing returns.\n\nAlways measure before adding complexity.",
+                  "accentColor": "#3b82f6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-retrieve-cross",
+                "source": "initial-retrieval",
+                "target": "cross-encoder",
+                "label": "top-100 candidates",
+                "animated": true
+              },
+              {
+                "id": "e-cross-reranked",
+                "source": "cross-encoder",
+                "target": "reranked-results",
+                "label": "re-score & sort",
+                "animated": true
+              },
+              {
+                "id": "e-reranked-llm",
+                "source": "reranked-results",
+                "target": "llm-context",
+                "label": "top-5 for LLM",
+                "animated": true
+              },
+              {
+                "id": "e-retrieve-without",
+                "source": "initial-retrieval",
+                "target": "without-reranker",
+                "label": "skip re-ranking"
+              },
+              {
+                "id": "e-reranked-skip",
+                "source": "reranked-results",
+                "target": "when-to-skip",
+                "label": "decision guide"
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Database Query Optimizer",
+                "familiarIcon": "🔧",
+                "newConcept": "Cross-Encoder Re-ranker",
+                "newIcon": "🔬",
+                "bridgeText": "A query optimizer first uses indexes to quickly find candidate rows (cheap), then applies filters and sorts on the candidates (expensive but precise). A re-ranker first uses bi-encoders to quickly find candidate documents (cheap vector search), then applies a cross-encoder to score the candidates (expensive but precise). Both follow the funnel pattern: cast a wide net cheaply, then refine expensively.",
+                "breakPoint": "Query optimizers make a single pass — they choose one execution plan. Re-ranking is explicitly a two-pass system — first pass is always the bi-encoder, second pass is always the cross-encoder. The query optimizer can decide NOT to use an index; you explicitly decide to add or skip the re-ranker."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Express Middleware Pipeline",
+                "familiarIcon": "🔄",
+                "newConcept": "Retrieve → Re-rank → Generate",
+                "newIcon": "📊",
+                "bridgeText": "Express middleware processes requests in stages: auth → validation → rate-limit → handler. Each stage filters or enriches the request. The RAG re-ranking pipeline works the same way: retrieve (get candidates) → re-rank (filter and reorder) → generate (produce answer). Each stage refines the data for the next stage.",
+                "breakPoint": "Middleware stages are independent — removing the rate-limit middleware does not affect auth. In RAG, the stages are deeply coupled — the re-ranker's quality depends entirely on the retriever's recall. If the retriever misses a relevant document, the re-ranker cannot recover it. The pipeline is only as good as its weakest stage's recall."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Array.sort() Comparator Function",
+                "familiarIcon": "🔢",
+                "newConcept": "Cross-Encoder Scoring",
+                "newIcon": "📊",
+                "bridgeText": "Array.sort() takes a comparator function that examines pairs of elements to determine their order. A cross-encoder examines pairs of (query, document) to determine relevance scores. Both are comparison-based ranking — they look at the actual content to make ordering decisions, not pre-computed keys.",
+                "breakPoint": "Array.sort() comparators are typically simple functions (a.price - b.price). Cross-encoders are 100M+ parameter neural networks — they read both texts through 12 transformer layers to produce a single relevance score. The computational cost difference is enormous, which is why cross-encoders are only used on small candidate sets (top-100), never on the full corpus."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "React Reconciliation (Virtual DOM Diff)",
+                "familiarIcon": "⚛️",
+                "newConcept": "Re-ranking",
+                "newIcon": "🏆",
+                "bridgeText": "React's reconciler takes a list of components and efficiently determines the minimal set of DOM updates needed — it compares old and new trees to find what actually changed. A re-ranker takes a list of retrieved documents and determines which are truly relevant — it compares each document against the query to find what actually matches. Both refine a rough initial result into a precise final output.",
+                "breakPoint": "React reconciliation is deterministic — same inputs always produce same DOM diff. Cross-encoder scoring has variance — different models score differently, and temperature settings add randomness. React reconciliation is also about minimizing changes; re-ranking is about maximizing relevance."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Canary Deployment",
+                "familiarIcon": "🐤",
+                "newConcept": "Retrieve-then-Rerank",
+                "newIcon": "🔍",
+                "bridgeText": "Canary deploys route 5% of traffic to the new version first — if metrics look good, roll out to 100%. The retrieve-then-rerank pattern does the same: retrieve 100 candidates first (wide net, low cost), then re-rank to select the best 5-10 (narrow selection, high cost). Both manage risk by starting broad and narrowing based on quality signals.",
+                "breakPoint": "Canary deployment is about risk management — the 5% traffic is identical to the 100% traffic. Re-ranking is about quality improvement — the 100 candidates are a fundamentally different evaluation (vector similarity) from the top-10 (cross-encoder relevance). The two stages use different algorithms, not the same algorithm at different scales."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Alert Triage (50 Alerts → 5 Real Incidents)",
+                "familiarIcon": "🚨",
+                "newConcept": "Document Re-ranking (100 → 10)",
+                "newIcon": "📋",
+                "bridgeText": "On-call engineers receive 50 alerts but only 5 are real incidents — they triage by severity, correlation, and context to identify the real ones. A re-ranker receives 100 retrieved documents but only 10 are truly relevant — it scores each one against the query using deep analysis to identify the real matches. Both filter signal from noise using deeper inspection than the initial detection.",
+                "breakPoint": "Alert triage is a human judgment call using domain knowledge. Cross-encoder re-ranking is a neural network inference — it cannot use domain knowledge beyond what it learned during training. Also, alert triage considers temporal correlation (did 10 alerts fire at the same time?); re-ranking scores each document independently."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 7,
+          "section_type": "prediction",
+          "title": "Predict: Lost in the Middle",
+          "content": {
+            "question": "You send 10 documents to the LLM. The answer to the user's question is in document #6 (middle of the context). The LLM gives a plausible but wrong answer based on documents #1-3. What is the best fix?",
+            "options": [
+              "Switch to a model with a larger context window (128K tokens)",
+              "Reduce to 5 documents and ensure the most relevant ones are in positions 1-3",
+              "Add an instruction saying 'Read ALL documents carefully before answering'",
+              "Increase temperature to make the model consider all context equally"
+            ],
+            "reveal": "Reduce to 5 documents and put the most relevant first. The 'Lost in the Middle' problem (Liu et al., 2023) shows that LLMs pay disproportionate attention to the beginning and end of context, with significantly reduced attention to the middle. A larger context window makes this WORSE (more middle to get lost in). Adding instructions helps slightly but does not override the attention pattern. The real fix is: (1) use a re-ranker to identify the most relevant documents, (2) send fewer documents (5 instead of 10), and (3) order them by relevance so the best content is in positions 1-3 where the LLM pays most attention."
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "prediction",
+          "title": "Predict: Reranker Latency Budget",
+          "content": {
+            "question": "Adding a cross-encoder re-ranker improved answer quality from 3.2/5 to 4.1/5. But total pipeline latency went from 800ms to 1400ms, exceeding your 1000ms budget. What is the best optimization?",
+            "options": [
+              "Remove the re-ranker — latency matters more than quality",
+              "Reduce re-ranking candidates from 100 to 25 — fewer documents to score means less latency",
+              "Switch from a cross-encoder to a bi-encoder re-ranker — faster but same concept",
+              "Run retrieval and re-ranking in parallel to halve the latency"
+            ],
+            "reveal": "Reduce candidates from 100 to 25. Cross-encoder latency scales linearly with the number of candidates — scoring 25 documents takes ~25% of the time of scoring 100. With a fast cross-encoder (bge-reranker-v2-m3), 25 candidates takes ~30-40ms instead of ~150ms. The quality drop is small: if your bi-encoder recall@25 is still >0.90, you are re-ranking the right candidates. You cannot run retrieval and re-ranking in parallel — re-ranking DEPENDS on retrieval output. A bi-encoder 're-ranker' would just be a different embedding model, not a true re-ranker — it misses the cross-attention that makes re-ranking valuable."
           }
         }
       ]
@@ -1814,6 +2543,114 @@
               }
             ]
           }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "API Testing Pyramid (Unit → Integration → E2E)",
+                "familiarIcon": "🔺",
+                "newConcept": "RAG Evaluation Levels",
+                "newIcon": "📊",
+                "bridgeText": "The testing pyramid has unit tests (fast, isolated, many), integration tests (medium, cross-service, some), and E2E tests (slow, full system, few). RAG evaluation follows the same pattern: component metrics (retrieval recall, chunk quality — fast, many), pipeline metrics (faithfulness, relevance — medium, cross-component), and human evaluation (actual answer quality — slow, few but definitive).",
+                "breakPoint": "Unit tests are deterministic — they pass or fail identically every time. RAG metrics are probabilistic — faithfulness scores can vary 5-10% between runs due to LLM variance. Also, a passing unit test means the code works; a high faithfulness score does not guarantee the answer is useful to the human user."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "SQL EXPLAIN ANALYZE",
+                "familiarIcon": "📋",
+                "newConcept": "RAGAS Evaluation Framework",
+                "newIcon": "📊",
+                "bridgeText": "EXPLAIN ANALYZE breaks down query performance into stages: seq scan time, join cost, sort cost, total rows. RAGAS breaks down RAG performance into components: context precision (did you retrieve the right docs?), context recall (did you miss any?), faithfulness (is the answer grounded?), answer relevancy (does it address the question?). Both give per-stage visibility into a pipeline.",
+                "breakPoint": "EXPLAIN ANALYZE measures objective hardware metrics (milliseconds, rows scanned). RAGAS metrics are LLM-judged — an LLM evaluates whether the answer is faithful. This means RAGAS scores are themselves subject to LLM biases and can disagree with human judgment. Always validate RAGAS scores against a human-labeled golden dataset."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Lighthouse Performance Scores",
+                "familiarIcon": "💡",
+                "newConcept": "RAG Quality Scores",
+                "newIcon": "📈",
+                "bridgeText": "Lighthouse gives you 0-100 scores across categories (Performance, Accessibility, SEO, Best Practices). RAGAS gives you 0-1.0 scores across categories (Faithfulness, Answer Relevancy, Context Precision, Context Recall). Both provide a multi-dimensional quality score card that tells you WHERE to improve, not just whether the system is good or bad.",
+                "breakPoint": "Lighthouse scores are based on deterministic browser measurements (LCP in ms, CLS ratio). RAGAS scores are based on LLM judgments which have inherent variance. Running Lighthouse twice gives the same score (mostly); running RAGAS twice can give different scores. Always use multiple runs and report confidence intervals."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Visual Regression Testing (Chromatic/Percy)",
+                "familiarIcon": "📸",
+                "newConcept": "RAG Regression Testing",
+                "newIcon": "🔄",
+                "bridgeText": "Visual regression testing captures screenshots of your UI before and after changes, flagging any pixel differences. RAG regression testing captures answer quality scores before and after pipeline changes (new chunking strategy, different embedding model), flagging any quality drops. Both catch regressions that are invisible in unit tests.",
+                "breakPoint": "Visual regression uses pixel-level diff — differences are clearly visible and deterministic. RAG regression uses LLM-scored metrics — a 0.02 drop in faithfulness might be noise or a real regression. You need statistical significance testing (p-value < 0.05 across 50+ queries) to distinguish real regressions from variance."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "SLO/SLI Monitoring (Datadog/Prometheus)",
+                "familiarIcon": "📊",
+                "newConcept": "RAG Quality Monitoring",
+                "newIcon": "📈",
+                "bridgeText": "SLOs define targets (p99 latency < 500ms, error rate < 0.1%). SLIs measure actuals (p99 = 423ms, error rate = 0.05%). RAG quality monitoring follows the same pattern: quality targets (faithfulness > 0.85, recall > 0.90) and measured actuals. Both trigger alerts when actuals breach targets, enabling proactive maintenance.",
+                "breakPoint": "SLI metrics (latency, errors) are computed from request logs — deterministic and cheap. RAG quality metrics require running an LLM evaluator on each response — expensive ($0.01-0.05 per evaluation). In production, most teams sample 1-5% of queries for quality evaluation rather than scoring every response."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Canary Deploys with Automatic Rollback",
+                "familiarIcon": "🐤",
+                "newConcept": "RAG A/B Testing with Quality Gates",
+                "newIcon": "🔬",
+                "bridgeText": "Canary deploys route 5% of traffic to the new version and automatically roll back if error rates spike. RAG A/B testing routes a percentage of queries through a new pipeline (different chunking, new model) and rolls back if quality metrics drop. Both use the same pattern: gradual rollout with automated quality monitoring and rollback on regression.",
+                "breakPoint": "Canary rollback is based on hard metrics (5xx errors, latency). RAG rollback is based on soft metrics (LLM-judged quality) which require more queries to reach statistical significance. A canary can detect a crash in 10 requests; RAG quality regression detection needs 50-200 queries for confidence."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: The Faithfulness Trap",
+          "content": {
+            "question": "Your RAG pipeline has a faithfulness score of 0.95 — the LLM almost never says anything not grounded in the retrieved documents. But users report that answers are frequently wrong. What is happening?",
+            "options": [
+              "The faithfulness metric is broken — 0.95 should mean correct answers",
+              "The LLM is correctly citing retrieved documents, but the retrieved documents are wrong or irrelevant — it is a retrieval failure, not a generation failure",
+              "Users are asking questions outside the knowledge base scope",
+              "The LLM is hallucinating despite the high faithfulness score"
+            ],
+            "reveal": "The retrieved documents are wrong. High faithfulness means the LLM is faithful TO THE CONTEXT — it accurately represents what the documents say. But if the retriever returns the wrong documents, the LLM faithfully generates wrong answers. This is the most dangerous RAG failure mode: the system appears confident and well-cited, but the citations point to irrelevant content. Fix: check context recall and context precision metrics. A system with 0.95 faithfulness but 0.40 context precision is retrieving garbage and faithfully summarizing it. Always evaluate retrieval quality SEPARATELY from generation quality."
+          }
+        },
+        {
+          "sort_order": 10,
+          "section_type": "prediction",
+          "title": "Predict: The Regression",
+          "content": {
+            "question": "After switching from text-embedding-ada-002 to text-embedding-3-small, your faithfulness score went UP (0.82 → 0.89) but your context recall went DOWN (0.88 → 0.71). Users now get more confident but less complete answers. What should you prioritize?",
+            "options": [
+              "Keep the new model — higher faithfulness means better answers overall",
+              "Revert to the old model — context recall is more important than faithfulness",
+              "Fix retrieval first — improve context recall back to 0.88+ before celebrating the faithfulness gain",
+              "Average the two scores — (0.89 + 0.71) / 2 = 0.80 which is acceptable"
+            ],
+            "reveal": "Fix retrieval first. Context recall measures whether all relevant documents are retrieved — a drop from 0.88 to 0.71 means the new embedding model is missing 17% more relevant documents. The faithfulness increase is misleading: with fewer retrieved documents, there is less context for the LLM to contradict — faithfulness goes up because there is less information to be unfaithful to. The answers are more confident but less complete. Fix: check if the new model needs different index parameters (HNSW ef_construction), different chunk sizes, or if the new embedding space has different distance characteristics. Never average metrics — they measure different things."
+          }
+        },
+        {
+          "sort_order": 11,
+          "section_type": "prediction",
+          "title": "Predict: Eval Dataset Size",
+          "content": {
+            "question": "You have 20 test questions in your golden evaluation dataset. After changing the chunking strategy, answer quality improved by 5% on this test set. Your manager wants to ship immediately. Should you?",
+            "options": [
+              "Yes — 5% improvement is statistically significant and ready to ship",
+              "No — 20 questions is too few; the improvement could be random noise, need 50-200 questions with bootstrap confidence intervals",
+              "Yes — but run it past the team first for a sanity check",
+              "No — you need at least 1000 test questions for any valid conclusion"
+            ],
+            "reveal": "No — 20 questions is too few. With 20 questions, a 5% improvement means 1 additional question answered correctly. This could easily be random variance (the chunking change happened to help one specific query pattern). For reliable RAG evaluation: (1) use 50-200 diverse test questions covering different query types, topics, and difficulty levels, (2) run each question 3-5 times to account for LLM variance, (3) compute bootstrap confidence intervals — if the 95% CI for the improvement overlaps zero, it is not significant. In practice, 100 well-curated questions with 3 runs each gives reliable results. 1000 questions is ideal but often impractical to curate with verified ground truth."
+          }
         }
       ]
     },
@@ -1977,6 +2814,249 @@
             "variant": "enterprise",
             "title": "80/20 Rule for RAG Architecture",
             "content": "In most production systems: 80% Standard RAG handles point lookups, 15% Agentic RAG handles multi-step reasoning, 5% (if any) GraphRAG handles theme synthesis. Start with Standard RAG and add complexity only when you've measured that simpler approaches fail. Every architectural upgrade multiplies infrastructure cost, latency, and debugging complexity. The enterprise instinct to choose the most sophisticated option first is counterproductive here."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Advanced RAG Patterns — Beyond Basic Retrieval",
+          "content": {
+            "title": "Advanced RAG Patterns — Beyond Basic Retrieval",
+            "description": "Click each pattern to see when it works, when it fails, and real-world benchmarks. Standard RAG is the center — advanced patterns branch out for specific use cases.",
+            "nodes": [
+              {
+                "id": "standard-rag",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 0
+                },
+                "data": {
+                  "label": "Standard RAG",
+                  "icon": "🔍",
+                  "details": "The baseline: embed → retrieve → generate\n\nStrengths:\n- Simple to implement and debug\n- Fast (100-500ms end-to-end)\n- Works for 80% of use cases\n- Low cost per query (~$0.002)\n\nWeaknesses:\n- Cannot reason over document relationships\n- Struggles with multi-hop questions\n- No self-correction mechanism\n- Context window is a hard ceiling\n\nUse when: Single-document answers, FAQ-style questions, straightforward retrieval needs.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "graph-rag",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 200
+                },
+                "data": {
+                  "label": "GraphRAG",
+                  "icon": "🕸️",
+                  "details": "Microsoft GraphRAG (2024):\nBuilds a knowledge graph from documents, then retrieves over the graph structure.\n\nHow it works:\n1. LLM extracts entities + relationships from every chunk\n2. Entities are clustered into communities (Leiden algorithm)\n3. Each community gets an LLM-generated summary\n4. Query: retrieve relevant communities + their entity graphs\n\nBenchmarks:\n- 3.4x improvement on relationship queries (NarrativeQA)\n- +26% on multi-entity reasoning vs standard RAG\n- Indexing cost: ~$5-50 per 1M tokens (LLM extraction)\n\nUse when: Legal discovery, research synthesis, organizational knowledge graphs\nSkip when: Simple factoid retrieval, cost-sensitive, rapidly changing docs",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "agentic-rag",
+                "type": "concept",
+                "position": {
+                  "x": 800,
+                  "y": 200
+                },
+                "data": {
+                  "label": "Agentic RAG",
+                  "icon": "🤖",
+                  "details": "The LLM DECIDES what to retrieve (and whether to retrieve at all).\n\nHow it works:\n1. LLM analyzes the query and plans retrieval strategy\n2. LLM writes search queries (may write multiple)\n3. LLM evaluates retrieved results — if insufficient, retrieves more\n4. LLM synthesizes final answer from all retrieved context\n\nReal-world: Perplexity AI uses this pattern\n\nBenchmarks:\n- +15-30% on complex multi-hop questions\n- 2-4 retrieval calls per query (vs 1 for standard RAG)\n- Latency: 2-6 seconds (vs 0.5s for standard RAG)\n\nUse when: Research questions, multi-source synthesis, complex reasoning\nSkip when: Latency <1s required, simple questions, cost-constrained",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "raptor",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 400
+                },
+                "data": {
+                  "label": "RAPTOR",
+                  "icon": "🌲",
+                  "details": "Stanford RAPTOR (2024): Recursive Abstractive Processing for Tree-Organized Retrieval\n\nHow it works:\n1. Cluster chunks by semantic similarity\n2. LLM summarizes each cluster into a higher-level node\n3. Repeat: cluster summaries → even higher summaries\n4. Result: a tree where leaves are original chunks and parents are summaries\n5. Query: traverse tree from top (broad) to leaves (specific)\n\nBenchmarks:\n- +20% on QuALITY benchmark (long-document QA)\n- +15% on NarrativeQA (narrative understanding)\n- Excellent for thematic questions that span many documents\n\nUse when: Book-length documents, research papers, broad thematic queries\nSkip when: Short documents, factoid questions, frequently updated content",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "self-rag",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 400
+                },
+                "data": {
+                  "label": "Self-RAG",
+                  "icon": "🪞",
+                  "details": "Self-Reflective RAG (2023): The LLM judges its own retrieval and generation quality.\n\nHow it works:\n1. Generate with retrieval\n2. Model outputs special reflection tokens:\n   - [Retrieve]: Should I retrieve? (yes/no)\n   - [IsRel]: Is retrieved context relevant? (yes/no)\n   - [IsSup]: Is my answer supported by context? (fully/partially/no)\n   - [IsUse]: Is my answer useful? (1-5 scale)\n3. If reflection tokens indicate problems → re-retrieve or regenerate\n\nBenchmarks:\n- +85% on PubHealth (medical fact-checking)\n- +30% on biography generation accuracy\n- Requires fine-tuned model (not prompt-only)\n\nUse when: High-stakes domains (medical, legal), citation-critical applications\nSkip when: Cannot fine-tune the model, latency-critical",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "corrective-rag",
+                "type": "concept",
+                "position": {
+                  "x": 800,
+                  "y": 400
+                },
+                "data": {
+                  "label": "Corrective RAG (CRAG)",
+                  "icon": "🔄",
+                  "details": "Corrective RAG (2024): Falls back to web search when local retrieval fails.\n\nHow it works:\n1. Retrieve from local vector store\n2. Evaluator classifies retrieval quality:\n   - CORRECT: high-confidence match → use as-is\n   - AMBIGUOUS: uncertain match → refine query + web search\n   - INCORRECT: no relevant match → web search only\n3. Web results are knowledge-refined (strip noise, extract relevant passages)\n4. Generate from corrected context\n\nBenchmarks:\n- +36.6% on PubHealth vs standard RAG\n- +18% on PopQA (open-domain QA)\n- Adds 1-3s for web search fallback\n\nUse when: Knowledge base has gaps, open-domain questions, freshness matters\nSkip when: Air-gapped systems, curated KB with complete coverage",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "decision-guide",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 200
+                },
+                "data": {
+                  "label": "When to Use What",
+                  "icon": "🧭",
+                  "details": "Decision guide for choosing RAG patterns:\n\nStart with Standard RAG. Add complexity only when metrics demand it.\n\n→ Multi-hop relationship questions? → GraphRAG\n→ Complex research needing multiple sources? → Agentic RAG\n→ Long documents, thematic questions? → RAPTOR\n→ High-stakes, need self-verification? → Self-RAG\n→ Knowledge gaps, need web fallback? → CRAG\n→ Simple factoid questions? → Standard RAG is sufficient\n\nCommon mistake: Starting with GraphRAG or Agentic RAG before proving standard RAG is insufficient. Complexity has a cost — in latency, dollars, and debugging time.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-std-graph",
+                "source": "standard-rag",
+                "target": "graph-rag",
+                "label": "relationship queries"
+              },
+              {
+                "id": "e-std-agent",
+                "source": "standard-rag",
+                "target": "agentic-rag",
+                "label": "complex multi-step"
+              },
+              {
+                "id": "e-std-raptor",
+                "source": "standard-rag",
+                "target": "raptor",
+                "label": "long documents"
+              },
+              {
+                "id": "e-std-self",
+                "source": "standard-rag",
+                "target": "self-rag",
+                "label": "self-verification"
+              },
+              {
+                "id": "e-std-crag",
+                "source": "standard-rag",
+                "target": "corrective-rag",
+                "label": "web fallback"
+              },
+              {
+                "id": "e-std-guide",
+                "source": "standard-rag",
+                "target": "decision-guide",
+                "label": "choose pattern",
+                "animated": true
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Microservices vs Monolith",
+                "familiarIcon": "🏗️",
+                "newConcept": "Advanced vs Standard RAG",
+                "newIcon": "🔍",
+                "bridgeText": "A monolith handles everything in one service — simple to deploy and debug but limited in scalability. Standard RAG handles everything in one pipeline — simple but limited for complex queries. Microservices split responsibilities across specialized services. Advanced RAG patterns split retrieval across specialized strategies (graph queries, multi-hop agents, hierarchical summaries). Both add power at the cost of operational complexity.",
+                "breakPoint": "Microservices communicate via APIs with clear contracts. Advanced RAG patterns often compose unpredictably — an agentic RAG system may issue 1 or 10 retrieval calls depending on the query, making latency and cost hard to predict. Microservices failures are isolated; RAG pipeline failures cascade (bad retrieval → bad re-ranking → bad answer)."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Event Sourcing",
+                "familiarIcon": "📜",
+                "newConcept": "RAPTOR Hierarchical Summaries",
+                "newIcon": "🌲",
+                "bridgeText": "Event sourcing stores every state change as an immutable event, then builds materialized views (projections) at different granularities for different query patterns. RAPTOR stores original document chunks as leaves, then builds summary nodes at different abstraction levels for different query patterns. Both create a multi-resolution view of the same underlying data.",
+                "breakPoint": "Event sourcing projections are deterministic — replaying events always produces the same view. RAPTOR summaries are LLM-generated — re-running the summarization may produce different summaries. Also, event sourcing projections can be rebuilt from events; RAPTOR summaries must be regenerated with an LLM, which costs money and time."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "React Component Composition",
+                "familiarIcon": "⚛️",
+                "newConcept": "Agentic RAG",
+                "newIcon": "🤖",
+                "bridgeText": "React composes complex UIs from simple components — a parent component decides which children to render based on state. Agentic RAG composes complex answers from simple retrievals — an LLM agent decides which queries to run based on the question. Both use a decision-maker (React state / LLM agent) to orchestrate simpler building blocks dynamically.",
+                "breakPoint": "React rendering is deterministic (same props → same UI) and fast (milliseconds). Agentic RAG is non-deterministic (same question → different retrieval paths) and slow (seconds). React component trees are bounded by the developer; agent retrieval depth is bounded by a max-iteration parameter that can still be expensive if set too high."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Error Boundaries (React)",
+                "familiarIcon": "🛡️",
+                "newConcept": "Corrective RAG (CRAG)",
+                "newIcon": "🔄",
+                "bridgeText": "React Error Boundaries catch rendering errors in child components and render a fallback UI instead of crashing the whole app. Corrective RAG catches retrieval failures (no relevant docs found) and falls back to web search instead of generating a hallucinated answer. Both implement graceful degradation — detect failure, contain it, provide an alternative.",
+                "breakPoint": "Error Boundaries have clear failure signals (thrown exceptions). CRAG must estimate retrieval quality using a classifier — this estimation can itself be wrong, triggering unnecessary web searches or missing genuine retrieval failures. The failure detection is probabilistic, not deterministic."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Multi-Region Failover",
+                "familiarIcon": "🌍",
+                "newConcept": "Corrective RAG (CRAG)",
+                "newIcon": "🔄",
+                "bridgeText": "Multi-region deploys route traffic to the primary region, but fail over to a secondary region if the primary is unhealthy. CRAG routes queries to the local vector store, but fails over to web search if local retrieval quality is poor. Both implement the same pattern: primary source with automatic failover to a secondary source based on health checks.",
+                "breakPoint": "Region failover is based on hard health checks (HTTP 200/503). CRAG failover is based on soft quality estimation (is this retrieval CORRECT, AMBIGUOUS, or INCORRECT?) — which requires an LLM classifier that adds latency and cost even when local retrieval succeeds. Multi-region failover is binary; CRAG has a three-way classification."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Observability Stack (Traces + Metrics + Logs)",
+                "familiarIcon": "🔭",
+                "newConcept": "Self-RAG Reflection Tokens",
+                "newIcon": "🪞",
+                "bridgeText": "An observability stack instruments your application to emit traces (request flow), metrics (performance numbers), and logs (detailed events). Self-RAG instruments the LLM to emit reflection tokens: [IsRel] (is context relevant?), [IsSup] (is answer supported?), [IsUse] (is answer useful?). Both add inline monitoring to enable real-time quality assessment and debugging.",
+                "breakPoint": "Observability data is emitted passively — it does not change the request path. Self-RAG reflection tokens are active — they can trigger re-retrieval or regeneration, changing the execution path. Observability is added without modifying the application logic; Self-RAG requires fine-tuning the model to produce reflection tokens."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 7,
+          "section_type": "prediction",
+          "title": "Predict: GraphRAG Overkill",
+          "content": {
+            "question": "You are building a customer support RAG system over 50K FAQ documents. Questions are straightforward ('How do I reset my password?', 'What are your business hours?'). Your colleague proposes building GraphRAG with entity extraction. It will take 3 months. What is the right call?",
+            "options": [
+              "Build GraphRAG — entity relationships will improve answer quality for all question types",
+              "GraphRAG is overkill — standard RAG with a good re-ranker will handle FAQ-style questions well, and ship in 2 weeks",
+              "Build Agentic RAG instead — it is more flexible than GraphRAG",
+              "Build RAPTOR — FAQ documents need hierarchical summarization"
+            ],
+            "reveal": "GraphRAG is overkill. FAQ questions are single-hop ('What is X?' not 'How does X relate to Y?'). GraphRAG shines on relationship queries and multi-entity reasoning — it adds 3.4x improvement ONLY on those query types. For simple factoid retrieval, standard RAG with a re-ranker achieves 90%+ quality at 1/10th the complexity and cost. GraphRAG indexing costs $5-50 per 1M tokens (LLM entity extraction) and takes 3 months to build. The golden rule: start with standard RAG, measure where it fails, and add complexity ONLY for the failure modes you observe. Do not build for imagined complexity."
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "prediction",
+          "title": "Predict: The Agent Loop",
+          "content": {
+            "question": "Your Agentic RAG system averages 4 retrieval calls per query, resulting in 6-second latency. Users love the answer quality for complex questions but complain about wait times for simple questions like 'What is the refund policy?'. How do you fix this?",
+            "options": [
+              "Cache all queries — most questions repeat, so cache hits will be fast",
+              "Reduce the agent's max iterations from 4 to 2 — cut latency in half",
+              "Route by query complexity: simple questions go to standard RAG (<500ms), complex questions go to Agentic RAG (3-6s)",
+              "Switch entirely to standard RAG — 6s latency is never acceptable"
+            ],
+            "reveal": "Route by query complexity. Use a lightweight classifier (or even keyword rules) to categorize incoming queries: simple factoid questions ('What is the refund policy?') route to standard RAG (1 retrieval, <500ms). Complex multi-hop questions ('Compare the refund policies across our enterprise and consumer tiers, including any changes in the last quarter') route to Agentic RAG (2-5 retrievals, 3-6s). This gives you fast answers for 70-80% of queries and high-quality answers for the complex 20-30%. Caching helps but does not solve cold queries. Reducing max iterations degrades quality on complex questions that genuinely need multiple retrievals."
           }
         }
       ]
@@ -2279,6 +3359,99 @@
                 "animated": true
               }
             ]
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "Connection Pooling",
+                "familiarIcon": "🔌",
+                "newConcept": "Embedding Cache",
+                "newIcon": "⚡",
+                "bridgeText": "Connection pooling avoids the overhead of creating a new database connection per request by reusing existing connections. An embedding cache avoids the overhead of computing embeddings for repeated queries by reusing pre-computed vectors. Both sacrifice memory for speed by keeping expensive-to-create resources ready for immediate reuse.",
+                "breakPoint": "Connection pools hold a fixed number of identical, interchangeable connections. Embedding caches hold query-specific vectors that are only useful for exact or near-exact query matches. A connection pool with 20 connections serves thousands of different queries; an embedding cache entry serves only the one query it was computed for (unless you implement semantic caching with similarity thresholds)."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "N+1 Query Problem",
+                "familiarIcon": "🐌",
+                "newConcept": "Per-Chunk vs Batch Embedding",
+                "newIcon": "📦",
+                "bridgeText": "The N+1 problem fires a separate SQL query for each related record (1 query for users + N queries for each user's orders). Per-chunk embedding fires a separate API call for each document chunk. The fix is the same in both cases: batch. SQL uses JOINs or DataLoader; embedding APIs accept batches of up to 2048 texts per call, reducing API overhead from N calls to N/2048 calls.",
+                "breakPoint": "The N+1 fix (JOIN/DataLoader) is purely a performance optimization — the results are identical. Batch embedding can differ from sequential embedding in some models due to padding and truncation behavior in batched tokenization. Always verify that batched embeddings match sequential ones for your model."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Bundle Optimization (Tree-Shaking)",
+                "familiarIcon": "🌳",
+                "newConcept": "Embedding Cost Reduction",
+                "newIcon": "💰",
+                "bridgeText": "Tree-shaking removes unused code from your bundle — you only ship what is actually imported. Embedding cost reduction removes unchanged documents from re-indexing — you only re-embed documents that actually changed. Both audit what is needed and eliminate redundant work. Track document hashes to detect changes, just as bundlers track import graphs.",
+                "breakPoint": "Tree-shaking is deterministic and automated by the bundler. Document change detection requires you to build and maintain a hash-tracking system (SHA-256 per document → compare on re-index). Also, tree-shaking runs at build time (once); document hash checking runs continuously in production."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Responsive Images (srcset)",
+                "familiarIcon": "🖼️",
+                "newConcept": "Matryoshka Multi-Dimensional Embeddings",
+                "newIcon": "🪆",
+                "bridgeText": "HTML srcset serves different image resolutions to different devices — a phone gets 480px, a desktop gets 1920px. Same image, different quality-size tradeoffs. Matryoshka embeddings serve different dimension counts for different use cases — a mobile app gets 256 dims (fast, small), a production API gets 1536 dims (precise, larger). Same model, different quality-cost tradeoffs.",
+                "breakPoint": "srcset requires storing multiple image files (each resolution is a separate file). Matryoshka requires storing only the full-dimension vector — you truncate at query time to the desired dimension. This makes Matryoshka more storage-efficient than the srcset analogy suggests."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Spot Instances (AWS/GCP)",
+                "familiarIcon": "💸",
+                "newConcept": "Batch Embedding Jobs",
+                "newIcon": "📋",
+                "bridgeText": "Spot instances run non-urgent workloads at 60-90% discount by using spare capacity. Batch embedding APIs (OpenAI Batch API) process non-urgent embeddings at 50% discount by running them during off-peak hours. Both trade latency for cost — you submit the work and get results hours later at a fraction of the real-time price.",
+                "breakPoint": "Spot instances can be interrupted mid-job (you need checkpointing). Batch embedding APIs guarantee completion — they just take longer (up to 24 hours). Spot instances have variable pricing; batch embedding has a fixed discount (typically 50%)."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "CDN Caching (CloudFront/Cloudflare)",
+                "familiarIcon": "🌐",
+                "newConcept": "Semantic Cache",
+                "newIcon": "💾",
+                "bridgeText": "A CDN caches responses at edge locations — if someone nearby already requested the same URL, the cached response is served instantly. A semantic cache caches RAG responses — if someone already asked a semantically similar question, the cached answer is returned instantly. Both eliminate redundant computation for repeated or similar requests.",
+                "breakPoint": "CDN caching uses exact URL matching — '/api/users/123' either hits the cache or misses. Semantic caching uses similarity thresholds — 'how do I reset my password' and 'password reset help' should hit the same cache entry. Setting the similarity threshold is tricky: too strict (0.98) = few cache hits; too loose (0.85) = stale/wrong cached answers for different-enough queries."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: The Semantic Cache",
+          "content": {
+            "question": "You implement a semantic cache for your RAG pipeline. Cache hit rate is 60%, which cuts costs dramatically. But users report that cached answers are sometimes stale — they reference outdated documentation. Your documents are re-indexed weekly. What is the issue?",
+            "options": [
+              "The semantic similarity threshold is too low — it is matching dissimilar queries",
+              "The cache TTL must match the re-indexing interval — cached answers expire when documents change",
+              "Semantic caching is fundamentally incompatible with frequently updated documents",
+              "The embedding model needs to be retrained on the new documents"
+            ],
+            "reveal": "The cache TTL must match the re-indexing interval. If documents are re-indexed weekly but cached answers live for 30 days, users get answers grounded in month-old documents. The fix: set cache TTL equal to (or shorter than) the re-indexing interval. If you re-index weekly, set cache TTL to 7 days. Better yet: implement cache invalidation — when a document is re-indexed, invalidate all cache entries whose retrieved chunks came from that document. This requires storing the source chunk IDs alongside the cached answer. Semantic caching works fine with updating documents, but only if the cache lifecycle is tied to the content lifecycle."
+          }
+        },
+        {
+          "sort_order": 10,
+          "section_type": "prediction",
+          "title": "Predict: The Embedding Cost Cut",
+          "content": {
+            "question": "Your company spends $500/month on embedding API calls to keep the RAG knowledge base up to date. Only 10% of documents change each week, but you re-embed the entire corpus every re-index. Your boss wants to cut embedding costs by 80%. What is the most effective approach?",
+            "options": [
+              "Switch to a cheaper embedding model (text-embedding-3-small at $0.02/M tokens vs $0.13/M)",
+              "Track document content hashes — only re-embed documents whose SHA-256 hash changed since last index (skip the 90% that are unchanged)",
+              "Reduce embedding dimensions from 1536 to 512 using Matryoshka truncation",
+              "Move to a monthly re-indexing schedule instead of weekly"
+            ],
+            "reveal": "Track document hashes. If only 10% of documents change per week, you are wasting 90% of your embedding budget re-computing identical vectors. Implement: (1) compute SHA-256 hash of each document's content, (2) store hashes alongside embeddings, (3) on re-index, compare new hash to stored hash — only re-embed if different. This cuts costs by ~90% (from $500 to ~$50). Switching models cuts cost-per-token but still wastes money on unchanged documents. Reducing dimensions does not reduce API calls. Monthly re-indexing delays knowledge updates by 3 weeks. The hash-tracking approach is used by production systems at Notion, Stripe, and Intercom."
           }
         }
       ]
