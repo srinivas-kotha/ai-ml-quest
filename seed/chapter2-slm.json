@@ -19,8 +19,7 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "At 10K requests/day, a self-hosted RTX 4090 ($1,500) pays for itself in ~2 months vs GPT-4o-mini API at $0.15/1M input tokens. Privacy (GDPR/HIPAA), sub-10ms latency, and air-gapped deployment are the",
-        "budget": 100,
-        "sliders": []
+        "dimensions": []
       },
       "key_insight": "Local wins at >5K requests/day for most open-weight models. But factor in: GPU depreciation (~$83/mo for RTX 4090 over 18 months), electricity (~$50/mo at full load), maintenance time, and operator expertise. The true break-even for a team is typically 3–8K requests/day depending on average prompt length.",
       "xp_reward": 100,

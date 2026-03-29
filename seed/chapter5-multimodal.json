@@ -193,8 +193,7 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "WebGPU achieved full browser support in early 2026 — running SLMs in-browser is now practical with zero inference cost. TensorRT consistently delivers 2-5x speedup over unoptimized PyTorch through ker",
-        "budget": 100,
-        "sliders": []
+        "dimensions": []
       },
       "key_insight": "TensorRT = 2-5x over PyTorch on NVIDIA GPUs (kernel fusion, quantization, graph optimization). ONNX Runtime = best cross-platform (CPU/GPU/mobile/browser). WebGPU = free inference in browser (full browser support 2026). Edge Jetson breaks even vs cloud GPU at ~3,000-5,000 requests/day. Hybrid: WebGPU for non-critical + cloud for precision-critical.",
       "xp_reward": 100,

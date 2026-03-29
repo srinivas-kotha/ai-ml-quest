@@ -140,22 +140,10 @@
               }
             ],
             "edges": [
-              [
-                "query",
-                "embed"
-              ],
-              [
-                "embed",
-                "retrieve"
-              ],
-              [
-                "retrieve",
-                "augment"
-              ],
-              [
-                "augment",
-                "generate"
-              ]
+              ["query", "embed"],
+              ["embed", "retrieve"],
+              ["retrieve", "augment"],
+              ["augment", "generate"]
             ],
             "animate": true,
             "stepThrough": true
@@ -474,7 +462,7 @@
       "game_type": "PipelineBuilder",
       "game_config": {
         "description": "Arrange the correct chunking pipeline for an enterprise document system. Click components in order, then check your pipeline.",
-        "components": [
+        "steps": [
           {
             "id": "document_loader",
             "label": "Document Loader"
@@ -570,31 +558,15 @@
             "code": "from langchain.text_splitter import RecursiveCharacterTextSplitter\nfrom langchain.document_loaders import UnstructuredPDFLoader\nfrom pathlib import Path\nimport hashlib\n\n# Step 1: Load and parse documents\nloader = UnstructuredPDFLoader(\"contract.pdf\", mode=\"elements\")\ndocuments = loader.load()\n\n# Step 2: Split with RecursiveCharacterTextSplitter\nsplitter = RecursiveCharacterTextSplitter(\n    chunk_size=512,          # tokens, not characters\n    chunk_overlap=50,        # 10% overlap\n    separators=[\"\\n\\n\", \"\\n\", \". \", \" \", \"\"],  # hierarchy\n    length_function=len,\n)\nchunks = splitter.split_documents(documents)\n\n# Step 3: Enrich metadata per chunk\nfor i, chunk in enumerate(chunks):\n    chunk.metadata.update({\n        \"chunk_id\": hashlib.md5(chunk.page_content.encode()).hexdigest()[:8],\n        \"doc_id\": Path(\"contract.pdf\").stem,\n        \"chunk_index\": i,\n        \"section\": chunk.metadata.get(\"category\", \"unknown\"),\n    })\n\nprint(f\"Created {len(chunks)} chunks from {len(documents)} pages\")\n# Typical: 10-page contract → 45-80 chunks at 512 tokens",
             "annotations": [
               {
-                "lines": [
-                  6,
-                  7
-                ],
+                "lines": [6, 7],
                 "text": "UnstructuredPDFLoader with mode='elements' parses headings, paragraphs, tables separately — crucial for structured documents. Raw PDF text extraction produces corrupted chunks."
               },
               {
-                "lines": [
-                  10,
-                  11,
-                  12,
-                  13,
-                  14
-                ],
+                "lines": [10, 11, 12, 13, 14],
                 "text": "chunk_size=512 and chunk_overlap=50 is the FloTorch-validated production default. The separators list defines the fallback hierarchy — try paragraph breaks first, then sentence breaks, then word breaks."
               },
               {
-                "lines": [
-                  18,
-                  19,
-                  20,
-                  21,
-                  22,
-                  23
-                ],
+                "lines": [18, 19, 20, 21, 22, 23],
                 "text": "Chunk-level metadata enables filtered retrieval: 'only search chunks from contracts signed in 2024' or 'only search the indemnification section'. Without metadata, every query searches the entire corpus."
               }
             ]
@@ -873,30 +845,26 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "You have 10M documents to embed and query ~500K times/month. Monthly infrastructure budget is $50. Adjust the sliders to hit your budget without sacrificing quality below 90%.",
-        "budget": 50,
-        "sliders": [
+        "dimensions": [
           {
             "name": "Model Cost ($/MTok)",
             "min": 0.0,
             "max": 0.1,
-            "step": 0.01,
-            "default": 0.1,
-            "unit": ""
+            "optimal": 0.1,
+            "unit": "$/MTok"
           },
           {
             "name": "Self-Hosted GPU ($)",
             "min": 0,
             "max": 40,
-            "step": 5,
-            "default": 0,
+            "optimal": 0,
             "unit": "$/mo"
           },
           {
             "name": "Matryoshka Dims",
             "min": 256,
             "max": 1536,
-            "step": 256,
-            "default": 1536,
+            "optimal": 1536,
             "unit": "d"
           }
         ]
@@ -939,23 +907,15 @@
             "code": "import openai\nimport numpy as np\nfrom typing import List\n\nclient = openai.OpenAI()\n\ndef embed_documents(\n    texts: List[str],\n    model: str = \"text-embedding-3-small\",\n    dimensions: int = 512,  # Matryoshka truncation\n) -> np.ndarray:\n    \"\"\"Embed texts with Matryoshka truncation for cost-efficient storage.\"\"\"\n    response = client.embeddings.create(\n        model=model,\n        input=texts,\n        dimensions=dimensions,  # MRL truncation built into API\n    )\n    vectors = np.array([e.embedding for e in response.data])\n    # Normalize for cosine similarity (pgvector <=>)\n    norms = np.linalg.norm(vectors, axis=1, keepdims=True)\n    return vectors / norms\n\n# Cost comparison:\n# text-embedding-3-small, 512 dims: $0.02/MTok — 98% quality at 25% storage\n# text-embedding-3-large, 1536 dims: $0.13/MTok — marginal quality gain\n# Self-hosted BGE-M3, 512 dims: ~$0/query after $20/mo GPU\nchunks = [\"Document chunk 1...\", \"Document chunk 2...\"]\nvectors = embed_documents(chunks, dimensions=512)\nprint(f\"Shape: {vectors.shape}\")  # (2, 512)",
             "annotations": [
               {
-                "lines": [
-                  13
-                ],
+                "lines": [13],
                 "text": "The 'dimensions' parameter activates Matryoshka truncation built into OpenAI's API. Setting 512 instead of 1536 reduces storage by 67% and cuts vector DB costs proportionally."
               },
               {
-                "lines": [
-                  16
-                ],
+                "lines": [16],
                 "text": "Always normalize embeddings before storing in pgvector. Normalized vectors allow using <=> (cosine distance) which is more semantically accurate than <-> (L2 distance) for text."
               },
               {
-                "lines": [
-                  20,
-                  21,
-                  22
-                ],
+                "lines": [20, 21, 22],
                 "text": "At 10M documents and 500K queries/month: text-embedding-3-small costs ~$200/month. Self-hosted BGE-M3 on a $20/mo GPU instance costs... $20/month. Break-even is around 5K queries/day."
               }
             ]
@@ -1304,22 +1264,10 @@
               }
             ],
             "edges": [
-              [
-                "ingest",
-                "index"
-              ],
-              [
-                "index",
-                "store"
-              ],
-              [
-                "store",
-                "query"
-              ],
-              [
-                "query",
-                "retrieve"
-              ]
+              ["ingest", "index"],
+              ["index", "store"],
+              ["store", "query"],
+              ["query", "retrieve"]
             ],
             "animate": true,
             "stepThrough": true
@@ -1991,26 +1939,11 @@
               }
             ],
             "edges": [
-              [
-                "query",
-                "biencoder"
-              ],
-              [
-                "biencoder",
-                "check"
-              ],
-              [
-                "check",
-                "crossencoder"
-              ],
-              [
-                "check",
-                "llm"
-              ],
-              [
-                "crossencoder",
-                "llm"
-              ]
+              ["query", "biencoder"],
+              ["biencoder", "check"],
+              ["check", "crossencoder"],
+              ["check", "llm"],
+              ["crossencoder", "llm"]
             ],
             "animate": true
           }
@@ -2025,20 +1958,11 @@
             "code": "import cohere\nfrom dataclasses import dataclass\n\nco = cohere.Client(api_key=\"...\")\n\n@dataclass\nclass RetrievedDoc:\n    id: str\n    content: str\n    score: float  # bi-encoder similarity score\n\ndef rerank_with_conditional_skip(\n    query: str,\n    candidates: list[RetrievedDoc],\n    confidence_threshold: float = 0.85,\n    top_n: int = 5,\n) -> list[RetrievedDoc]:\n    # Gate: skip re-ranking if top result is highly confident\n    if candidates[0].score >= confidence_threshold:\n        return candidates[:top_n]  # bi-encoder top-K is sufficient\n    \n    # Cross-encoder re-ranking for ambiguous queries\n    results = co.rerank(\n        model=\"rerank-english-v3.0\",\n        query=query,\n        documents=[c.content for c in candidates],\n        top_n=top_n,\n    )\n    \n    return [\n        candidates[r.index]\n        for r in results.results\n    ]\n\n# Metrics from production:\n# - 63% of queries skip the reranker (confidence > 0.85)\n# - p95 latency: 1.8s → 950ms after conditional skip\n# - Quality maintained: same faithfulness (0.91) on skipped queries",
             "annotations": [
               {
-                "lines": [
-                  17,
-                  18
-                ],
+                "lines": [17, 18],
                 "text": "The conditional gate is the key optimization. When bi-encoder confidence is high (top result score >= 0.85), the ranking is already good enough. The cross-encoder adds 180ms of latency with minimal quality improvement for these queries."
               },
               {
-                "lines": [
-                  21,
-                  22,
-                  23,
-                  24,
-                  25
-                ],
+                "lines": [21, 22, 23, 24, 25],
                 "text": "Cohere Rerank v3 is the production standard: 33% better nDCG@3 than bi-encoder alone. Cohere charges per API call — another reason to use conditional skipping aggressively."
               }
             ]
@@ -2327,19 +2251,11 @@
             "code": "from ragas import evaluate\nfrom ragas.metrics import (\n    faithfulness,\n    answer_relevancy,\n    context_precision,\n    context_recall,\n)\nfrom langchain_anthropic import ChatAnthropic\nfrom datasets import Dataset\nimport pytest\n\n# Use a DIFFERENT model family as judge than your generator\n# Generator: GPT-4o. Judge: Claude Sonnet 3.5\nJUDGE_LLM = ChatAnthropic(model=\"claude-sonnet-4-5\")\n\ndef test_rag_quality_gate(rag_chain, golden_dataset):\n    questions, contexts, answers, ground_truths = golden_dataset\n    \n    eval_data = Dataset.from_dict({\n        \"question\": questions,\n        \"answer\": [rag_chain.invoke(q) for q in questions],\n        \"contexts\": contexts,\n        \"ground_truth\": ground_truths,\n    })\n    \n    result = evaluate(\n        eval_data,\n        metrics=[faithfulness, answer_relevancy, context_precision],\n        llm=JUDGE_LLM,  # Different family eliminates self-grading bias\n    )\n    \n    # Faithfulness first — it's the hallucination gate\n    assert result[\"faithfulness\"] >= 0.80, (\n        f\"DEPLOY BLOCKED: Faithfulness {result['faithfulness']:.2f} < 0.80 minimum. \"\n        f\"This means {(1-result['faithfulness'])*100:.0f}% of answers contain fabricated claims.\"\n    )\n    # Secondary quality gates\n    assert result[\"answer_relevancy\"] >= 0.75\n    assert result[\"context_precision\"] >= 0.60",
             "annotations": [
               {
-                "lines": [
-                  13
-                ],
+                "lines": [13],
                 "text": "Critical: using Claude (Anthropic) to judge outputs from GPT-4o (OpenAI) eliminates same-family bias. Both models are capable judges but have different failure modes — disagreements between them surface real quality issues."
               },
               {
-                "lines": [
-                  29,
-                  30,
-                  31,
-                  32,
-                  33
-                ],
+                "lines": [29, 30, 31, 32, 33],
                 "text": "Faithfulness >= 0.80 is the industry minimum for customer-facing applications. Below 0.80 means more than 1-in-5 answers contain fabricated claims. Express the failure message as a percentage — it makes the severity clear to reviewers."
               }
             ]
@@ -2761,22 +2677,10 @@
               }
             ],
             "edges": [
-              [
-                "corpus",
-                "graphbuild"
-              ],
-              [
-                "graphbuild",
-                "query_router"
-              ],
-              [
-                "query_router",
-                "graphrag"
-              ],
-              [
-                "query_router",
-                "agentic"
-              ]
+              ["corpus", "graphbuild"],
+              ["graphbuild", "query_router"],
+              ["query_router", "graphrag"],
+              ["query_router", "agentic"]
             ],
             "animate": true
           }
@@ -3070,30 +2974,26 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "Production RAG system. 1000 queries/day. Current cost: $2.50/query ($75K/month). Target: under $0.30/query. Adjust the levers to optimize cost while keeping quality above threshold.",
-        "budget": 0.3,
-        "sliders": [
+        "dimensions": [
           {
             "name": "Semantic Cache Hit Rate (%)",
             "min": 0,
             "max": 70,
-            "step": 5,
-            "default": 0,
+            "optimal": 0,
             "unit": "%"
           },
           {
             "name": "GPT-4o-mini Routing (%)",
             "min": 0,
             "max": 90,
-            "step": 10,
-            "default": 0,
+            "optimal": 0,
             "unit": "% to mini"
           },
           {
             "name": "Embedding Dimensions",
             "min": 256,
             "max": 1536,
-            "step": 256,
-            "default": 1536,
+            "optimal": 1536,
             "unit": "dims"
           }
         ]
@@ -3159,19 +3059,11 @@
             "code": "import redis\nimport numpy as np\nfrom openai import OpenAI\nfrom typing import Optional\n\nclient = OpenAI()\nr = redis.Redis(host=\"localhost\", port=6379, db=0)\n\nSIMILARITY_THRESHOLD = 0.95  # High threshold — only cache near-identical queries\nCACHE_TTL_SECONDS = 3600      # 1 hour — adjust based on knowledge base update frequency\n\ndef semantic_cache_lookup(\n    query: str,\n    query_embedding: np.ndarray,\n    namespace: str = \"rag_cache\",\n) -> Optional[str]:\n    # Check all cached embeddings for similarity\n    cached_keys = r.keys(f\"{namespace}:*\")\n    for key in cached_keys:\n        cached_data = r.hgetall(key)\n        cached_embedding = np.frombuffer(cached_data[b\"embedding\"], dtype=np.float32)\n        similarity = np.dot(query_embedding, cached_embedding)\n        if similarity >= SIMILARITY_THRESHOLD:\n            r.expire(key, CACHE_TTL_SECONDS)  # refresh TTL on cache hit\n            return cached_data[b\"response\"].decode()\n    return None  # cache miss\n\ndef cache_store(query_embedding: np.ndarray, response: str, namespace: str = \"rag_cache\") -> None:\n    key = f\"{namespace}:{hash(response)}\"\n    r.hset(key, mapping={\n        \"embedding\": query_embedding.astype(np.float32).tobytes(),\n        \"response\": response,\n    })\n    r.expire(key, CACHE_TTL_SECONDS)\n\n# Production metrics:\n# - 35% cache hit rate on internal knowledge base queries\n# - $2.50/query → $1.63/query after caching (35% reduction)\n# - p50 latency: 800ms → 12ms on cache hits",
             "annotations": [
               {
-                "lines": [
-                  8
-                ],
+                "lines": [8],
                 "text": "SIMILARITY_THRESHOLD=0.95 is conservative — only serve cached responses for near-identical queries. A threshold of 0.90 would increase hit rate but risk returning the wrong cached answer for subtly different questions."
               },
               {
-                "lines": [
-                  18,
-                  19,
-                  20,
-                  21,
-                  22
-                ],
+                "lines": [18, 19, 20, 21, 22],
                 "text": "For production at scale, replace this linear scan with a vector store (pgvector or Redis Stack with VSS). Linear scan is O(n) over all cached queries — fine for < 10K cached entries, too slow beyond that."
               }
             ]
