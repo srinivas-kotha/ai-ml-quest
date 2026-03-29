@@ -503,9 +503,12 @@ export default function SliderPlayground({
 }
 
 function hexToRgb(hex: string): string {
+  // Handle CSS variables — fall back to a neutral tint
+  if (!hex.startsWith("#")) return "59,130,246";
   const clean = hex.replace("#", "");
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return "59,130,246";
   return `${r},${g},${b}`;
 }
