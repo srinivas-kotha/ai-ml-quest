@@ -20,15 +20,24 @@ export default function AnalogyPanel({
   analogies,
   accentColor = "var(--color-accent-gold)",
 }: AnalogyPanelProps) {
-  const [selectedBg, setSelectedBg] = useState("general");
-
   const backgrounds = [...new Set(analogies.map((a) => a.background))];
+  const nonGeneralBackgrounds = backgrounds.filter((b) => b !== "general");
+  const [selectedBg, setSelectedBg] = useState(
+    nonGeneralBackgrounds[0] || "general",
+  );
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   const filtered = analogies.filter(
     (a) => a.background === selectedBg || a.background === "general",
   );
-  const analogy = filtered[0] || analogies[0];
+  const analogy = filtered[currentIndex] || filtered[0];
 
   if (!analogy) return null;
+
+  const handleBgChange = (bg: string) => {
+    setSelectedBg(bg);
+    setCurrentIndex(0);
+  };
 
   return (
     <div
@@ -40,7 +49,7 @@ export default function AnalogyPanel({
     >
       {/* Header with background selector tabs */}
       <div
-        className="flex items-center gap-2 px-5 py-3"
+        className="flex items-center gap-2 px-5 py-3 flex-wrap"
         style={{
           borderBottom: "1px solid var(--color-border)",
           backgroundColor: "var(--color-bg-card)",
@@ -52,27 +61,27 @@ export default function AnalogyPanel({
         >
           💡 YOU ALREADY KNOW THIS
         </span>
-        <div className="ml-auto flex gap-1">
-          {backgrounds
-            .filter((b) => b !== "general")
-            .map((bg) => (
-              <button
-                key={bg}
-                onClick={() => setSelectedBg(bg)}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors duration-150"
-                style={{
-                  backgroundColor:
-                    selectedBg === bg
-                      ? "var(--color-accent-gold)"
-                      : "var(--color-bg-surface)",
-                  color:
-                    selectedBg === bg ? "#1a1a2e" : "var(--color-text-muted)",
-                  border: `1px solid ${selectedBg === bg ? "var(--color-accent-gold)" : "var(--color-border)"}`,
-                }}
-              >
-                {bg.charAt(0).toUpperCase() + bg.slice(1)}
-              </button>
-            ))}
+        <div className="ml-auto flex gap-1 flex-wrap">
+          {nonGeneralBackgrounds.map((bg) => (
+            <button
+              key={bg}
+              onClick={() => handleBgChange(bg)}
+              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,border-color] duration-150"
+              style={{
+                backgroundColor:
+                  selectedBg === bg
+                    ? "var(--color-accent-gold)"
+                    : "var(--color-bg-surface)",
+                color:
+                  selectedBg === bg
+                    ? "var(--color-bg-primary)"
+                    : "var(--color-text-muted)",
+                border: `1px solid ${selectedBg === bg ? "var(--color-accent-gold)" : "var(--color-border)"}`,
+              }}
+            >
+              {bg.charAt(0).toUpperCase() + bg.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -130,10 +139,10 @@ export default function AnalogyPanel({
 
         {/* Break point */}
         <details
-          className="text-xs"
+          className="text-xs mb-3"
           style={{ color: "var(--color-text-muted)" }}
         >
-          <summary className="cursor-pointer hover:text-[var(--color-accent-gold)] transition-colors">
+          <summary className="cursor-pointer hover:text-[var(--color-accent-gold)] transition-colors duration-150">
             🎓 Where this analogy breaks...
           </summary>
           <p
@@ -143,6 +152,59 @@ export default function AnalogyPanel({
             {analogy.breakPoint}
           </p>
         </details>
+
+        {/* Pagination dots for multiple analogies */}
+        {filtered.length > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <button
+              onClick={() =>
+                setCurrentIndex((prev) =>
+                  prev > 0 ? prev - 1 : filtered.length - 1,
+                )
+              }
+              className="text-xs px-2 py-1 rounded transition-[background-color,color] duration-150"
+              style={{
+                color: "var(--color-text-muted)",
+                backgroundColor: "var(--color-bg-card)",
+                border: "1px solid var(--color-border)",
+              }}
+              aria-label="Previous analogy"
+            >
+              ←
+            </button>
+            {filtered.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className="w-2 h-2 rounded-full transition-[background-color] duration-150"
+                style={{
+                  backgroundColor:
+                    currentIndex === idx
+                      ? accentColor
+                      : "var(--color-text-muted)",
+                  opacity: currentIndex === idx ? 1 : 0.4,
+                }}
+                aria-label={`Analogy ${idx + 1}`}
+              />
+            ))}
+            <button
+              onClick={() =>
+                setCurrentIndex((prev) =>
+                  prev < filtered.length - 1 ? prev + 1 : 0,
+                )
+              }
+              className="text-xs px-2 py-1 rounded transition-[background-color,color] duration-150"
+              style={{
+                color: "var(--color-text-muted)",
+                backgroundColor: "var(--color-bg-card)",
+                border: "1px solid var(--color-border)",
+              }}
+              aria-label="Next analogy"
+            >
+              →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

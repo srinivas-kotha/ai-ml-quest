@@ -173,6 +173,248 @@
             "title": "Enterprise Skills Bridge",
             "content": "You've spent years building database-backed search systems. RAG is the same pattern at a higher abstraction: the vector store is your search index, the embedding model is your tokenizer/analyzer, and the LLM is your result formatter. The engineering discipline transfers directly — think pgvector the same way you think about SQL Server full-text indexes."
           }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "analogy",
+          "title": "RAG Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "backend",
+                "familiarConcept": "SQL Index (B-tree)",
+                "familiarIcon": "🗂️",
+                "newConcept": "Vector Database",
+                "newIcon": "🧮",
+                "bridgeText": "A SQL B-tree index maps column values to row pointers so lookups are O(log n) instead of full table scans. A vector database does the same thing for meaning — it maps embedding vectors to document chunks so semantic lookups are O(log n) instead of comparing every document. pgvector literally adds this capability to Postgres, so you already have the mental model.",
+                "breakPoint": "B-tree indexes work on exact or range matches over scalar values. Vector indexes use approximate nearest neighbor (ANN) algorithms like HNSW or IVF — they trade perfect recall for speed, and the 'distance' is cosine similarity in 768+ dimensions, not simple value comparison. There is no vector equivalent of a composite index."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Browser DevTools Search",
+                "familiarIcon": "🔍",
+                "newConcept": "Vector Database",
+                "newIcon": "🧮",
+                "bridgeText": "When you Cmd+F in DevTools to find a CSS rule, you type exact text and it highlights matches. Now imagine a search that finds the rule even if you type 'make text bigger' and the rule says 'font-size: 1.5rem'. That is what a vector database does — it matches by meaning, not characters. It pre-indexes all your content so these meaning-based lookups are instant.",
+                "breakPoint": "DevTools search is deterministic — same query always gives same results. Vector search is probabilistic — results depend on the embedding model, and similar queries may return slightly different orderings. There is no 'exact match' mode in vector search."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Hash Function",
+                "familiarIcon": "#️⃣",
+                "newConcept": "Embedding Model",
+                "newIcon": "📐",
+                "bridgeText": "A hash function maps arbitrary input to a fixed-size output (SHA-256 gives you 256 bits). An embedding model maps text to a fixed-size vector (text-embedding-3-small gives you 1536 floats). The key difference: hash functions are designed so similar inputs produce wildly different outputs, while embedding models are designed so similar meanings produce nearby vectors.",
+                "breakPoint": "Hash functions are deterministic and irreversible — you cannot reconstruct the input from the hash. Embeddings are also irreversible, but they preserve semantic relationships. Two sentences about 'authentication timeouts' will hash to completely different values but embed to nearby vectors. Embeddings are not cryptographic — they leak semantic information by design."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Tokenization (JS parsing)",
+                "familiarIcon": "🧩",
+                "newConcept": "Embedding Model",
+                "newIcon": "📐",
+                "bridgeText": "When a JS engine parses your code, the tokenizer breaks 'const x = 42' into tokens: [CONST, IDENTIFIER, EQUALS, NUMBER]. An embedding model does something similar but for meaning — it breaks 'how do I handle auth timeouts?' into subword tokens, then transforms them through neural network layers into a single vector that captures the full semantic meaning.",
+                "breakPoint": "JS tokenization is rule-based and lossless — you can reconstruct the source from tokens. Embedding is lossy and learned — the model compresses all meaning into a fixed-size vector, so nuances can be lost. Also, JS tokens are discrete symbols, while embedding dimensions are continuous floating-point values with no human-interpretable meaning."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Config File vs Docker Image",
+                "familiarIcon": "📋",
+                "newConcept": "RAG vs Fine-tuning",
+                "newIcon": "🔧",
+                "bridgeText": "Updating a config file is instant — change the YAML, restart the service, done. Rebuilding a Docker image takes minutes to hours — install dependencies, compile, push to registry, deploy. RAG is like config: update the knowledge base, re-index, done in minutes. Fine-tuning is like rebuilding: curate data, train for hours, evaluate, deploy the new model weights.",
+                "breakPoint": "Config files can only change what the software already supports — you cannot add new functionality via config. Fine-tuning actually changes the model's behavior and capabilities, not just its data access. RAG cannot teach a model a new skill (like writing legal briefs in a specific style) — it can only give it reference material."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Runtime Props vs Build-time Static",
+                "familiarIcon": "⚛️",
+                "newConcept": "RAG vs Fine-tuning",
+                "newIcon": "🔧",
+                "bridgeText": "Passing data as runtime props means your component adapts instantly when data changes — no rebuild needed. Baking data at build time (getStaticProps) means it is frozen until the next deployment. RAG is runtime props: the model receives fresh context with every query. Fine-tuning is build-time: knowledge is baked into weights and frozen until you retrain.",
+                "breakPoint": "Runtime props do not change the component's rendering logic — it still renders the same JSX. Fine-tuning literally rewrites the model's neural network weights, changing its fundamental behavior. A fine-tuned model can learn entirely new output patterns, while RAG only provides new input context."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "Dependency Injection",
+                "familiarIcon": "💉",
+                "newConcept": "Retrieval-Augmented Generation",
+                "newIcon": "🔗",
+                "bridgeText": "In React, you inject dependencies via Context or props instead of hardcoding them. The component does not know where the data comes from — it just uses what it receives. RAG works the same way: the LLM does not 'know' your documents. You inject relevant chunks into its prompt at query time, and it generates answers using that injected context.",
+                "breakPoint": "Dependency injection in code is deterministic — the injected value is always used as-is. An LLM may ignore, misinterpret, or hallucinate beyond the injected context. RAG reduces hallucination but does not eliminate it. The model is a probabilistic system, not a deterministic function."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Middleware Pipeline",
+                "familiarIcon": "🔄",
+                "newConcept": "Retrieval-Augmented Generation",
+                "newIcon": "🔗",
+                "bridgeText": "Express middleware intercepts requests and enriches them before the handler runs: auth middleware adds user info, logging middleware adds timestamps. RAG is middleware for LLM prompts: the retrieval step intercepts the user query, enriches it with relevant document chunks, and then passes the augmented prompt to the LLM handler.",
+                "breakPoint": "Middleware is synchronous and deterministic — each layer adds predictable data. RAG retrieval is probabilistic — the chunks returned depend on embedding similarity scores, and different embedding models may return different chunks for the same query. The 'augmented prompt' changes based on what the retriever finds."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Redis Cache",
+                "familiarIcon": "⚡",
+                "newConcept": "Vector Store",
+                "newIcon": "🗄️",
+                "bridgeText": "Redis sits between your app and the database as a fast lookup layer — you check Redis first, and only hit Postgres if the key is not cached. A vector store sits between your app and the LLM — you search the vector store first to find relevant context, then send only the relevant chunks to the LLM. Both are optimized for fast retrieval to avoid expensive operations.",
+                "breakPoint": "Redis uses exact key-value lookup (O(1) hash table). Vector stores use approximate nearest neighbor search (O(log n) with HNSW). Redis returns exactly what was stored; vector stores return the most similar items, which may not be exactly what you need. Also, Redis cache invalidation is explicit (TTL, delete), while vector stores need re-embedding when source documents change."
+              },
+              {
+                "background": "frontend",
+                "familiarConcept": "localStorage Cache",
+                "familiarIcon": "💾",
+                "newConcept": "Vector Store",
+                "newIcon": "🗄️",
+                "bridgeText": "localStorage stores key-value pairs in the browser for fast access without server roundtrips. A vector store is similar in spirit — it stores pre-computed embeddings for fast semantic retrieval without re-computing them every query. Both are persistence layers optimized for read-heavy workloads where computing the value from scratch would be too slow.",
+                "breakPoint": "localStorage uses string keys for exact lookup. Vector stores use multi-dimensional similarity search — there is no 'key', only vectors that are more or less similar. localStorage has a 5MB limit per origin; production vector stores hold millions of embeddings using specialized data structures (HNSW graphs, IVF indexes) that have no browser equivalent."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 6,
+          "section_type": "prediction",
+          "title": "Predict: Keyword vs Semantic",
+          "content": {
+            "question": "A user searches your docs for 'how to handle login failures'. Your docs contain a page titled 'Authentication Error Recovery Patterns'. Which search approach will find it?",
+            "options": [
+              "Keyword search — 'login' and 'failures' will match common words",
+              "Semantic search — it understands that 'login failures' means the same as 'authentication error recovery'",
+              "Both will find it equally well",
+              "Neither — the vocabulary gap is too large"
+            ],
+            "reveal": "Semantic search wins here. Keyword search looks for exact tokens: 'login' does not appear in 'Authentication Error Recovery Patterns', and 'failures' does not match 'Error'. Semantic search converts both to embedding vectors and measures meaning-similarity — 'login failures' and 'authentication error recovery' are semantically close (~0.89 cosine similarity). This is the fundamental reason RAG exists: enterprise docs use formal terminology, but engineers ask questions in casual language."
+          }
+        },
+        {
+          "sort_order": 7,
+          "section_type": "exploration",
+          "title": "RAG Pipeline Data Flow",
+          "content": {
+            "title": "RAG Pipeline — See Real Data at Every Step",
+            "description": "Click each node to see what the data actually looks like at that stage. Follow a real query through the entire pipeline.",
+            "nodes": [
+              {
+                "id": "user-query",
+                "type": "concept",
+                "position": { "x": 0, "y": 120 },
+                "data": {
+                  "label": "User Query",
+                  "icon": "🔍",
+                  "details": "Input: \"how do I handle auth timeouts?\"\n\nThis is natural language — the user does not know or care what terminology your docs use. They want an answer, not a keyword match.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "embed-query",
+                "type": "concept",
+                "position": { "x": 280, "y": 120 },
+                "data": {
+                  "label": "Embed Query",
+                  "icon": "📐",
+                  "details": "Model: text-embedding-3-small (OpenAI)\nOutput: [0.023, -0.041, 0.089, ..., 0.012] (1536 floats)\nLatency: ~15ms\nCost: $0.00002 per query\n\nThe entire meaning of the question is now a point in 1536-dimensional space.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "vector-search",
+                "type": "concept",
+                "position": { "x": 560, "y": 120 },
+                "data": {
+                  "label": "Vector Search",
+                  "icon": "🗄️",
+                  "details": "Engine: pgvector (HNSW index)\nQuery: SELECT * ORDER BY embedding <=> $1 LIMIT 5\n\nResults:\n1. auth_retry_logic.md (score: 0.91)\n2. token_expiration.md (score: 0.87)\n3. timeout_patterns.md (score: 0.84)\n4. session_management.md (score: 0.79)\n5. error_handling.md (score: 0.72)\n\nLatency: ~8ms over 100K chunks",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "augment-prompt",
+                "type": "concept",
+                "position": { "x": 840, "y": 120 },
+                "data": {
+                  "label": "Augment Prompt",
+                  "icon": "📝",
+                  "details": "System: \"Answer using ONLY these sources. Cite [1], [2] etc.\"\n\nContext injected:\n[1] auth_retry_logic.md: \"Implement exponential backoff starting at 100ms, max 3 retries...\"\n[2] token_expiration.md: \"JWT tokens expire after 15min. Refresh tokens last 7 days...\"\n[3] timeout_patterns.md: \"Set connection timeout to 5s, read timeout to 30s...\"\n\nUser: \"how do I handle auth timeouts?\"\n\nTotal prompt: ~1,200 tokens",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "llm-generate",
+                "type": "concept",
+                "position": { "x": 1120, "y": 120 },
+                "data": {
+                  "label": "LLM Generate",
+                  "icon": "✨",
+                  "details": "Model: GPT-4o-mini ($0.15/1M input tokens)\n\nOutput: \"To handle auth timeouts, implement exponential backoff starting at 100ms with a max of 3 retries [1]. Ensure JWT refresh tokens are used before the 15-minute access token expiry [2]. Set connection timeouts to 5s and read timeouts to 30s [3].\"\n\nLatency: ~800ms\nTotal cost per query: ~$0.002\nHallucination: near-zero (grounded in sources)",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-query-embed",
+                "source": "user-query",
+                "target": "embed-query",
+                "label": "text → vector",
+                "animated": true
+              },
+              {
+                "id": "e-embed-search",
+                "source": "embed-query",
+                "target": "vector-search",
+                "label": "similarity search",
+                "animated": true
+              },
+              {
+                "id": "e-search-augment",
+                "source": "vector-search",
+                "target": "augment-prompt",
+                "label": "top-K chunks",
+                "animated": true
+              },
+              {
+                "id": "e-augment-generate",
+                "source": "augment-prompt",
+                "target": "llm-generate",
+                "label": "grounded prompt",
+                "animated": true
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 8,
+          "section_type": "prediction",
+          "title": "Predict: What Happens with Bad Chunks?",
+          "content": {
+            "question": "Your RAG pipeline retrieves 5 chunks, but 3 of them are irrelevant (low-quality matches). What happens to the LLM's answer?",
+            "options": [
+              "The LLM ignores irrelevant chunks and only uses the good ones",
+              "The LLM gets confused and may generate a lower-quality or contradictory answer",
+              "The LLM explicitly tells the user which chunks were irrelevant",
+              "Nothing changes — the LLM treats all context equally regardless of relevance"
+            ],
+            "reveal": "The LLM gets confused. This is called the 'Lost in the Middle' problem (Liu et al., 2023): LLMs pay more attention to context at the beginning and end of the prompt, and can be distracted by irrelevant information in the middle. Retrieval precision matters enormously — this is why production RAG systems use re-ranking (Cohere Rerank, cross-encoders) to filter and reorder chunks before sending them to the LLM. Garbage in, garbage out applies even with the best models."
+          }
+        },
+        {
+          "sort_order": 9,
+          "section_type": "prediction",
+          "title": "Predict: Updating Knowledge",
+          "content": {
+            "question": "Your company just updated its authentication policy. You need answers about the new policy within 1 hour. Which approach works?",
+            "options": [
+              "Fine-tune the model on the new policy document — fastest way to update knowledge",
+              "RAG — re-index the updated document into the vector store, available in minutes",
+              "Both take about the same time to update",
+              "Neither — you need to wait for the next model version from OpenAI"
+            ],
+            "reveal": "RAG wins decisively for dynamic knowledge updates. Re-indexing a document into a vector store takes seconds to minutes: chunk the document, compute embeddings, upsert into pgvector. Fine-tuning takes hours minimum: prepare training data, run training (30min-6hrs depending on model size), evaluate, deploy. For knowledge that changes weekly or faster, RAG is the only practical choice. Fine-tuning is for when you need to change the model's behavior or style — not its factual knowledge."
+          }
         }
       ]
     },
