@@ -48,6 +48,12 @@ docs/
 4. **Dual-theme syntax highlighting** — verify code blocks render correctly in both themes
 5. See `docs/prd-content-enrichment.md §2.7` for full visual style guide
 
+### Diagram Strategy (LOCKED)
+
+- **In-app diagrams → React Flow** (`exploration` section type). Interactive, theme-aware, zero cost, JSON in seed data.
+- **Documentation diagrams → D2** (source in `content/diagrams/`, rendered SVGs in `public/diagrams/`). For git review and technical docs only.
+- **Napkin AI / Gemini image generation → DO NOT USE for this project.** Replaced by React Flow. Static images exist in `public/diagrams/napkin-*` as legacy — app uses React Flow instead.
+
 ## Chapter Topics (for research targeting)
 
 ### Chapter 1: Production RAG Pipeline
@@ -158,13 +164,13 @@ When researching improvements, focus on:
 
 ## Content Enrichment Sprint Status
 
-| Sprint | Description                                                          | Status   | Issue/PR |
-| ------ | -------------------------------------------------------------------- | -------- | -------- |
-| 6      | React Flow install, quest_visual_assets schema, 4 new components     | COMPLETE | PR #34   |
-| 7A     | RAG Pipeline React Flow exploration + analogies + prediction prompts | COMPLETE | PR #36   |
-| 7B     | Chapter 1 D2 diagrams, DiagramViewer component, Discovery arc        | COMPLETE | PR #38   |
-| 8-10   | Chapters 2-5 content enrichment                                      | NEXT     | #32      |
-| 11     | Content enrichment polish + deploy                                   | PLANNED  | #33      |
+| Sprint | Description                                                               | Status   | Issue/PR   |
+| ------ | ------------------------------------------------------------------------- | -------- | ---------- |
+| 6      | React Flow install, quest_visual_assets schema, 4 new components          | COMPLETE | PR #34     |
+| 7A     | RAG Pipeline React Flow exploration + analogies + prediction prompts      | COMPLETE | PR #36     |
+| 7B     | 8 D2 diagrams + 5 React Flow explorations + DiagramViewer + Discovery arc | COMPLETE | PRs #38-42 |
+| 8-10   | Chapters 2-5 content enrichment                                           | NEXT     | #32        |
+| 11     | Content enrichment polish + deploy                                        | PLANNED  | #33        |
 
 ## State File (.improvement-state.json)
 
