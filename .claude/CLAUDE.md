@@ -161,10 +161,10 @@ When researching improvements, focus on:
 | Sprint | Description                                                          | Status   | Issue/PR |
 | ------ | -------------------------------------------------------------------- | -------- | -------- |
 | 6      | React Flow install, quest_visual_assets schema, 4 new components     | COMPLETE | PR #34   |
-| 7A     | RAG Pipeline React Flow exploration + analogies + prediction prompts | NEXT     | #30      |
-| 7B     | SLM analogies + prediction prompts                                   | PLANNED  | #31      |
-| 7C     | Monitoring DiagnosisLab interactive                                  | PLANNED  | #32      |
-| 7D     | Fine-Tuning exploration graphs                                       | PLANNED  | #33      |
+| 7A     | RAG Pipeline React Flow exploration + analogies + prediction prompts | COMPLETE | PR #36   |
+| 7B     | Chapter 1 D2 diagrams, DiagramViewer component, Discovery arc        | COMPLETE | PR #38   |
+| 8-10   | Chapters 2-5 content enrichment                                      | NEXT     | #32      |
+| 11     | Content enrichment polish + deploy                                   | PLANNED  | #33      |
 
 ## State File (.improvement-state.json)
 
