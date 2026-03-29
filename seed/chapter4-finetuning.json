@@ -124,8 +124,7 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "7B full fine-tuning = 112GB VRAM → QLoRA = 5GB. 70B full fine-tuning = 560GB VRAM → QLoRA = 46GB. NF4 (NormalFloat4) quantization is information-theoretically optimal for normally distributed neural n",
-        "budget": 100,
-        "sliders": []
+        "dimensions": []
       },
       "key_insight": "7B QLoRA on RTX 4090 (~$0.40/hr on Vast.ai) = ~$1.20 for 3 hours on 1K samples. QLoRA matches full LoRA quality with negligible degradation from the 4-bit NF4 base model. NF4 beats standard INT4 because it places quantization bins at equal-area intervals matching the normal distribution of LLM weights.",
       "xp_reward": 100,

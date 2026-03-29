@@ -192,8 +192,7 @@
       "game_type": "CostOptimizer",
       "game_config": {
         "scenario": "LLM monitoring is completely different from traditional ML monitoring. Token costs, latency percentiles, hallucination detection, prompt injection, and semantic drift — none of this exists in scikit-l",
-        "budget": 100,
-        "sliders": []
+        "dimensions": []
       },
       "key_insight": "LLM latency SLOs: p50 semantic entropy (cheapest, no extra API call), faithfulness scoring (most accurate, one extra LLM call), self-consistency (sample 3–5 outputs, check agreement). Semantic caching on similar queries (cosine > 0.95) is usually the highest-ROI optimisation.",
       "xp_reward": 100,
