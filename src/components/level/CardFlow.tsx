@@ -153,16 +153,29 @@ export default function CardFlow({
   // Ref for the card heading — used to move focus when step changes
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Ref for the card area — used to scroll to top on step change
+  const cardAreaRef = useRef<HTMLDivElement>(null);
+
   // Live region ref for announcing step changes
   const liveRef = useRef<HTMLDivElement>(null);
 
-  // Focus the card heading on step change for keyboard / screen-reader users
+  // Focus the card heading on step change for keyboard / screen-reader users,
+  // and scroll the card area back to the top.
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
     // Update live region
     if (liveRef.current) {
       liveRef.current.textContent = `Step ${currentStep + 1} of ${totalSteps}`;
     }
+    // Scroll card area to top — respect prefers-reduced-motion
+    const prefersReduced =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        : false;
+    cardAreaRef.current?.scrollIntoView({
+      behavior: prefersReduced ? "instant" : "smooth",
+      block: "start",
+    });
   }, [currentStep, totalSteps]);
 
   // Keyboard navigation — Left/Right arrows when no input is focused
@@ -257,7 +270,7 @@ export default function CardFlow({
       </div>
 
       {/* ── Card area ── */}
-      <div style={{ flex: 1, paddingBottom: "8px" }}>
+      <div ref={cardAreaRef} style={{ flex: 1, paddingBottom: "8px" }}>
         {/* Visually hidden heading receives focus on step change */}
         <h2
           ref={headingRef}

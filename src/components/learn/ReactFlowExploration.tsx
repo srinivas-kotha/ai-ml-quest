@@ -176,7 +176,26 @@ export default function ReactFlowExploration({
   interactive = true,
 }: ReactFlowExplorationProps) {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  // Apply default edge styles — ensure edges are visible on both light and dark themes
+  const styledEdges = initialEdges.map((edge) => ({
+    ...edge,
+    style: {
+      stroke: "var(--color-text-muted)",
+      strokeWidth: 1.5,
+      ...edge.style,
+    },
+    labelStyle: {
+      fill: "var(--color-text-secondary)",
+      fontSize: 11,
+      ...edge.labelStyle,
+    },
+    labelBgStyle: {
+      fill: "var(--color-bg-card)",
+      fillOpacity: 0.85,
+      ...edge.labelBgStyle,
+    },
+  }));
+  const [edges, , onEdgesChange] = useEdgesState(styledEdges);
 
   return (
     <ReactFlow
@@ -186,6 +205,7 @@ export default function ReactFlowExploration({
       onEdgesChange={interactive ? onEdgesChange : undefined}
       nodeTypes={nodeTypes}
       fitView
+      fitViewOptions={{ padding: 0.15 }}
       panOnDrag={interactive}
       zoomOnScroll={interactive}
       zoomOnPinch={interactive}
@@ -193,7 +213,7 @@ export default function ReactFlowExploration({
       nodesConnectable={false}
       elementsSelectable={interactive}
       proOptions={{ hideAttribution: true }}
-      style={{ backgroundColor: "var(--color-code-bg)" }}
+      style={{ backgroundColor: "var(--color-bg-card)" }}
     >
       <Background color="var(--color-border)" gap={20} size={1} />
       {interactive && <Controls />}

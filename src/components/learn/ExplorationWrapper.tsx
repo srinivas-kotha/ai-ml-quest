@@ -100,18 +100,21 @@ export default function ExplorationWrapper({
             {title}
           </h3>
         </div>
-        {!isDesktop && (
-          <span
-            className="text-xs px-2 py-1 rounded-lg"
-            style={{
-              backgroundColor: "var(--color-bg-surface)",
-              color: "var(--color-text-muted)",
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            {isTablet ? "Click to explore" : "Swipe through steps"}
-          </span>
-        )}
+        <span
+          className="text-xs px-2 py-1 rounded-lg"
+          style={{
+            backgroundColor: "var(--color-bg-surface)",
+            color: "var(--color-text-muted)",
+            border: "1px solid var(--color-border)",
+            flexShrink: 0,
+          }}
+        >
+          {isDesktop
+            ? "Click any node to see details. Drag to explore. Use +/− to zoom."
+            : isTablet
+              ? "Click to explore"
+              : "Swipe through steps"}
+        </span>
       </div>
 
       {/* Content */}

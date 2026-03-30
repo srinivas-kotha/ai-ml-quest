@@ -32,6 +32,9 @@ export default function LevelHeader({
   // Ref to the collapsible area for height animation
   const collapseRef = useRef<HTMLDivElement>(null);
 
+  // Whether there is any collapsible content to show
+  const hasCollapsibleContent = !!(subtitle || hookQuote);
+
   // Drive the height transition via inline style on the ref node.
   // We use maxHeight (not height) so we don't need to measure exact content height.
   useEffect(() => {
@@ -100,69 +103,71 @@ export default function LevelHeader({
             </h1>
           </div>
 
-          {/* Collapsible section: subtitle + hook quote */}
-          <div
-            ref={collapseRef}
-            style={{
-              overflow: "hidden",
-              maxHeight: isExpanded ? "500px" : "0px",
-              opacity: isExpanded ? 1 : 0,
-              transition: "max-height 300ms ease-out, opacity 200ms ease-out",
-            }}
-            aria-hidden={!isExpanded}
-          >
-            {/* Subtitle */}
-            {subtitle && (
-              <p
-                className="text-sm ml-9 mb-2"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                {subtitle}
-              </p>
-            )}
-
-            {/* Hook — editorial pull-quote */}
-            {hookQuote && (
-              <blockquote
-                className="ml-9 mt-3 relative pl-12 pt-8 pb-4 pr-4 rounded-r-lg"
-                style={{
-                  borderLeft: `4px solid ${accentColor}`,
-                  backgroundColor: `${accentColor}06`,
-                }}
-              >
-                {/* Large opening quote glyph */}
-                <span
-                  aria-hidden="true"
-                  className="absolute left-3 font-display leading-none select-none"
-                  style={{
-                    fontSize: "80px",
-                    color: "var(--color-accent-gold)",
-                    lineHeight: 1,
-                    top: "-4px",
-                  }}
-                >
-                  &ldquo;
-                </span>
+          {/* Collapsible section: subtitle + hook quote — only rendered if content exists */}
+          {hasCollapsibleContent && (
+            <div
+              ref={collapseRef}
+              style={{
+                overflow: "hidden",
+                maxHeight: isExpanded ? "500px" : "0px",
+                opacity: isExpanded ? 1 : 0,
+                transition: "max-height 300ms ease-out, opacity 200ms ease-out",
+              }}
+              aria-hidden={!isExpanded}
+            >
+              {/* Subtitle */}
+              {subtitle && (
                 <p
-                  className="font-display italic leading-relaxed"
+                  className="text-sm ml-9 mb-2"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  {subtitle}
+                </p>
+              )}
+
+              {/* Hook — editorial pull-quote */}
+              {hookQuote && (
+                <blockquote
+                  className="ml-9 mt-3 relative pl-12 pt-8 pb-4 pr-4 rounded-r-lg"
                   style={{
-                    color: "var(--color-text-primary)",
-                    fontSize: "clamp(1rem, 2vw, 1.375rem)",
+                    borderLeft: `4px solid ${accentColor}`,
+                    backgroundColor: `${accentColor}06`,
                   }}
                 >
-                  {hookQuote}
-                </p>
-                {chapterTitle && (
-                  <footer
-                    className="mt-2 text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                  {/* Large opening quote glyph */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-3 font-display leading-none select-none"
+                    style={{
+                      fontSize: "80px",
+                      color: "var(--color-accent-gold)",
+                      lineHeight: 1,
+                      top: "-4px",
+                    }}
                   >
-                    — Level {levelNum} &middot; {chapterTitle}
-                  </footer>
-                )}
-              </blockquote>
-            )}
-          </div>
+                    &ldquo;
+                  </span>
+                  <p
+                    className="font-display italic leading-relaxed"
+                    style={{
+                      color: "var(--color-text-primary)",
+                      fontSize: "clamp(1rem, 2vw, 1.375rem)",
+                    }}
+                  >
+                    {hookQuote}
+                  </p>
+                  {chapterTitle && (
+                    <footer
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      — Level {levelNum} &middot; {chapterTitle}
+                    </footer>
+                  )}
+                </blockquote>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Meta: XP + time + level counter — always visible */}
