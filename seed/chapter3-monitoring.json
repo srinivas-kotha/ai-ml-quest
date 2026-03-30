@@ -42,6 +42,57 @@
             "title": "Enterprise Insight",
             "content": "Data drift (PSI 0.38 > 0.2 threshold) degraded retrieval quality (0.51 vs 0.80 target). Azure Monitor catches infra issues — ML monitoring catches model degradation. That's the career differentiator."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Sentry Error Monitoring + Source Maps",
+                "familiarIcon": "🔭",
+                "newConcept": "ML Model Monitoring + Feature Drift",
+                "newIcon": "📊",
+                "bridgeText": "Sentry captures unhandled exceptions with stack traces — you know exactly what broke and where. ML monitoring captures 'soft failures': the model doesn't throw an exception, it just gives worse answers because the input distribution shifted. Feature drift is the ML equivalent of a source map: it maps from 'users are complaining' back to 'this input feature changed by 2 standard deviations last Tuesday'.",
+                "breakPoint": "Sentry errors are binary — the code either throws or it doesn't. Model degradation is continuous and often invisible — accuracy drops from 94% to 89% over 3 months without a single exception. You need proactive drift detection, not reactive error logging."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Slow Query Monitoring",
+                "familiarIcon": "🗄️",
+                "newConcept": "ML Prediction Latency + Quality Monitoring",
+                "newIcon": "📊",
+                "bridgeText": "You monitor p99 query latency because slow queries signal database health issues — schema bloat, missing indexes, lock contention. ML models need the same two-dimensional monitoring: latency (are predictions fast enough?) AND quality (are predictions accurate enough?). A model can be fast but wrong. Unlike slow queries where you can read EXPLAIN ANALYZE, quality degradation requires comparing predictions to ground truth labels — which often arrive hours or days later.",
+                "breakPoint": "Slow query detection is immediate — latency is measurable in real-time. Quality degradation detection has a delay: you need ground truth labels to compute accuracy, and those may not arrive until users complain or batch jobs complete. Design your monitoring pipeline to handle this delayed label problem."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Service Health Checks (uptime monitoring)",
+                "familiarIcon": "💓",
+                "newConcept": "ML Model Health Checks (quality monitoring)",
+                "newIcon": "📊",
+                "bridgeText": "An HTTP health check returns 200 if the service is running. An ML model health check must also verify that predictions are reasonable: statistical tests on feature distributions, prediction confidence scores, and canary test inputs with known correct outputs. A model that's 'up' (returns predictions) but has drifted is worse than a model that's 'down' — it silently gives wrong answers.",
+                "breakPoint": "Service uptime is objective — the server is either responding or it isn't. Model quality is subjective and task-dependent — what counts as 'healthy' depends on business metrics (conversion rate, user satisfaction), not just technical metrics. Always tie ML health checks to business KPIs."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: The Silent Failure",
+          "content": {
+            "question": "A fraud detection model was trained on 2023 data. In 2025, it still returns predictions without errors. But fraud losses increased 40% in Q1 2025. The ML team claims the model is 'working fine' because it has 100% uptime. What is the most likely root cause?",
+            "options": [
+              "The model has a bug that only triggers for certain fraud types",
+              "The model is experiencing concept drift — fraud patterns changed since 2023 training data",
+              "The model is overfitting to the training data",
+              "The prediction latency increased, causing timeouts in the fraud prevention pipeline"
+            ],
+            "reveal": "Option 2 (concept drift) is correct. Fraud patterns evolve — new fraud techniques emerge, transaction patterns shift, attacker behaviour adapts to the model's predictions. A model trained on 2023 fraud patterns has never seen 2025 fraud techniques. Concept drift is the most common cause of ML silent failures: the model was correct for its training distribution but the real-world distribution changed. Monitor prediction confidence scores and compare to a held-out 'current period' validation set quarterly."
+          }
         }
       ]
     },
@@ -77,6 +128,185 @@
             "title": "Enterprise Insight",
             "content": "KS test is dangerously sensitive at large N — it detects statistically significant but operationally irrelevant noise. Production standard: Wasserstein distance for numerical features (threshold 0.1), Jensen-Shannon divergence for categorical (threshold 0.1). PSI (threshold 0.2) works well for business-familiar reporting."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "A/B Test Statistical Significance (t-test)",
+                "familiarIcon": "🧪",
+                "newConcept": "Kolmogorov-Smirnov (KS) Drift Test",
+                "newIcon": "📈",
+                "bridgeText": "A t-test checks if two means are significantly different with a p-value threshold. The KS test checks if two DISTRIBUTIONS are significantly different — it doesn't just compare means, it compares the entire shape. When you run a drift test on a model feature (e.g., user_age), you're asking 'is this week's distribution significantly different from training data?' KS test gives you p < 0.05 as a drift alarm, just like your A/B test framework.",
+                "breakPoint": "T-tests detect mean shifts. KS tests detect distribution shape changes — useful when means are stable but variance or skew changed. Neither test tells you WHY the distribution shifted (new user segment, data pipeline bug, seasonal effect). Always investigate the root cause before retraining."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Checksum / Hash Validation of Data Imports",
+                "familiarIcon": "🔑",
+                "newConcept": "Feature Distribution Validation in Data Pipelines",
+                "newIcon": "📈",
+                "bridgeText": "You validate ETL imports with checksums to detect silent data corruption — wrong row count, truncated values, encoding issues. Feature drift detection is validation for ML pipelines: instead of 'did the row count change?', you ask 'did the statistical distribution change?' Great Expectations and Evidently AI provide this validation layer, emitting alerts when production data deviates from training data expectations.",
+                "breakPoint": "Checksum validation is binary and deterministic. Distribution validation is probabilistic — a p=0.049 KS test result means 'probably drifted' not 'definitely drifted'. False alarms (natural variation triggering alerts) are common in early deployments. Tune your significance threshold with 30+ days of baseline data before going to production."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Prometheus Alerting Rules (metric thresholds)",
+                "familiarIcon": "🔔",
+                "newConcept": "Drift Alerting (statistical test alarms)",
+                "newIcon": "📈",
+                "bridgeText": "A Prometheus alert fires when a metric exceeds a threshold: 'alert if p99_latency > 500ms for 5 minutes'. Drift alerting fires when a statistical test crosses significance: 'alert if KS p-value < 0.05 for feature X in rolling 7-day window'. The alert format is identical — condition, threshold, duration. Evidently AI exports drift metrics as Prometheus-compatible endpoints, so you can use the same Grafana dashboards and PagerDuty routing.",
+                "breakPoint": "Prometheus alerts have clear remediation actions (scale pods, restart services). Drift alerts have ambiguous remediation — drift could mean: retrain the model, fix the data pipeline, investigate the input distribution, or accept the drift as a real-world change. Build a runbook for each drift alarm before going to production."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Drift Source",
+          "content": {
+            "question": "Your model's feature 'average_order_value' shows KS drift (p < 0.001) in March. Looking at the raw data, the mean shifted from $45 to $62. Your model was trained in October. What are the top 3 most likely explanations, in order?",
+            "options": [
+              "Model bug, data pipeline bug, seasonal pricing",
+              "Data pipeline schema change, seasonal effect (Q1 spending patterns), new product category launch",
+              "Concept drift, model overfitting, data corruption",
+              "Random statistical variation, hardware failure, network timeout"
+            ],
+            "reveal": "Option 2 is correct. A 38% mean increase is significant — investigate in this order: (1) Data pipeline: check for schema changes, type casting bugs, or upstream source changes that affect the feature calculation. (2) Seasonal effect: March often shows higher discretionary spending. (3) Business change: new product categories, pricing changes, or marketing campaigns can shift order values legitimately. Only after ruling out all three should you consider retraining — retraining on seasonally-inflated data may hurt October performance."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Data Drift Timeline",
+          "content": {
+            "title": "Data Drift Timeline",
+            "description": "See how feature distributions shift over time. Click each time period to compare against training baseline distribution.",
+            "nodes": [
+              {
+                "id": "training",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 100
+                },
+                "data": {
+                  "label": "Training Data (Oct 2024)",
+                  "icon": "📊",
+                  "active": true,
+                  "accentColor": "#22c55e",
+                  "details": "Feature: average_order_value\nMean: $45.20\nStd: $18.50\nMin: $5.00 | Max: $320\nDistribution: Right-skewed, long tail\n\n✅ BASELINE — all future comparisons are against this distribution.\nKS p-value vs itself: 1.0 (identical by definition)"
+                }
+              },
+              {
+                "id": "nov2024",
+                "type": "concept",
+                "position": {
+                  "x": 280,
+                  "y": 100
+                },
+                "data": {
+                  "label": "November 2024",
+                  "icon": "📉",
+                  "accentColor": "#22c55e",
+                  "details": "Feature: average_order_value\nMean: $46.80 (+3.5%)\nStd: $19.20\nKS p-value vs training: 0.43\n\n✅ NO DRIFT — within normal variation range.\np > 0.05 means we cannot reject the null hypothesis (same distribution). This level of variation is expected."
+                }
+              },
+              {
+                "id": "dec2024",
+                "type": "concept",
+                "position": {
+                  "x": 560,
+                  "y": 100
+                },
+                "data": {
+                  "label": "December 2024",
+                  "icon": "📈",
+                  "accentColor": "#eab308",
+                  "details": "Feature: average_order_value\nMean: $58.40 (+29%)\nStd: $25.10\nKS p-value vs training: 0.08\n\n⚠️ BORDERLINE — check before alarming.\np = 0.08 is above 0.05 threshold. Likely explained by holiday shopping season (higher gift values). Log and monitor — do not retrain yet."
+                }
+              },
+              {
+                "id": "jan2025",
+                "type": "concept",
+                "position": {
+                  "x": 840,
+                  "y": 100
+                },
+                "data": {
+                  "label": "January 2025",
+                  "icon": "📉",
+                  "accentColor": "#22c55e",
+                  "details": "Feature: average_order_value\nMean: $44.10 (-2.4%)\nStd: $17.80\nKS p-value vs training: 0.67\n\n✅ NO DRIFT — post-holiday normalisation.\nDistribution returned to near-training baseline. Holiday spike was seasonal, not a true distribution shift. Decision validated: correct to not retrain in December."
+                }
+              },
+              {
+                "id": "feb2025",
+                "type": "concept",
+                "position": {
+                  "x": 1120,
+                  "y": 100
+                },
+                "data": {
+                  "label": "February 2025",
+                  "icon": "🔴",
+                  "accentColor": "#ef4444",
+                  "details": "Feature: average_order_value\nMean: $62.30 (+38%)\nStd: $31.20\nKS p-value vs training: 0.002\n\n🚨 DRIFT DETECTED — action required.\np < 0.05 threshold crossed. This is NOT seasonal (Feb is not a high-spend month). Investigate: (1) New product category launched? (2) Pricing change? (3) Data pipeline bug? (4) New customer segment?"
+                }
+              },
+              {
+                "id": "march2025",
+                "type": "concept",
+                "position": {
+                  "x": 1400,
+                  "y": 100
+                },
+                "data": {
+                  "label": "Investigation",
+                  "icon": "🔍",
+                  "accentColor": "#3b82f6",
+                  "details": "Root Cause Found: New 'Premium Electronics' product category launched Feb 3rd. Average order value for electronics: $180. This accounts for 28% of February orders.\n\nDecision: DO NOT RETRAIN on Feb data alone — distribution will stabilise as electronics reaches steady-state proportion.\nAction: Add 'product_category' as a model feature. Retrain in 60 days with full electronics data."
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "source": "training",
+                "target": "nov2024",
+                "label": "p=0.43 ✅"
+              },
+              {
+                "id": "e2",
+                "source": "nov2024",
+                "target": "dec2024",
+                "label": "p=0.08 ⚠️"
+              },
+              {
+                "id": "e3",
+                "source": "dec2024",
+                "target": "jan2025",
+                "label": "p=0.67 ✅"
+              },
+              {
+                "id": "e4",
+                "source": "jan2025",
+                "target": "feb2025",
+                "label": "p=0.002 🚨"
+              },
+              {
+                "id": "e5",
+                "source": "feb2025",
+                "target": "march2025",
+                "label": "investigate"
+              }
+            ]
+          }
         }
       ]
     },
@@ -110,6 +340,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "Data drift: inputs changed, P(X) shifted — retrain on recent data. Concept drift: the X→Y relationship itself changed — re-label and rethink features. Feature drift: preprocessing bug — fix the pipeline first before assuming distribution shift."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Specificity Conflicts",
+                "familiarIcon": "🎨",
+                "newConcept": "Covariate vs Concept Drift",
+                "newIcon": "🌊",
+                "bridgeText": "Covariate drift = the input styles (CSS classes applied to elements) changed, but the render rules (model logic) are still correct. Concept drift = the render rules themselves changed — what 'a beautiful button' looks like evolved. In ML: covariate drift is when input features shift (user demographics changed). Concept drift is when the ground truth relationship changed (what predicts fraud changed because attackers adapted). Covariate drift can often be handled with recalibration; concept drift requires retraining.",
+                "breakPoint": "CSS specificity conflicts are deterministic and debuggable. Drift types often co-occur — covariate drift can cause apparent concept drift if your model hasn't seen the new input range. Always check for covariate drift before concluding concept drift exists."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Schema Migration vs Data Migration",
+                "familiarIcon": "🗄️",
+                "newConcept": "Concept Drift vs Data Drift",
+                "newIcon": "🌊",
+                "bridgeText": "A schema migration changes the structure (column added, type changed). A data migration changes the values (backfill nulls, normalise formats). Similarly: concept drift changes the underlying relationship structure (P(Y|X) changes — the rules for what predicts fraud changed). Data/covariate drift changes the input values (P(X) changes — users now have different demographics). Both require different responses: schema changes need new indexes; concept drift needs retraining.",
+                "breakPoint": "Schema migrations are planned and applied intentionally. Drift happens continuously and invisibly. There is no equivalent of 'git blame' for concept drift — you need statistical tests and monitoring to detect it."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Configuration Drift in Infrastructure",
+                "familiarIcon": "⚙️",
+                "newConcept": "Model Distribution Drift",
+                "newIcon": "🌊",
+                "bridgeText": "Infrastructure configuration drift happens when servers diverge from their desired state (Terraform/Ansible intent vs actual state). You detect it by comparing actual config to desired config. ML model drift works the same way: desired state = training distribution, actual state = production distribution. Evidently AI is the 'Terraform plan' for your model — it compares current production data against training baseline and reports the delta.",
+                "breakPoint": "Infrastructure drift can be corrected by applying idempotent configs (terraform apply). Model drift cannot be 'corrected' by applying the original training data — you must collect new data from the drifted distribution and retrain. There's no 'rollback to desired state' for data."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Drift Type Diagnosis",
+          "content": {
+            "question": "Your credit scoring model was trained on 2022 data. In 2024 it starts underperforming. Analysis shows: (1) income distribution shifted — average income increased 15%. (2) The relationship between income and credit risk changed — higher income now correlates more strongly with risk due to buy-now-pay-later debt. Which drift types are present?",
+            "options": [
+              "Only covariate drift — the income distribution changed",
+              "Only concept drift — the income-risk relationship changed",
+              "Both covariate drift (P(X) changed) and concept drift (P(Y|X) changed)",
+              "Label drift — the definition of 'credit risk' changed"
+            ],
+            "reveal": "Option 3 (both) is correct. Covariate drift: P(income) shifted — the input distribution is different from training. Concept drift: P(risk | income) shifted — the relationship between income and risk changed (BNPL debt changed the income-risk mapping). Both require retraining, but they have different remediation strategies: covariate drift alone might be handled with importance weighting; concept drift always requires new training data from the current distribution."
           }
         }
       ]
@@ -146,6 +427,57 @@
             "title": "Enterprise Insight",
             "content": "Evidently's killer feature: assert test_suite.as_dict()['summary']['all_passed'] inside a pytest test that runs in CI. Fail the PR before bad data reaches production. Exactly like your .NET quality gates — same mental model, different layer."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "ESLint in CI Pipeline",
+                "familiarIcon": "🔍",
+                "newConcept": "Evidently AI Model Quality Gate in CI/CD",
+                "newIcon": "🧪",
+                "bridgeText": "ESLint blocks PRs when code quality rules are violated. An Evidently AI quality gate blocks model deployment when drift or quality metrics exceed thresholds. Both run in CI, both use pass/fail criteria, both protect the production environment. The YAML config even looks similar: rules/tests → test_suites → pass_fail thresholds.",
+                "breakPoint": "ESLint runs on static code — deterministic. Evidently tests run on data samples — statistical. A test might pass with one data sample and fail with another from the same week. Build your CI gates with enough test data (1K+ samples) to reduce variance, and include a confidence interval in your threshold."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "pytest with Fixtures and Assertions",
+                "familiarIcon": "🧪",
+                "newConcept": "Evidently TestSuite with Column Tests",
+                "newIcon": "🧪",
+                "bridgeText": "pytest fixtures provide reference data; test assertions check against expected values. Evidently TestSuite provides reference dataset (training data) and runs statistical tests (TestColumnDrift, TestNumberOfColumns, TestShareOfOutRangeValues) against current data. The API is nearly identical: test_suite.run(current_data, reference_data) → test_suite.as_dict() → pass/fail per test.",
+                "breakPoint": "pytest tests are unit-level and test one function at a time. Evidently tests are dataset-level and test statistical properties of entire columns. A single failing test in pytest means a bug. A single failing Evidently test might mean natural variation or a real data quality issue — investigate before treating it as a blocker."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "GitHub Actions Quality Gates",
+                "familiarIcon": "⚙️",
+                "newConcept": "Evidently CI/CD Integration",
+                "newIcon": "🧪",
+                "bridgeText": "GitHub Actions runs test suites on PR and blocks merge if tests fail. Evidently integrates the same way: add an evidently_test step in your deploy workflow, run drift tests against a fresh data sample, fail the deployment if drift_score > threshold. The YAML step is 5 lines, the Evidently report is a JSON artifact you can publish to GitHub Pages as a model health dashboard.",
+                "breakPoint": "GitHub Actions failures are deterministic and repeatable. Evidently drift test failures depend on which data sample you use — running the test twice with different 500-row samples may give different results. Always use consistent, large reference and test sets, and track the trend over time rather than reacting to single test failures."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Gate Configuration",
+          "content": {
+            "question": "You're building an Evidently quality gate for model deployment. You want to block deployment if data drift is severe but allow it for minor drift. Which threshold configuration is most appropriate for a production fraud detection model?",
+            "options": [
+              "Block if ANY feature shows drift (p < 0.05)",
+              "Block if >50% of features show drift (p < 0.05)",
+              "Block if >20% of features show drift AND model performance drops >3% on validation set",
+              "Never block deployment — always deploy and monitor post-release"
+            ],
+            "reveal": "Option 3 is correct for production fraud detection. A strict 'any feature drifts' gate (A) would block too frequently — some features naturally drift without affecting model performance. A combined gate (C) requires both distribution drift AND performance impact to block deployment. This prevents false alarms while catching real problems. Always pair drift detection with actual performance metrics — drift without performance degradation is informational, not a blocker."
+          }
         }
       ]
     },
@@ -180,6 +512,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "TreeSHAP = production standard for tabular ML (millisecond latency). For LLMs, attention visualisation + token attribution replace SHAP. EU AI Act makes explainability a legal requirement for high-risk decisions — this is now a compliance topic, not just a nice-to-have."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "DevTools Network Waterfall (request attribution)",
+                "familiarIcon": "🔍",
+                "newConcept": "SHAP Feature Importance (prediction attribution)",
+                "newIcon": "📊",
+                "bridgeText": "The Network waterfall shows which requests contributed most to page load time — you see that the hero image blocked 800ms and the analytics script added 200ms. SHAP shows which features contributed most to a prediction — 'age=45 added 0.23 to the fraud score, high_frequency_transactions added 0.41, large_transfer added 0.18'. Both are attribution tools: waterfall attributes page load time, SHAP attributes prediction score.",
+                "breakPoint": "Network waterfall attribution is causal — removing the hero image would save exactly 800ms. SHAP attribution is correlational — high age correlating with high fraud score doesn't mean age CAUSES fraud. SHAP tells you what the model learned, not the underlying truth. Regulatory use (GDPR Article 22 explanations) requires causal explanations, not just SHAP correlations."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "SQL Query EXPLAIN ANALYZE (operation attribution)",
+                "familiarIcon": "🗄️",
+                "newConcept": "LIME Local Explanations",
+                "newIcon": "📊",
+                "bridgeText": "EXPLAIN ANALYZE shows which operations consumed the most time for a specific query execution. LIME generates a local explanation for a specific prediction: it creates perturbed versions of the input, runs them through the model, and fits a simple linear model to approximate which features drove this specific prediction. Both tools explain specific executions, not the global system behaviour.",
+                "breakPoint": "EXPLAIN ANALYZE produces the exact, deterministic execution path. LIME generates an approximation by sampling — different runs of LIME on the same input can give different explanations. LIME is a 'good enough' explanation, not a mathematical proof of model behaviour."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Distributed Tracing (Jaeger, OpenTelemetry)",
+                "familiarIcon": "🔭",
+                "newConcept": "SHAP TreeExplainer + Attention Visualisation",
+                "newIcon": "📊",
+                "bridgeText": "Distributed tracing follows a request through service boundaries — API → cache → DB → external service — and measures time at each hop. SHAP TreeExplainer traces a prediction through tree nodes — feature split → branch → contribution — and measures the impact of each feature value. Both tools are 'tracing' for their respective systems: distributed systems vs decision trees.",
+                "breakPoint": "Distributed traces are deterministic — the same request follows the same path (barring failures). SHAP values for neural networks (vs tree models) are computed using Shapley values (game theory approximations) and can vary slightly with sampling. TreeExplainer (for XGBoost/LightGBM) is exact; DeepExplainer (for neural nets) is approximate."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Regulatory Compliance",
+          "content": {
+            "question": "Your loan approval ML model is subject to the EU AI Act. A rejected applicant requests an explanation. Your SHAP analysis shows: income (SHAP: -0.45), employment_duration (SHAP: -0.31), recent_credit_inquiries (SHAP: -0.28). The applicant asks 'Why was I rejected and what can I do to get approved?' What is the correct response?",
+            "options": [
+              "Share the SHAP values directly — they explain the model's decision",
+              "SHAP values are insufficient for regulatory compliance — provide actionable feature guidance",
+              "Refuse to provide any explanation — model IP is protected",
+              "Run the model without the applicant's income data to see if they'd be approved"
+            ],
+            "reveal": "Option 2 is correct. The EU AI Act (and GDPR Article 22) requires 'meaningful information about the logic involved' and the right to human review. SHAP values explain correlation, not causation — telling an applicant 'your income had SHAP -0.45' isn't actionable. The compliant response: 'The primary factors were income level, employment duration, and recent credit applications. Increasing income above $X or waiting 6 months without new credit inquiries would likely result in approval.' Always translate SHAP scores into human-readable, actionable guidance."
           }
         }
       ]
@@ -216,6 +599,57 @@
             "title": "Enterprise Insight",
             "content": "LLM latency SLOs: p50 semantic entropy (cheapest, no extra API call), faithfulness scoring (most accurate, one extra LLM call), self-consistency (sample 3–5 outputs, check agreement). Semantic caching on similar queries (cosine > 0.95) is usually the highest-ROI optimisation."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Bundle Size Monitoring + Lighthouse CI",
+                "familiarIcon": "📦",
+                "newConcept": "LLM Output Quality Monitoring",
+                "newIcon": "🤖",
+                "bridgeText": "Lighthouse CI blocks deploys when bundle size > X or LCP degrades. LLM quality monitoring blocks deploys (or triggers alerts) when output quality metrics degrade: hallucination rate > threshold, answer relevance score drops, toxicity rate increases. Both use automated scoring (Lighthouse score vs LLM-as-judge quality score) to gate deployments. The difference: Lighthouse scores are deterministic, LLM quality scores are probabilistic.",
+                "breakPoint": "Lighthouse scores are reproducible — same code, same score. LLM quality scores use another LLM as judge, which introduces variance. An LLM judge might rate the same output differently on different runs. Use multiple judge models and ensemble their scores for reliable quality monitoring."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "API Error Rate Monitoring (5xx rate)",
+                "familiarIcon": "🔴",
+                "newConcept": "LLM Hallucination Rate Monitoring",
+                "newIcon": "🤖",
+                "bridgeText": "You alert if 5xx error rate > 1% because errors are unambiguous failures. Hallucination monitoring works the same way: track the rate at which model outputs contain unverifiable claims, factual errors, or fabricated citations. Tools like Ragas (for RAG), TruLens, and ARES automate this — they compare model outputs to ground truth context and flag when answers aren't grounded in the retrieved documents.",
+                "breakPoint": "5xx errors are binary and definitionally wrong. Hallucinations are on a spectrum — some outputs are subtly wrong in ways that require domain expertise to detect. Automated hallucination detection has false positive rates of 15–25%. Use human review sampling (5% of flagged outputs) to calibrate your automated detector."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Grafana Dashboards + PagerDuty Alerts",
+                "familiarIcon": "📊",
+                "newConcept": "LLM Observability (Phoenix, LangSmith, Langfuse)",
+                "newIcon": "🤖",
+                "bridgeText": "Grafana dashboards show time-series metrics (latency, error rate, throughput) with alert thresholds. LLM observability platforms (Arize Phoenix, LangSmith, Langfuse) show the equivalent for language models: token usage, latency per call, quality scores per trace, user feedback correlation. They integrate with OpenTelemetry — the same tracing standard you use for microservices — making LLM observability feel familiar if you've done distributed tracing.",
+                "breakPoint": "Grafana metrics are numeric and easy to aggregate. LLM observability includes unstructured data (the prompts and completions) that you need to store and search. This creates significant storage and privacy considerations — production prompts often contain PII. Implement PII scrubbing before logging prompts to your observability platform."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: RAG Hallucination Source",
+          "content": {
+            "question": "Your RAG chatbot is generating factually incorrect answers 15% of the time. You instrument with Ragas and find: Context Recall = 0.65 (retrieval only finds relevant docs 65% of the time), Faithfulness = 0.95 (when context is retrieved, answers are 95% grounded in it). Where should you focus improvement efforts?",
+            "options": [
+              "The LLM — faithfulness 0.95 means the model is still hallucinating 5%",
+              "The retrieval system — context recall 0.65 is the primary bottleneck",
+              "The chunking strategy — better chunks will fix both metrics",
+              "The embedding model — a better model will fix retrieval recall"
+            ],
+            "reveal": "Option 2 (retrieval) is the correct focus. Ragas decomposes RAG quality into: retrieval quality (context recall/precision) and generation quality (faithfulness/answer relevance). Context recall = 0.65 means the retriever fails to find relevant documents 35% of the time — when there's no relevant context, even a perfect LLM will hallucinate or refuse. Faithfulness = 0.95 means the LLM is working well when given good context. Invest in retrieval: better chunking, hybrid search (dense + sparse), or re-ranking. The LLM is not the bottleneck."
+          }
         }
       ]
     },
@@ -250,6 +684,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "Langfuse self-hosted on your existing PostgreSQL = zero extra infrastructure. Key OTel gen_ai span attributes: gen_ai.system, gen_ai.request.model, gen_ai.usage.input_tokens, gen_ai.usage.output_tokens. Safety check runs before LLM generation to prevent prompt injection costs."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "React DevTools Profiler (component render times)",
+                "familiarIcon": "⚛️",
+                "newConcept": "LLM Chain Tracing (span-level latency)",
+                "newIcon": "🔭",
+                "bridgeText": "React Profiler shows which components took longest to render and why (re-render cascades). LangSmith / Phoenix tracing shows which LLM chain steps took longest: retrieval (200ms), embedding (50ms), LLM call (800ms), post-processing (30ms). Both tools attribute total time to specific operations, helping you find the actual bottleneck instead of guessing. LangSmith spans map directly to React Profiler flame charts.",
+                "breakPoint": "React Profiler is always available in development mode. LLM tracing must be explicitly instrumented — you add trace decorators to your code, which adds a few milliseconds overhead. In production, sample traces (1% of requests) rather than tracing everything to avoid performance impact."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "OpenTelemetry Distributed Tracing",
+                "familiarIcon": "🔭",
+                "newConcept": "LangSmith / Langfuse Tracing",
+                "newIcon": "🔭",
+                "bridgeText": "OpenTelemetry traces requests through microservices with parent/child spans. LangSmith and Langfuse use the same concept for LLM chains: the top-level 'agent run' is the parent span, each tool call or LLM invocation is a child span. Both export to the same backends (Jaeger, Tempo, Honeycomb). Arize Phoenix is built on OpenTelemetry — you can literally use the same SDK and routing for both microservices and LLM tracing.",
+                "breakPoint": "OpenTelemetry traces are uniformly structured — all services emit the same span format. LLM traces contain unstructured data (prompt text, completion text) that doesn't fit in OpenTelemetry span attributes (limited to 256 chars). LLM tracing platforms add a separate storage layer for the full text payloads."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Structured Logging (JSON logs + log aggregation)",
+                "familiarIcon": "📋",
+                "newConcept": "LLM Prompt/Completion Logging",
+                "newIcon": "🔭",
+                "bridgeText": "Structured JSON logging lets you query logs like a database: 'all requests where user_id=X with status=500'. LLM prompt logging is structured logging for AI: log {prompt, model, completion, latency, tokens, user_id, session_id, quality_score}. Langfuse's data model is exactly a structured log table with full-text search on prompt/completion. Build your LLM logging the same way you'd build structured app logging.",
+                "breakPoint": "Application logs are typically small (1–10 KB per request). LLM prompt + completion logs are large (10–100 KB) and grow linearly with context window. At 10K requests/day with average 4KB logs, you're generating 40MB/day = 14.6GB/year. Plan your retention policy upfront: hot storage (30 days), cold storage (1 year), delete (beyond)."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: The Latency Breakdown",
+          "content": {
+            "question": "LangSmith tracing shows your RAG pipeline has p99 latency of 3.2 seconds. Span breakdown: embedding (45ms), vector search (120ms), LLM call (2,800ms), formatting (15ms). A user asks 'How do I reduce latency to under 1 second?' What should you focus on first?",
+            "options": [
+              "Optimise vector search — it's the second-largest contributor",
+              "Cache embeddings — regenerating them for every query wastes 45ms",
+              "Reduce LLM output length — shorter responses from the LLM model will help",
+              "Switch to a faster/smaller model — 2.8s LLM latency is the bottleneck"
+            ],
+            "reveal": "Option 4 is correct. The LLM call is 87.5% of total latency (2,800ms of 3,200ms). Optimising vector search saves 120ms but leaves you at 3.08 seconds. Embedding caching saves 45ms but leaves you at 3.15 seconds. The only way to reach <1 second is to address the LLM call: switch to a faster model (GPT-4o-mini, Mistral 7B, or local llama.cpp), reduce max_tokens, enable streaming to reduce perceived latency, or use a faster inference provider. Optimise the biggest piece first."
           }
         }
       ]
@@ -286,6 +771,57 @@
             "title": "Enterprise Insight",
             "content": "'Monitoring without runbooks is theater.' Every alert needs: (1) rollback procedure, (2) escalation path, (3) root-cause investigation template. This is SRE incident response applied to ML — the same discipline, a different failure domain."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Playwright Visual Regression Tests",
+                "familiarIcon": "📸",
+                "newConcept": "ML Model Regression Testing",
+                "newIcon": "🔬",
+                "bridgeText": "Playwright captures screenshots of your UI and diffs them against approved baselines — if the button moved 2px, the test fails. ML regression testing captures model outputs on a fixed test set and diffs them against approved baselines: if accuracy drops >2% from the approved model, the deploy fails. Both are 'baseline comparison' CI tests protecting against regressions introduced by new changes.",
+                "breakPoint": "Playwright visual diffs are pixel-perfect and deterministic. ML regression tests measure statistical performance — accuracy/F1/RMSE has variance depending on the test set. A 'pass/fail' threshold must account for this variance: a 0.5% accuracy change might be noise, not regression. Always compute confidence intervals and set thresholds based on your eval set size."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Migration Dry-Run (--dry-run)",
+                "familiarIcon": "🗄️",
+                "newConcept": "Shadow Model Evaluation (challenger model)",
+                "newIcon": "🔬",
+                "bridgeText": "A migration dry-run applies the migration in a transaction, checks the results, then rolls back — you see the effect without committing. Shadow model evaluation runs the new model in parallel with the production model (same inputs, both outputs), compares outputs without serving the new model to users. This is 'dry-run for model deployment': you validate the new model against real production traffic before it affects users.",
+                "breakPoint": "DB migration dry-runs are perfectly reproducible. Shadow model evaluation has selection bias — you evaluate on current production traffic, which may not represent the full input distribution. Run shadow evaluation for at least 2 weeks to capture weekly patterns before concluding the new model is safe to deploy."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Blue-Green Deployment with Health Checks",
+                "familiarIcon": "🔵",
+                "newConcept": "ML Canary Deployment with Model Quality Gate",
+                "newIcon": "🔬",
+                "bridgeText": "Blue-green deploys route 100% traffic to green once health checks pass on blue, with instant rollback to green if issues occur. ML canary deploys route 5% of traffic to the new model, measure quality metrics for 24 hours, then promote to 100% only if the new model meets quality thresholds. The 'health check' is not just HTTP 200 — it's model accuracy, hallucination rate, and user feedback score.",
+                "breakPoint": "Blue-green rollback triggers on technical failures (HTTP errors, timeouts). ML canary rollback triggers on quality failures (accuracy drop, user dissatisfaction) which may take days to detect. Build your canary success criteria into the deployment script: 'promote after 24h if accuracy ≥ baseline - 1% AND user_feedback_positive_rate ≥ 85%'."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: The CI Test Strategy",
+          "content": {
+            "question": "You're building CI for a recommendation engine. You have: (1) a fixed holdout test set from 3 months ago, (2) a fresh sample of last week's data. Which should be your primary regression gate, and why?",
+            "options": [
+              "Fixed holdout — consistent baseline, reproducible over time",
+              "Fresh data — tests against current production distribution",
+              "Both — run against fixed holdout for reproducibility AND fresh data for drift detection",
+              "Neither — CI tests can't reliably evaluate recommendation quality"
+            ],
+            "reveal": "Option 3 (both) is the correct production approach. Fixed holdout: ensures the new model doesn't regress on historical patterns — reproducible, comparable across PRs. Fresh data: ensures the new model works on the current distribution — catches cases where old training data caused the new model to diverge from real user behaviour. Use fixed holdout as your hard gate (fail if score drops) and fresh data as your soft gate (warn if distribution mismatch exceeds threshold)."
+          }
         }
       ]
     },
@@ -321,6 +857,57 @@
             "title": "Enterprise Insight",
             "content": "Interleaving for ranking is 10–100× more efficient than standard A/B (both models answer the same query, user clicks reveal preference). Guardrail metrics: latency p95, cost per query, and error rate must NOT degrade. If ANY guardrail breaches, auto-rollback fires — even if the primary conversion metric improved."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Feature Flag A/B Testing (LaunchDarkly, GrowthBook)",
+                "familiarIcon": "🚩",
+                "newConcept": "Model A/B Testing (traffic splitting between models)",
+                "newIcon": "🧪",
+                "bridgeText": "LaunchDarkly splits users into control/treatment based on user ID hash — deterministic per user, can be targeted by cohort. ML model A/B testing works the same way: hash the user ID, route 50% to Model A, 50% to Model B, measure business metric differences. The critical difference: model experiments measure downstream business metrics (conversion, satisfaction), not just model metrics (accuracy). LaunchDarkly's experiment SDK is often the right tool for ML A/B tests too.",
+                "breakPoint": "Feature flag A/B tests can be stopped and rolled back instantly with a flag flip. ML model A/B tests have ramp-up and cooldown periods — you need enough samples for statistical significance (often 2–4 weeks). Stopping early introduces bias and can invalidate the experiment."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Query Rewrite with Explain Plan Comparison",
+                "familiarIcon": "🗄️",
+                "newConcept": "Multi-Armed Bandit for Model Selection",
+                "newIcon": "🧪",
+                "bridgeText": "A query rewrite test is binary: old query vs new query, measure execution time, keep the faster one. Multi-armed bandit (MAB) for ML models is dynamic: continuously allocate more traffic to the winning model while still exploring alternatives. It's like A/B testing where you optimise during the experiment, not just after. Use MAB when you have multiple model candidates and can't afford to run a full A/B test for each.",
+                "breakPoint": "DB query rewrites are deterministic — the faster query is always faster. MAB model selection optimises for current traffic patterns — the 'winning' model during high-traffic periods may not win during low-traffic periods. Use MAB for engagement metrics (clicks, time on page), not for rare-event metrics (fraud, churn) where variance is too high."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Infrastructure A/B Testing (instance types, configs)",
+                "familiarIcon": "🖥️",
+                "newConcept": "Online ML Evaluation (shadow mode + interleaving)",
+                "newIcon": "🧪",
+                "bridgeText": "You test infrastructure changes by running A/B with different instance types and measuring latency/cost. ML model A/B testing uses the same infrastructure: route request logs to both models, compare outputs. 'Interleaving' goes further — for recommendation systems, interleave results from both models in a single response and measure which positions get clicked. This is 10x more statistically efficient than standard A/B testing.",
+                "breakPoint": "Infrastructure A/B tests measure objective metrics (latency, cost). ML A/B tests measure user behaviour metrics (clicks, conversions) which are influenced by factors outside the model — session context, page layout, time of day. Always control for confounders in your statistical analysis."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Statistical Power",
+          "content": {
+            "question": "You're A/B testing two recommendation models. Model A (control) has 40% click-through rate. You need to detect a 5% relative improvement (40% → 42%). Your site gets 10,000 daily unique users. How long do you need to run the test for 80% statistical power at p < 0.05?",
+            "options": [
+              "1 day — 10K users gives enough statistical power",
+              "3–5 days — standard A/B test duration",
+              "7–14 days — need to capture weekly patterns",
+              "Use a power calculator: ~12,000 samples per variant needed for this effect size"
+            ],
+            "reveal": "Option 4 is the methodologically correct answer. For a 5% relative improvement (40% → 42%) at 80% power and α=0.05, a two-sample proportion test requires ~12,000 samples per variant (~24,000 total). At 10,000 daily users with 50/50 split, that's 5,000 per variant per day → 2.4 days minimum by sample count. But: always run for at least 1 full week to capture weekly patterns (weekend behaviour differs from weekday). Correct answer in practice: run for 7+ days, confirm >12,000 per variant, then calculate significance. Never stop early due to apparent significance — peeking at results inflates false positive rate."
+          }
         }
       ]
     },
@@ -345,6 +932,39 @@
           "title": "Overview: Chapter Boss: Interview Gauntlet",
           "content": {
             "markdown": "20 expert-level monitoring questions across drift detection, explainability, LLM observability, CI/CD, and A/B testing. This chapter alone separates you from 95% of AI portfolio projects. Nobody shows monitoring — now you can speak to ALL of it."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "analogy",
+          "title": "Chapter 3 Core Mental Model",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Software Quality Assurance Pipeline",
+                "familiarIcon": "✅",
+                "newConcept": "ML Model Quality Assurance Pipeline",
+                "newIcon": "📊",
+                "bridgeText": "Software QA: unit tests → integration tests → staging → canary → production. ML QA: offline evaluation (test set metrics) → shadow mode (parallel predictions) → A/B test (small traffic split) → canary deploy (staged rollout) → full production + continuous monitoring. The stages are identical. The difference: software bugs are binary and reproducible; model degradation is statistical and gradual. Your monitoring pipeline IS your QA for production ML.",
+                "breakPoint": "Software QA has a clear 'done' state — all tests pass. ML monitoring never reaches 'done' — model quality degrades continuously as the world changes. Build your monitoring as a permanent part of the production system, not a one-time validation step."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "prediction",
+          "title": "Predict: The Hard Monitoring Question",
+          "content": {
+            "question": "An interviewer asks: 'Your model's accuracy is 91% in offline evaluation but only 84% in production. What's wrong?' Walk through your debugging process.",
+            "options": [
+              "The model is overfitting — reduce model complexity",
+              "There's a train-serve skew — the production data distribution differs from training",
+              "The evaluation metric is wrong — use a different accuracy measure",
+              "The production infrastructure is causing data corruption"
+            ],
+            "reveal": "Option 2 (train-serve skew) is the primary suspect and the senior engineer answer. A 7% accuracy gap between offline and online evaluation is the classic sign of train-serve skew — the features computed at training time differ from features computed at serving time. Debugging process: (1) Log production features and compare distributions to training features. (2) Check feature engineering code for differences between training pipeline and serving pipeline. (3) Look for data leakage in training that inflated offline metrics. (4) Check for missing value handling differences. Train-serve skew is so common it has its own monitoring category in most ML platforms."
           }
         }
       ]
