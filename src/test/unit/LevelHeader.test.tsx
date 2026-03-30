@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import LevelHeader from "@/components/level/LevelHeader";
 
 const baseProps = {
@@ -15,91 +15,42 @@ const baseProps = {
 };
 
 describe("LevelHeader", () => {
-  it("(a) step=0 — collapsible section is visible (maxHeight not 0, opacity not 0)", () => {
+  it("(a) step=0 — full header with hook quote visible", () => {
     render(<LevelHeader {...baseProps} currentStep={0} />);
-
-    // The collapsible wrapper has aria-hidden=false at step 0
-    const collapseWrapper = screen
-      .getByText(baseProps.hookQuote!)
-      .closest("[aria-hidden]");
-    expect(collapseWrapper).not.toBeNull();
-    expect(collapseWrapper).toHaveAttribute("aria-hidden", "false");
-
-    // Hook quote text is in the document
     expect(screen.getByText(baseProps.hookQuote!)).toBeInTheDocument();
-
-    // Subtitle is visible
     expect(screen.getByText(baseProps.subtitle!)).toBeInTheDocument();
-  });
-
-  it("(b) step=1 — collapsible section is collapsed (aria-hidden=true, maxHeight=0px)", () => {
-    render(<LevelHeader {...baseProps} currentStep={1} />);
-
-    // The wrapper should be aria-hidden
-    const collapseWrapper = screen
-      .getByText(baseProps.hookQuote!)
-      .closest("[aria-hidden]");
-    expect(collapseWrapper).not.toBeNull();
-    expect(collapseWrapper).toHaveAttribute("aria-hidden", "true");
-
-    // Inline style should have maxHeight: 0px and opacity: 0
-    const el = collapseWrapper as HTMLElement;
-    expect(el.style.maxHeight).toBe("0px");
-    expect(el.style.opacity).toBe("0");
-  });
-
-  it("(c) prefers-reduced-motion — transition is removed when media query matches", () => {
-    // Mock matchMedia to return prefers-reduced-motion: reduce
-    const mockMatchMedia = vi.fn().mockReturnValue({
-      matches: true,
-      media: "(prefers-reduced-motion: reduce)",
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    });
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: mockMatchMedia,
-    });
-
-    render(<LevelHeader {...baseProps} currentStep={1} />);
-
-    const collapseWrapper = screen
-      .getByText(baseProps.hookQuote!)
-      .closest("[aria-hidden]") as HTMLElement;
-
-    // With reduced motion, useEffect sets transition to 'none'
-    // The initial inline style from JSX still sets the correct maxHeight/opacity
-    expect(collapseWrapper.style.maxHeight).toBe("0px");
-    expect(collapseWrapper.style.opacity).toBe("0");
-
-    // Restore
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: undefined,
-    });
-  });
-
-  it("(d) title is always visible regardless of step", () => {
-    const { rerender } = render(<LevelHeader {...baseProps} currentStep={0} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       baseProps.title,
     );
+  });
+
+  it("(b) step=1 — compact bar, no hook quote", () => {
+    render(<LevelHeader {...baseProps} currentStep={1} />);
+    // Hook quote should NOT be in the document (compact mode)
+    expect(screen.queryByText(baseProps.hookQuote!)).toBeNull();
+    // Title should still be visible in compact bar
+    expect(screen.getByText(baseProps.title)).toBeInTheDocument();
+  });
+
+  it("(c) title visible on both step 0 and step 3", () => {
+    const { rerender } = render(<LevelHeader {...baseProps} currentStep={0} />);
+    expect(screen.getByText(baseProps.title)).toBeInTheDocument();
 
     rerender(<LevelHeader {...baseProps} currentStep={3} />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      baseProps.title,
-    );
+    expect(screen.getByText(baseProps.title)).toBeInTheDocument();
   });
 
-  it("(e) XP badge and level counter are always visible", () => {
+  it("(d) XP badge visible on step 0 (full header)", () => {
+    render(<LevelHeader {...baseProps} currentStep={0} />);
+    expect(screen.getByText(`+${baseProps.xpReward} XP`)).toBeInTheDocument();
+  });
+
+  it("(e) XP badge visible on step > 0 (compact bar)", () => {
     render(<LevelHeader {...baseProps} currentStep={2} />);
     expect(screen.getByText(`+${baseProps.xpReward} XP`)).toBeInTheDocument();
-    expect(
-      screen.getByText(`${baseProps.levelNum} / ${baseProps.totalLevels}`),
-    ).toBeInTheDocument();
   });
 
-  it("(f) renders without hookQuote — no blockquote rendered", () => {
+  it("(f) renders without hookQuote — no blockquote", () => {
     render(<LevelHeader {...baseProps} hookQuote={null} currentStep={0} />);
     expect(screen.queryByRole("blockquote")).toBeNull();
   });
