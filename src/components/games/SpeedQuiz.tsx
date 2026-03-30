@@ -7,6 +7,7 @@ interface SpeedQuizProps {
   config: SpeedQuizConfig;
   accentColor: string;
   onComplete: (score: number, maxScore: number) => void;
+  timerEnabled?: boolean;
 }
 
 const OPTION_KEYS = ["A", "B", "C", "D"];
@@ -15,6 +16,7 @@ export default function SpeedQuiz({
   config,
   accentColor,
   onComplete,
+  timerEnabled = true,
 }: SpeedQuizProps) {
   const { questions, timePerQuestion = 30 } = config;
   const [qIdx, setQIdx] = useState(0);
@@ -70,9 +72,10 @@ export default function SpeedQuiz({
     ],
   );
 
-  // Timer
+  // Timer — only runs when timerEnabled is true
   useEffect(() => {
     setTimeLeft(timePerQuestion);
+    if (!timerEnabled) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 0.1) {
@@ -84,7 +87,7 @@ export default function SpeedQuiz({
       });
     }, 100);
     return stopTimer;
-  }, [qIdx, timePerQuestion, stopTimer, handleAnswer]);
+  }, [qIdx, timePerQuestion, stopTimer, handleAnswer, timerEnabled]);
 
   const timerPct = (timeLeft / timePerQuestion) * 100;
   const timerColor =
@@ -100,28 +103,35 @@ export default function SpeedQuiz({
         <span>
           Question {qIdx + 1} of {questions.length}
         </span>
-        <span
-          className="font-mono font-medium"
-          style={{ color: timerColor, transition: "color 0.3s" }}
-        >
-          {Math.ceil(timeLeft)}s
-        </span>
+        {timerEnabled && (
+          <span
+            className="font-mono font-medium"
+            style={{
+              color: timerColor,
+              transition: "color 0.3s ease",
+            }}
+          >
+            {Math.ceil(timeLeft)}s
+          </span>
+        )}
       </div>
 
-      {/* Timer bar */}
-      <div
-        className="h-1 rounded-full overflow-hidden"
-        style={{ backgroundColor: "var(--color-border)" }}
-      >
+      {/* Timer bar — only shown when timer is enabled */}
+      {timerEnabled && (
         <div
-          className="h-full rounded-full"
-          style={{
-            width: `${timerPct}%`,
-            backgroundColor: timerColor,
-            transition: "width 0.1s linear, background-color 0.3s",
-          }}
-        />
-      </div>
+          className="h-1 rounded-full overflow-hidden"
+          style={{ backgroundColor: "var(--color-border)" }}
+        >
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${timerPct}%`,
+              backgroundColor: timerColor,
+              transition: "width 0.1s linear, background-color 0.3s ease",
+            }}
+          />
+        </div>
+      )}
 
       {/* Question */}
       <div
