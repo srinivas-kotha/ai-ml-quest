@@ -43,6 +43,57 @@
             "title": "Enterprise Insight",
             "content": "LLaVA-style (encoder + projection + LLM) dominates open-source. Native multimodal (Gemini) is better but requires massive training compute. For production: Qwen-VL series is the best open-source multimodal family — Qwen2.5-VL for documents, Qwen3-VL for long context + tools, MiniCPM-o for edge."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Browser APIs (Audio API, Canvas API, File API)",
+                "familiarIcon": "🌐",
+                "newConcept": "Multimodal AI Modalities (vision, audio, text)",
+                "newIcon": "🎭",
+                "bridgeText": "The browser exposes different APIs for different media types: Web Audio API for sound processing, Canvas API for image rendering, File API for binary data. Multimodal AI architectures follow the same separation: dedicated encoders for each modality (vision transformer for images, Whisper for audio, text transformer for language), then a fusion layer that combines them. The modality-specific encoders are like browser APIs — specialised for their input type.",
+                "breakPoint": "Browser APIs have standardised interfaces (Web APIs spec). Multimodal AI encoders have very different architectures and output dimensions — a ViT encoder outputs 768-dim patch embeddings, Whisper outputs 512-dim audio embeddings. The 'fusion layer' must handle these different dimensionalities. There's no standardised interface for multimodal fusion yet."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Microservice with Event Types (OrderCreated, UserSignedUp)",
+                "familiarIcon": "📬",
+                "newConcept": "Multimodal LLM Input Types (images, audio, video, text)",
+                "newIcon": "🎭",
+                "bridgeText": "An event-driven microservice handles different event types with different processors but unified routing. GPT-4V, Claude 3, and Gemini handle different input modalities with different encoders but unified token routing — the model receives a sequence of tokens regardless of modality (image patches become tokens, audio segments become tokens, text becomes tokens). The LLM backbone processes the unified token sequence identically regardless of source modality.",
+                "breakPoint": "Microservice event handlers are code you control — you can add new event types. Multimodal input support is fixed at training time — a model trained on image + text can't accept audio unless explicitly trained on audio data. Adding a new modality requires retraining (or fine-tuning) the fusion layer and LLM backbone on paired multimodal data."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Multi-Protocol Service Mesh",
+                "familiarIcon": "🔗",
+                "newConcept": "Multimodal Input Pipeline",
+                "newIcon": "🎭",
+                "bridgeText": "A service mesh handles HTTP, gRPC, and WebSocket traffic through unified infrastructure. A multimodal AI pipeline handles images, audio, and text through unified processing infrastructure — resizing images, normalising audio, tokenising text — before feeding to the model. The preprocessing steps are like protocol adapters: they convert each modality to a standardised internal representation.",
+                "breakPoint": "Service mesh protocol handling is symmetric — gRPC and HTTP requests have similar processing cost. Multimodal preprocessing is NOT symmetric — image encoding with a ViT is 100x more expensive than text tokenisation. Budget your latency differently: a 1024×1024 image adds 200–500ms to preprocessing; a 10-second audio clip adds 1–2 seconds. Multimodal latency is dominated by encoder cost, not LLM cost."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Vision Model Architecture",
+          "content": {
+            "question": "You're building an app that analyses product photos and generates descriptions. Users upload images on mobile. Which architecture handles this most efficiently?",
+            "options": [
+              "Full GPT-4V API — best quality vision understanding",
+              "Local CLIP encoder + small text LLM — extract visual features locally, generate text on server",
+              "Run the entire multimodal model on mobile device",
+              "Vision encoder on edge, LLM in cloud — split the workload"
+            ],
+            "reveal": "Option 4 (vision encoder on edge, LLM in cloud) is the production-optimal architecture. CLIP or MobileViT encoders can run on mobile (30–200ms inference). The dense visual embedding (512–768 floats = 2–4KB) is tiny to transmit vs the raw image (50KB+). The cloud LLM receives a compact visual embedding + text prompt and generates the description. This reduces bandwidth 25x vs uploading raw images, reduces server load (encoding is done client-side), and enables offline visual feature extraction."
+          }
         }
       ]
     },
@@ -76,6 +127,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "CLIP's magic: joint embedding space where image and text similarities are directly comparable. SigLIP replaces softmax with sigmoid loss — better for small batches, no need to normalize across the entire batch. OpenCLIP for custom domain training. CLIP + SAM = zero-shot segmentation of anything described in text."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Grid Alignment (aligning items across different dimensions)",
+                "familiarIcon": "📐",
+                "newConcept": "CLIP Contrastive Alignment (images and text in shared space)",
+                "newIcon": "🔗",
+                "bridgeText": "CSS Grid aligns items from different source flows (block, inline, grid) into a shared two-dimensional layout space. CLIP learns to align image features and text features into a shared embedding space — an image of a dog and the text 'a photo of a dog' should have similar positions in this space. The 'alignment' in CLIP is semantic alignment trained by contrastive loss, just as CSS Grid alignment is positional alignment defined by grid rules.",
+                "breakPoint": "CSS Grid alignment is deterministic and purely spatial. CLIP's semantic alignment is learned and imperfect — CLIP may 'misalign' text and images for abstract concepts, rare objects, or text with cultural context it wasn't trained on. CLIP was trained on English-centric data; image-text alignment for non-English concepts is weaker."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Elasticsearch Multi-field Search (text + numeric fields)",
+                "familiarIcon": "🔍",
+                "newConcept": "CLIP-powered Multimodal Search",
+                "newIcon": "🔗",
+                "bridgeText": "Elasticsearch combines text BM25 scores with numeric field boosts into a unified relevance score. CLIP enables the same for image+text: a query (text or image) gets embedded into the shared space, and you search for nearest neighbours regardless of modality. 'Show me products similar to this photo' and 'find images matching this description' use the same cosine similarity search against the CLIP-embedded index. Your existing vector search infrastructure (pgvector, Pinecone) works directly.",
+                "breakPoint": "Elasticsearch field types are static — you define them at index creation. CLIP embeddings are model-specific — changing the CLIP model version invalidates your entire image index (all images must be re-embedded). Version-lock your CLIP model and plan the re-indexing cost before upgrading."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Prometheus Metric Scraping (pull model)",
+                "familiarIcon": "📊",
+                "newConcept": "CLIP Batch Inference Pipeline",
+                "newIcon": "🔗",
+                "bridgeText": "Prometheus scrapes metrics on a schedule — pull all service metrics every 15 seconds, aggregate into TSDB. CLIP batch indexing works the same way: pull all new images from your CDN/S3 on a schedule, batch-encode with CLIP, upsert to your vector DB. Both are scheduled pull pipelines processing data in batches. The engineering pattern is identical: cron → batch process → upsert to storage.",
+                "breakPoint": "Prometheus scraping is idempotent — same metrics scraped twice just overwrite. CLIP re-indexing of unchanged images wastes GPU compute. Track 'last_indexed_at' timestamps and only re-encode images modified since the last batch run. Deduplication is essential at scale."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: CLIP Failure Mode",
+          "content": {
+            "question": "You're using CLIP for a fashion e-commerce search. A user searches for 'elegant black dress for a funeral'. CLIP returns results including bright party dresses and casual black outfits. What is the most likely cause?",
+            "options": [
+              "CLIP doesn't understand colour — 'black' is not reliable in CLIP searches",
+              "CLIP encodes visual features — 'elegant' and 'funeral appropriate' are social/contextual concepts underrepresented in image-text training data",
+              "CLIP's search radius is too large — reduce the similarity threshold",
+              "Need a larger CLIP model — ViT-L/14 vs ViT-B/32"
+            ],
+            "reveal": "Option 2 is correct. CLIP is strong on visual attributes (colours, shapes, objects) and weak on social/contextual concepts ('elegant', 'appropriate for funerals', 'professional'). These concepts require cultural knowledge and contextual understanding that is inconsistently represented in CLIP's image-text training pairs (mostly web alt-text). Solution: hybrid search combining CLIP visual embeddings with attribute metadata (category, formality tag) and text keyword search. Pure CLIP cannot reliably handle social dress codes."
           }
         }
       ]
@@ -112,6 +214,57 @@
             "title": "Enterprise Insight",
             "content": "Streaming recipe: 10s chunks, 2s overlap, Silero VAD threshold 0.5, Distil-Whisper large-v3. WER ~3% at 6x real-time speed. The overlap window prevents word-boundary cuts that create transcription errors at chunk boundaries. VAD threshold 0.5 balances missed words vs processing empty audio."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Audio/Video Element with Captions (WebVTT)",
+                "familiarIcon": "🎬",
+                "newConcept": "Whisper Transcription + Timestamps",
+                "newIcon": "🎤",
+                "bridgeText": "WebVTT captions map text to timestamps in a video — '00:01:23 --> 00:01:26 Hello world'. Whisper generates the same: each transcribed segment has start/end timestamps. Whisper's word_timestamps=True gives token-level precision — you can display synchronized captions, highlight the current word, or scrub to a specific sentence. The output format is essentially auto-generated WebVTT.",
+                "breakPoint": "WebVTT captions are manually written and exact. Whisper timestamps are model estimates based on audio attention patterns — they drift by ±0.2–0.5 seconds. For professional video production, Whisper timestamps need manual correction. For search and navigation use cases, ±500ms is usually acceptable."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Message Queue with Dead Letter Queue (DLQ)",
+                "familiarIcon": "📬",
+                "newConcept": "Whisper Async Processing with Retry",
+                "newIcon": "🎤",
+                "bridgeText": "A message queue processes audio files asynchronously — jobs enqueued, workers consume and process. Failed transcriptions (audio too noisy, codec unsupported) go to DLQ for retry with different settings (higher beam_size, different language hint). The architecture is identical to any async processing pipeline: SQS/RabbitMQ + workers + DLQ + retry with exponential backoff.",
+                "breakPoint": "Message queue DLQ retries the exact same message. Whisper transcription retries often need different parameters (different beam_size, temperature, initial_prompt) — not just retrying the same job. Build retry logic that varies the transcription parameters, not just re-enqueues the same job."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Load Balancer Across Region (latency-based routing)",
+                "familiarIcon": "⚖️",
+                "newConcept": "Whisper Model Size Selection (tiny to large-v3)",
+                "newIcon": "🎤",
+                "bridgeText": "Latency-based routing picks the closest region — 100ms vs 800ms. Whisper model selection works the same: 'tiny' (39M params) transcribes in 0.1× real-time on CPU; 'large-v3' (1.5B params) takes 1–3× real-time but is 40% more accurate on accented speech. Route 'clean audio, English' requests to tiny/base for speed; route 'accented, noisy, or rare language' to large-v3 for accuracy. Match model to quality requirement.",
+                "breakPoint": "Region latency is determined by geography — fixed. Whisper model quality/speed tradeoff depends on audio quality, language, and accent — varies per audio file. You need adaptive routing that classifies audio quality first, then routes to the appropriate model. Building a two-stage pipeline (quick quality check → route to appropriate Whisper variant) is the production pattern."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Whisper Performance",
+          "content": {
+            "question": "You're transcribing 1-hour support call recordings (clean audio, English, standard accent). Processing time budget: 5 minutes per call. You have a server with 1× A10G GPU (24GB VRAM). Which Whisper configuration achieves this?",
+            "options": [
+              "whisper-large-v3 with beam_size=5 — best quality",
+              "whisper-medium with beam_size=1 — balance of speed and quality",
+              "whisper-base with batch processing — fastest for English",
+              "faster-whisper large-v3 with batch_size=8 — optimised inference with CTranslate2"
+            ],
+            "reveal": "Option 4 (faster-whisper large-v3 + batching) is the production choice. faster-whisper uses CTranslate2 for 4x faster inference than standard Whisper with the same quality. 1 hour of audio: faster-whisper large-v3 processes 1 hour of audio in 6–12 minutes on CPU, 1.5–3 minutes on A10G. With batch_size=8 (processing 8 audio segments in parallel), you achieve 5-minute processing easily. The A10G 24GB VRAM easily fits large-v3 (3GB model) plus batch buffer. Use standard Whisper only if you don't have the faster-whisper library available."
+          }
         }
       ]
     },
@@ -146,6 +299,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "Decision matrix: Voice/real-time media → WebRTC (UDP, echo cancellation, jitter buffer). LLM token streaming → SSE (simplest, HTTP-native). Dashboards/notifications → SSE. Internal ML services → gRPC (binary, typed, 5-10x faster). Browser-to-browser → WebRTC only."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Server-Sent Events vs WebSockets vs HTTP Streaming",
+                "familiarIcon": "📡",
+                "newConcept": "LLM Streaming vs Batch Response",
+                "newIcon": "🔄",
+                "bridgeText": "SSE (text/event-stream) for one-way server push (perfect for token streaming). WebSockets for bidirectional (voice assistants — send audio, receive text). HTTP streaming for large response bodies. LLM APIs map directly: OpenAI's stream=True uses SSE for token-by-token streaming. Voice assistants use WebSockets for full-duplex audio. Batch LLM calls use standard HTTP POST/response for offline processing.",
+                "breakPoint": "SSE, WebSockets, and HTTP streaming are protocol choices for data delivery. LLM streaming changes the user experience (first token in 100ms vs full response in 3000ms) but NOT the total compute — the model generates all tokens either way. Streaming reduces perceived latency but doesn't change actual computation time."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Generator Functions (yield, async generators)",
+                "familiarIcon": "⚡",
+                "newConcept": "LLM Token Streaming API",
+                "newIcon": "🔄",
+                "bridgeText": "async function* generateTokens() { yield token1; yield token2; } is exactly how OpenAI's streaming API works under the hood — an async generator that yields one token at a time. The client iterates the stream with for await (const chunk of stream). LLM streaming clients are just async generator consumers. If you know how to consume an async generator, you know how to consume a streaming LLM response.",
+                "breakPoint": "Python generators are in-process and synchronous. LLM streams are network-based and async — network interruptions mid-stream require reconnect and resume logic. Always implement stream timeout handling and partial-response recovery for production streaming implementations."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Nginx Proxy Buffering Configuration",
+                "familiarIcon": "🔧",
+                "newConcept": "LLM Streaming Through Reverse Proxy",
+                "newIcon": "🔄",
+                "bridgeText": "By default, Nginx buffers upstream responses before sending to clients — breaking SSE streaming. Setting proxy_buffering off; and proxy_cache off; disables buffering, enabling streaming to pass through. The exact same Nginx config fix is required to stream LLM responses through a reverse proxy. Every load balancer and proxy layer between your LLM server and the client must have buffering disabled for streaming to work correctly.",
+                "breakPoint": "Nginx buffering is binary — either buffering is on or off. In practice, some proxies partially buffer (AWS ALB, CloudFlare) in ways that can cause subtle streaming issues (tokens arrive in batches of 10 instead of one at a time). Test your entire proxy chain with LLM streaming before deploying to production."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Streaming Architecture",
+          "content": {
+            "question": "You're building a voice assistant. User speaks → STT → LLM → TTS → user hears response. Current latency: STT=1s, LLM full response=3s, TTS=2s. Total = 6s. You implement: streaming TTS that starts speaking as LLM tokens arrive. Which latency improvement do you achieve?",
+            "options": [
+              "No improvement — TTS still needs the full text",
+              "3s improvement — TTS runs in parallel with LLM generation",
+              "TTS can start after first sentence (~0.5s of LLM output), reducing perceived latency to ~1.5s",
+              "Only works with specific TTS engines that support text streaming"
+            ],
+            "reveal": "Option 3 is the realistic answer. With streaming LLM → streaming TTS: STT completes in 1s. After ~0.3–0.5s of LLM generation, the first sentence is complete and TTS begins speaking. The user hears the first words after 1s (STT) + 0.5s (first sentence) + TTS buffer = ~1.7s instead of 6s. The total wall-clock time is similar, but perceived latency drops 65% because the user hears words as they're generated. This is the primary optimisation in production voice assistants (Amazon Alexa, Google Assistant all use this pattern). Option 4 is partially true but most modern TTS engines support streaming input."
           }
         }
       ]
@@ -182,6 +386,205 @@
             "title": "Enterprise Insight",
             "content": "PersonaPlex achieves 205ms end-to-end latency with 100% interruption success. Pipecat is the standard open-source framework. Cost: $0.15-0.50/min (STT + LLM + TTS combined). VAD runs first to avoid transcribing silence. WebRTC transport handles jitter and echo cancellation before audio output reaches the speaker."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "React Query with Optimistic Updates",
+                "familiarIcon": "⚡",
+                "newConcept": "Voice Assistant with Latency Hiding",
+                "newIcon": "🗣️",
+                "bridgeText": "Optimistic updates show the assumed-successful result immediately, then correct if the server disagrees. Voice assistant latency hiding plays a filler sound ('thinking...') or starts responding with low-confidence audio while the full LLM response processes. Both patterns reduce perceived latency by showing immediate UI feedback before the server response completes.",
+                "breakPoint": "Optimistic updates can be rolled back cleanly on error. Voice assistant latency hiding with early TTS output can't be 'rolled back' — the user already heard incorrect audio. Only start speaking early if you have high confidence in the response direction. Use 'thinking' fillers for ambiguous queries."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Connection Pooling (reuse expensive connections)",
+                "familiarIcon": "🔄",
+                "newConcept": "Voice Assistant Session Management",
+                "newIcon": "🗣️",
+                "bridgeText": "Connection pools keep expensive DB connections open across requests — avoiding per-request connection overhead. Voice assistant sessions keep context loaded across utterances — the conversation history, loaded model, and user preferences stay in memory between turns. Both pool expensive resources: database connections pool TCP connections, voice sessions pool model context and conversation state. Always design voice assistants with session expiry and cleanup — like connection pool max_idle_time.",
+                "breakPoint": "Database connections are stateless between queries (except transaction state). Voice sessions have cumulative state — the conversation history grows with each turn. A session with 20 turns has 10x more context than one with 2 turns. Monitor and cap session memory usage; implement context summarisation for long conversations."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Three-Tier Architecture (CDN → App Server → DB)",
+                "familiarIcon": "🏗️",
+                "newConcept": "Voice Pipeline Architecture (Edge → STT → LLM → TTS)",
+                "newIcon": "🗣️",
+                "bridgeText": "CDN serves static assets close to users; app server handles business logic; DB stores persistent data. Voice pipelines have the same three-tier structure: Edge (audio capture, VAD — Voice Activity Detection) → Compute (STT + LLM) → Output (TTS + audio playback). Each tier can be independently scaled. VAD on edge reduces bandwidth (only send detected speech, not silence). STT can be geographically distributed. LLM and TTS are compute-intensive and centralised.",
+                "breakPoint": "Three-tier web architecture has stateless middle tiers (app servers) that scale horizontally. Voice pipeline 'compute tier' has state (active session context). Horizontal scaling requires session affinity (sticky sessions) or external session storage — the same challenge as session-ful web applications."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Latency Budget",
+          "content": {
+            "question": "A voice assistant has a 1500ms target latency budget (from end of user speech to first audio byte). Measured: STT=400ms, LLM=900ms (to first token), TTS=200ms. Total=1500ms (just at budget). An update improves LLM to 600ms but adds context retrieval (RAG) 350ms. New total=1350ms. Is the new architecture better?",
+            "options": [
+              "No — adding RAG increases complexity without latency benefit",
+              "Yes — 150ms improvement, plus RAG improves response quality",
+              "Depends — RAG adds latency variance (retrieval can be 100ms or 800ms), not just average",
+              "Insufficient data — need to know p99 latency, not just average"
+            ],
+            "reveal": "Options 3 and 4 are both correct; Option 4 is the senior answer. Average latency improvement (+150ms) looks good, but RAG latency has HIGH variance — simple queries retrieve in 80ms, complex queries in 500–800ms. Your p99 latency may exceed 1500ms. The correct evaluation: measure p50, p95, p99 for the RAG retrieval step under load. If p99 retrieval > 400ms (pushing total over budget), implement a retrieval timeout with graceful degradation (respond without RAG context if retrieval takes too long)."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Voice Assistant Latency Budget",
+          "content": {
+            "title": "Voice Assistant Latency Budget",
+            "description": "Allocate milliseconds across each pipeline stage. Click nodes to see the tradeoffs. Target: first audio byte within 1500ms.",
+            "nodes": [
+              {
+                "id": "speech-in",
+                "type": "concept",
+                "position": {
+                  "x": 0,
+                  "y": 100
+                },
+                "data": {
+                  "label": "User Speaks",
+                  "icon": "🎤",
+                  "active": true,
+                  "accentColor": "#3b82f6",
+                  "details": "End-point detection (VAD): 50–200ms\n\nVAD detects when the user stops speaking. Too aggressive = cuts off speech. Too lenient = long delays before processing.\n\nBest practice: WebRTC VAD on client-side (free, zero latency), send audio only when speech detected. This saves bandwidth AND reduces STT processing time."
+                }
+              },
+              {
+                "id": "vad",
+                "type": "concept",
+                "position": {
+                  "x": 200,
+                  "y": 100
+                },
+                "data": {
+                  "label": "Voice Activity Detection",
+                  "icon": "🔊",
+                  "accentColor": "#3b82f6",
+                  "details": "Latency: 0ms (runs locally)\nCost: Free (WebRTC/Silero VAD)\n\nRuns on-device to detect speech boundaries. Sends only speech segments to server.\nBandwidth saving: 80–90% reduction (silence not transmitted)\n\n★ Always run VAD client-side. Server-side VAD adds 50–150ms round-trip for the silence detection."
+                }
+              },
+              {
+                "id": "stt",
+                "type": "concept",
+                "position": {
+                  "x": 450,
+                  "y": 100
+                },
+                "data": {
+                  "label": "Speech-to-Text (STT)",
+                  "icon": "📝",
+                  "accentColor": "#f97316",
+                  "details": "Options and latencies:\n• Whisper large-v3 (GPU): 200–500ms\n• Whisper base (GPU): 50–150ms\n• Deepgram Nova-2 API: 100–300ms\n• AssemblyAI: 200–500ms\n\nBudget target: 300ms\n\nFor best latency: Deepgram Nova-2 streaming (starts returning words before utterance ends). For local/private: faster-whisper base on GPU."
+                }
+              },
+              {
+                "id": "llm",
+                "type": "concept",
+                "position": {
+                  "x": 700,
+                  "y": 100
+                },
+                "data": {
+                  "label": "LLM (first token)",
+                  "icon": "🧠",
+                  "accentColor": "#8b5cf6",
+                  "details": "Time to first token (TTFT) options:\n• GPT-4o: 300–800ms\n• GPT-4o-mini: 150–400ms\n• Claude Haiku: 200–500ms\n• Mistral 7B local: 100–300ms\n\nBudget target: 600ms\n\n★ KEY INSIGHT: Stream the response — start TTS when first sentence completes (~300ms of generation), not when full response completes.\n\nRAG adds 100–400ms to this stage."
+                }
+              },
+              {
+                "id": "tts",
+                "type": "concept",
+                "position": {
+                  "x": 950,
+                  "y": 100
+                },
+                "data": {
+                  "label": "Text-to-Speech (TTS)",
+                  "icon": "🔈",
+                  "accentColor": "#22c55e",
+                  "details": "Options and latencies (streaming, first audio byte):\n• ElevenLabs streaming: 100–300ms\n• OpenAI TTS: 200–500ms\n• Coqui TTS (local): 150–400ms\n• Amazon Polly: 80–200ms\n\nBudget target: 200ms to first audio byte\n\n★ Start TTS as soon as first sentence from LLM is available. Users hear audio within 200ms of LLM completing first sentence."
+                }
+              },
+              {
+                "id": "audio-out",
+                "type": "concept",
+                "position": {
+                  "x": 1200,
+                  "y": 100
+                },
+                "data": {
+                  "label": "User Hears Response",
+                  "icon": "👂",
+                  "accentColor": "#22c55e",
+                  "details": "Total target: < 1500ms from end of speech\n\nOptimistic path: VAD(0) + STT(200ms) + LLM TTFT(400ms) + TTS(150ms) = 750ms ✅\nTypical path: VAD(0) + STT(350ms) + LLM TTFT(600ms) + TTS(200ms) = 1150ms ✅\nPoor path: VAD(0) + STT(500ms) + LLM TTFT(900ms) + TTS(300ms) = 1700ms ❌\n\nMonitor p95 latency, not just average."
+                }
+              },
+              {
+                "id": "budget-warning",
+                "type": "concept",
+                "position": {
+                  "x": 700,
+                  "y": 300
+                },
+                "data": {
+                  "label": "⚠️ Latency Budget Warning",
+                  "icon": "⚠️",
+                  "accentColor": "#ef4444",
+                  "details": "Common budget killers:\n\n1. Cold start: model not loaded in VRAM adds 5–30s\n2. Long context: >4K tokens in conversation history adds 200ms+ to LLM TTFT\n3. Network round-trips: client → STT API → LLM API → TTS API adds 200–600ms vs single server\n4. RAG retrieval spike: p99 vector search can be 500ms+ under load\n\nFix: (1) Keep model warm. (2) Summarise long conversations. (3) Co-locate pipeline stages. (4) Set retrieval timeout + graceful degradation."
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "source": "speech-in",
+                "target": "vad",
+                "label": "raw audio"
+              },
+              {
+                "id": "e2",
+                "source": "vad",
+                "target": "stt",
+                "label": "speech segments"
+              },
+              {
+                "id": "e3",
+                "source": "stt",
+                "target": "llm",
+                "label": "text"
+              },
+              {
+                "id": "e4",
+                "source": "llm",
+                "target": "tts",
+                "label": "streaming text"
+              },
+              {
+                "id": "e5",
+                "source": "tts",
+                "target": "audio-out",
+                "label": "audio stream"
+              },
+              {
+                "id": "e6",
+                "source": "budget-warning",
+                "target": "llm",
+                "label": "monitor TTFT"
+              }
+            ]
+          }
         }
       ]
     },
@@ -216,6 +619,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "TensorRT = 2-5x over PyTorch on NVIDIA GPUs (kernel fusion, quantization, graph optimization). ONNX Runtime = best cross-platform (CPU/GPU/mobile/browser). WebGPU = free inference in browser (full browser support 2026). Edge Jetson breaks even vs cloud GPU at ~3,000-5,000 requests/day. Hybrid: WebGPU for non-critical + cloud for precision-critical."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Service Worker + Cache API (offline-first apps)",
+                "familiarIcon": "⚙️",
+                "newConcept": "Edge AI Deployment (on-device inference)",
+                "newIcon": "📱",
+                "bridgeText": "Service workers intercept network requests and serve from cache when offline. Edge AI models run on-device and respond to queries without network. Both enable offline capability with the same tradeoff: the 'cache' (service worker cache / on-device model) is always a subset of the full server capability, but it's available 100% of the time without network dependency. WebLLM brings LLM inference to the browser using WebGPU — the service worker of AI.",
+                "breakPoint": "Service worker caches are updated transparently on reconnect. Edge AI models require explicit updates — a 2GB model update needs to be downloaded by the user. Model version management on edge is significantly harder than cache invalidation. Plan your update strategy before choosing edge deployment."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "SQLite vs PostgreSQL (embedded vs client-server DB)",
+                "familiarIcon": "🗄️",
+                "newConcept": "On-device LLM vs Cloud LLM (embedded vs API model)",
+                "newIcon": "📱",
+                "bridgeText": "SQLite runs in-process, no network, instant access — perfect for mobile apps and local tools. PostgreSQL runs as a separate server, network required, more powerful. Phi-3 mini (3.8B, 2GB) on-device is the SQLite of LLMs: instant, private, works offline. GPT-4o is the PostgreSQL: powerful, requires network, consumption-based pricing. Match the tool to the use case: simple classification → Phi-3 on-device; complex reasoning → GPT-4o via API.",
+                "breakPoint": "SQLite and PostgreSQL have identical SQL interfaces. On-device LLMs (Phi-3) and cloud LLMs (GPT-4o) have a 10–30x quality gap. Edge models are significantly less capable than cloud models — don't assume feature parity. Test your specific use case with both and measure quality difference before choosing edge."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "ARM Cross-Compilation for Embedded Systems",
+                "familiarIcon": "⚙️",
+                "newConcept": "Model Quantization + ONNX for Edge Deployment",
+                "newIcon": "📱",
+                "bridgeText": "Cross-compiling for ARM requires targeting the specific architecture and optimising for the instruction set. Edge model deployment requires the same hardware-specific optimisation: INT8/INT4 quantization for reduced compute, ONNX format for cross-platform inference, Core ML for Apple Silicon, TensorFlow Lite for Android. Each hardware platform has preferred formats and acceleration APIs — just like cross-compilation targets.",
+                "breakPoint": "Cross-compiled binaries run identically on target hardware. Edge AI models have hardware-specific quality degradation — INT4 quantization on ARM Cortex-A may produce different quality than INT4 on Apple Neural Engine. Always benchmark on your specific target hardware."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Edge vs Cloud Boundary",
+          "content": {
+            "question": "A smart camera app classifies objects in real-time (30fps). Options: (A) On-device MobileNetV3 (2MB, 50ms/frame, 78% accuracy). (B) Cloud API call per frame (GPT-4V, 95% accuracy, 500–800ms/frame, $0.003/frame). Which do you choose, and what's the estimated cost at 10K users × 30 min/day?",
+            "options": [
+              "Option B — accuracy difference is worth the cost",
+              "Option A — 10fps would be impossible with 500ms latency, and cloud cost is $54M/day",
+              "Hybrid — A for common objects, B for uncertain cases",
+              "Option B with aggressive caching"
+            ],
+            "reveal": "Option A is mandatory for real-time use cases. The math: 30fps requires <33ms per frame — 500ms cloud API latency makes real-time impossible. Cost: 10K users × 30 min × 60s × 30fps × $0.003 = $1,620,000/day. Cloud is literally impossible for this use case. Use on-device for real-time inference, and optionally upload uncertain frames (confidence < 0.6) to cloud API for verification — this hybrid approach gets you 95% accuracy at 5% of the frames requiring cloud, drastically reducing cost."
           }
         }
       ]
@@ -252,6 +706,57 @@
             "title": "Enterprise Insight",
             "content": "YOLO26 detects in <10ms per frame (100+ FPS). SAM 2 segments at 44 FPS with video object tracking across frames. Grounded SAM 2 + DINO enables text-guided detection ('find all safety violations'). Video-LLMs (Qwen3-VL, InternVL) understand temporal context across frame sequences. Motion detection as early filter prevents YOLO from running on static frames — major GPU savings."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Canvas requestAnimationFrame Loop",
+                "familiarIcon": "🎬",
+                "newConcept": "Video Frame Sampling for AI Analysis",
+                "newIcon": "📹",
+                "bridgeText": "requestAnimationFrame runs at 60fps but you control which frames your Canvas logic processes — you don't have to do heavy computation every frame. Video AI analysis uses the same principle: sample 1–4 frames per second (not 30fps), run inference only on samples, interpolate results between samples. AI inference at 30fps is 30x more expensive than 1fps sampling — sample at the minimum rate that gives adequate response time for your use case.",
+                "breakPoint": "requestAnimationFrame only runs during animation — the browser optimises for display. Video AI sampling must account for fast motion — at 1fps, a car accident in a 3-second clip might not appear in your 3 sampled frames. Adaptive sampling (increase rate when motion is detected) is the production pattern for safety-critical applications."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Event Stream Processing (Kafka consumers)",
+                "familiarIcon": "📊",
+                "newConcept": "Video Stream Frame Processing Pipeline",
+                "newIcon": "📹",
+                "bridgeText": "Kafka processes events from a stream — each event is processed independently by a consumer group. Video frame processing is an event stream where each frame is an event. The same consumer group pattern applies: multiple workers process frames in parallel from different video streams. Apache Kafka + Faust or Apache Flink are commonly used for video analytics at scale — the video pipeline IS an event stream architecture.",
+                "breakPoint": "Kafka consumer groups have no ordering dependencies between events. Video frame analysis often has temporal context — detecting 'person falls' requires comparing current frame to previous frames. Pure stateless stream processing doesn't capture this. Add a frame buffer (sliding window of last N frames) to each consumer for temporal analysis."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Metrics Collection at Scale (Prometheus with scrape intervals)",
+                "familiarIcon": "📊",
+                "newConcept": "Video Analytics at Scale (RTSP streams + GPU clusters)",
+                "newIcon": "📹",
+                "bridgeText": "Prometheus scrapes metrics at a configurable interval — 15s for most metrics, 5s for critical ones. You don't scrape at 1ms intervals just because you can. Video analytics follows the same philosophy: 1fps for static monitoring (parking lot), 4fps for medium activity (retail floor), 15fps only for high-speed events (sports tracking). Configure the minimum sampling rate that meets your detection latency requirements.",
+                "breakPoint": "Prometheus metric collection is lightweight (a few bytes per metric). Video frame inference is GPU-intensive (0.5–5ms per frame on modern GPU). At 30fps × 10 camera streams × 5ms/frame, you need 1.5 GPU-seconds per second of video — more than one A10G GPU for real-time processing. Budget GPU resources based on camera count × desired fps × inference time."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Frame Rate Requirements",
+          "content": {
+            "question": "A retail analytics system tracks customer dwell time at product displays. Target: detect when a customer has been in front of a display for >10 seconds. What is the minimum frame sampling rate that reliably achieves this?",
+            "options": [
+              "30fps — need smooth tracking for accurate dwell time",
+              "10fps — balance of accuracy and compute cost",
+              "1fps — 1-second precision is sufficient for 10-second threshold",
+              "0.2fps (1 frame every 5 seconds) — 5-second intervals give 50% accuracy at threshold"
+            ],
+            "reveal": "Option 3 (1fps) is correct. For a 10-second dwell time threshold with 1-second precision, you need to detect presence at 1-second intervals. 1fps gives you ±1 second accuracy — more than adequate. The compute saving is 30x vs 30fps. Implementation: detect person + track bounding box at 1fps, increment counter when person is detected in front of display zone, trigger event when counter reaches 10. This is the standard implementation in retail analytics systems. 10fps adds cost without improving the 1-second detection threshold."
+          }
         }
       ]
     },
@@ -287,6 +792,57 @@
             "title": "Enterprise Insight",
             "content": "MIG = guaranteed SLA (hardware partition, memory isolation) — production models on A100/H100. Time-slicing = maximum density (90% savings, shared memory) — experiments and batch. MPS = lightweight sharing (concurrent CUDA kernels) — many small jobs. Your K8s knowledge transfers directly: nvidia.com/gpu resource requests, nodeSelector for GPU type, GPU Operator for MIG resource names."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS will-change Hints + GPU Compositing Layer",
+                "familiarIcon": "⚡",
+                "newConcept": "GPU Memory Management for AI Workloads",
+                "newIcon": "🖥️",
+                "bridgeText": "will-change: transform promotes an element to its own GPU compositing layer — dedicating GPU memory to that element for faster animations. AI workloads do the same with CUDA streams: allocate dedicated GPU memory for each model, avoid memory sharing between concurrent workloads, use separate CUDA streams for concurrent execution. Both are 'GPU resource reservation' patterns that prevent interference between operations.",
+                "breakPoint": "CSS GPU layers are managed by the browser compositor — it decides when to evict layers. AI GPU memory allocation is explicit — you control exactly what lives in VRAM. GPU memory fragmentation in AI workloads requires explicit memory defragmentation (torch.cuda.empty_cache()) that has no browser compositor equivalent."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Connection Multiplexing (PgBouncer)",
+                "familiarIcon": "🔄",
+                "newConcept": "GPU Multiplexing (MIG, MPS, vGPU)",
+                "newIcon": "🖥️",
+                "bridgeText": "PgBouncer multiplexes many application connections over fewer actual DB connections — 1,000 app connections use 10 DB connections. GPU multiplexing does the same: NVIDIA MIG (Multi-Instance GPU) partitions one A100 into 7 independent GPU instances, each with dedicated VRAM and compute. MPS (Multi-Process Service) shares a GPU across processes. Both address the same problem: too many consumers for a scarce resource.",
+                "breakPoint": "PgBouncer multiplexing is seamless — applications see a normal connection. GPU MIG partitioning has hard limits — a 10GB MIG instance cannot temporarily borrow from a 20GB instance even if it's idle. VRAM partitions are fixed; DB connection pools are elastic. Design AI workloads with fixed VRAM budgets, not elastic ones."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Linux cgroups (resource limits per process/container)",
+                "familiarIcon": "⚙️",
+                "newConcept": "GPU Resource Partitioning (NVIDIA MIG + time-slicing)",
+                "newIcon": "🖥️",
+                "bridgeText": "cgroups set hard limits: 'this container gets max 4 CPU cores and 8GB RAM'. NVIDIA MIG sets hard limits: 'this AI workload gets 10GB VRAM and 14 compute slices of A100'. Kubernetes now integrates with MIG via device plugins — you can request 'nvidia.com/mig-1g.10gb' as a resource in a K8s Pod spec, just like requesting CPU/memory limits. GPU resource isolation is standard K8s resource management.",
+                "breakPoint": "cgroups CPU limits are enforced by the Linux scheduler — processes burst over limits in microseconds. GPU MIG limits are hardware-enforced — processes literally cannot access more than their allocated VRAM. MIG isolation is stronger than cgroups CPU isolation, but also less flexible (no burst capability)."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: MIG Partitioning",
+          "content": {
+            "question": "You have one NVIDIA A100 80GB GPU. You need to run: (A) 1 LLM inference server needing 40GB VRAM, (B) 3 fine-tuning jobs each needing 10GB VRAM. Can MIG satisfy this workload simultaneously?",
+            "options": [
+              "No — MIG partitions must be equal sizes",
+              "Yes — use 1× MIG 3g.40gb + 3× MIG 1g.10gb instances",
+              "No — fine-tuning cannot run on MIG instances",
+              "Yes — but only if all jobs use the same model architecture"
+            ],
+            "reveal": "Option 2 is correct. The A100 80GB supports multiple MIG partition sizes simultaneously. Configuration: 1× 3g.40gb (3 compute slices, 40GB VRAM) for the LLM inference server + 3× 1g.10gb (1 compute slice each, 10GB VRAM) for the 3 fine-tuning jobs = 3+3 = 6 of 7 available compute slices and 40+30 = 70 of 80GB VRAM used. This is a real A100 MIG configuration. Fine-tuning on MIG instances works fine — it just needs sufficient VRAM and compute slices. The remaining 1 compute slice and 10GB VRAM can be a small instance for monitoring/logging."
+          }
         }
       ]
     },
@@ -320,6 +876,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "GPU saturation (98%) caused queue buildup (847), which caused timeouts, which tripped circuit breakers. Correct fix: auto-scale GPU at 80% threshold (not 100%), alert on queue depth early, fallback chain: full model → smaller model → cached response → text-only → graceful error. Never let GPU hit 100% in production — you've lost the ability to drain the queue."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Progressive Enhancement (core functionality without JS)",
+                "familiarIcon": "🏗️",
+                "newConcept": "AI Graceful Degradation (fallback when AI fails)",
+                "newIcon": "🛡️",
+                "bridgeText": "Progressive enhancement: the page works without JavaScript; JS enhances it. AI graceful degradation: the feature works without AI; AI enhances it. If the LLM API is down, fall back to keyword search. If vision analysis fails, fall back to metadata. If STT fails, fall back to typed input. Every AI feature should have a non-AI fallback — this is the same engineering discipline as progressive enhancement.",
+                "breakPoint": "Progressive enhancement failures are usually visible (no JS = no interactivity). AI degradation failures can be invisible — the feature appears to work but with lower quality. Users may not notice AI is in fallback mode. Design explicit indicators ('AI analysis unavailable — showing keyword results') so users understand degraded quality."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Circuit Breaker Pattern (Resilience4j, Hystrix)",
+                "familiarIcon": "⚡",
+                "newConcept": "AI Feature Circuit Breaker",
+                "newIcon": "🛡️",
+                "bridgeText": "A circuit breaker opens when failure rate > threshold, sending all requests to a fallback until the upstream recovers. AI feature circuit breakers work identically: if the LLM API returns 5xx > 10% in 60 seconds, open the circuit and serve from cache/fallback. The same Resilience4j / Polly library you use for microservices works for AI API calls — no special AI-specific tooling needed.",
+                "breakPoint": "Circuit breakers trip on technical failures (HTTP 5xx, timeouts). AI quality failures (hallucinations, poor outputs) don't trigger circuit breakers — the API returned 200. You need a separate quality monitoring layer (confidence scores, output validation) to detect and fallback on quality failures, not just technical failures."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Multi-Region Failover (primary → secondary region)",
+                "failoverIcon": "🌍",
+                "newConcept": "AI Provider Failover (primary LLM → fallback LLM)",
+                "newIcon": "🛡️",
+                "bridgeText": "Primary region fails → traffic routes to secondary region automatically. Primary LLM provider (OpenAI) has outage → fallback to secondary (Anthropic Claude or local Ollama). LiteLLM handles this natively: configure a provider list with priorities, set timeout thresholds, automatic retry on the next provider. The same resilience patterns as multi-region failover apply directly.",
+                "breakPoint": "Multi-region failover is transparent — same application, different datacenter, identical behaviour. LLM provider failover changes model outputs — switching from GPT-4o to Claude Haiku produces different quality responses. User experience changes during failover. Design fallback UX accordingly: consider quality-adjusted prompts or simplified features when using the fallback model."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Degradation Strategy",
+          "content": {
+            "question": "Your e-commerce recommendation engine uses an LLM to personalise product recommendations. The LLM API has 99.9% SLA. If it's down during peak sales, what should happen?",
+            "options": [
+              "Show an error message — recommendations are a premium feature",
+              "Fall back to most-popular items in the category (non-personalised, always available)",
+              "Queue recommendation requests and process when LLM recovers",
+              "Cache the last LLM recommendations and serve stale recommendations"
+            ],
+            "reveal": "Options 2 and 4 are both valid depending on recency requirements. For most e-commerce: Option 2 (popular items fallback) is best — real-time, always available, no stale data risk. Option 4 (serve cached recommendations) is best if personalisation quality is critical and recommendations change slowly (daily batch updates). Worst option: Option 1 (show error) — during peak sales, losing recommendations hurts conversion significantly. Option 3 (queue) is only valid for non-time-sensitive requests. Production pattern: serve cached recommendations (if <2 hours old) with graceful display; fall back to popular items for older/missing cache."
           }
         }
       ]
@@ -356,6 +963,39 @@
             "title": "Enterprise Insight",
             "content": "You've mastered Multimodal AI. The differentiator: you understand the full stack from CLIP embeddings to WebRTC transport to GPU multiplexing to production failure patterns — not just 'I called the API'. That's the top 1% of AI engineers."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Chapter 5 Core Concept Map",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Full-Stack Development (frontend + backend + infra)",
+                "familiarIcon": "🏗️",
+                "newConcept": "Multimodal AI Engineering (STT + vision + LLM + TTS + edge)",
+                "newIcon": "🎭",
+                "bridgeText": "Full-stack engineers combine frontend (UI/UX), backend (APIs/logic), and infra (deployment/scaling). Multimodal AI engineers combine modality-specific expertise (audio with Whisper, vision with CLIP, language with LLMs), system integration (latency budgeting, streaming protocols), and deployment (edge vs cloud, model serving). The skills are additive — knowing each modality independently is necessary but not sufficient; the value is in the integration.",
+                "breakPoint": "Full-stack engineers can specialise in one tier and remain effective. Multimodal AI engineers who only know one modality (text only) can't build voice assistants or vision systems. The multimodal layer requires knowing enough about each modality to make architectural tradeoffs across the entire pipeline."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: System Design Challenge",
+          "content": {
+            "question": "Design a real-time AI meeting assistant that: transcribes speech, identifies speakers, generates action items, and provides live summaries. What are the top 3 technical challenges and how do you address them?",
+            "options": [
+              "Transcription accuracy, speaker diarisation, real-time LLM latency",
+              "Database schema, API design, authentication",
+              "GPU costs, model selection, UI responsiveness",
+              "Privacy compliance, audio quality, network bandwidth"
+            ],
+            "reveal": "Option 1 is the senior ML engineer answer. (1) Transcription accuracy: use Whisper large-v3 or Deepgram Nova-2 for speaker-aware transcription; handle overlapping speech and background noise with pre-processing. (2) Speaker diarisation: pyannote.audio for speaker identification — map voice embeddings to speaker IDs across the session. This is the hardest technical problem — overlapping speech causes errors. (3) Real-time LLM latency: use streaming GPT-4o for summary generation, send LLM prompts after each 30-second chunk (not the entire meeting), use delta summaries (update the summary incrementally). Options 2, 3, 4 are valid considerations but not the primary technical challenges."
+          }
         }
       ]
     },
@@ -391,6 +1031,39 @@
             "title": "Enterprise Insight",
             "content": "Systems thinking = understanding tradeoffs across the ENTIRE stack simultaneously. Cost vs latency vs quality vs scalability. The best AI engineers optimize the system, not individual components. Every architectural decision has downstream consequences — semantic cache affects model choice, model choice affects GPU requirements, GPU requirements affect SLA."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Systems Thinking in AI Engineering",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Microservices Architecture Decision Record (ADR)",
+                "familiarIcon": "📋",
+                "newConcept": "AI System Architecture Decision Record",
+                "newIcon": "🏗️",
+                "bridgeText": "An ADR documents: context, decision, rationale, consequences. AI architecture decisions need the same format: 'We chose RAG over fine-tuning because (1) knowledge updates weekly, (2) team lacks fine-tuning expertise, (3) RAG is debuggable. Trade-off: RAG adds 200ms latency per query.' Document your AI architectural decisions with the same discipline as your software architecture decisions — future engineers (including yourself in 6 months) will need to understand why.",
+                "breakPoint": "Software ADRs can be reversed by refactoring. AI architecture decisions often have irreversibility: a fine-tuned model cannot be 'un-tuned', training data cannot be 'un-biased', and LLM-generated content that was shipped cannot be recalled. Document 'this decision is hard to reverse' explicitly in AI ADRs."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Synthesis Question",
+          "content": {
+            "question": "You're designing an AI-powered legal document review system. Requirements: 95% recall on relevant clauses, <3 second response time, GDPR-compliant (no data to cloud), processes contracts in 12 languages. What is the MOST critical architectural constraint, and how does it shape your choices?",
+            "options": [
+              "95% recall — use largest available model",
+              "GDPR (no cloud) — forces on-premise deployment, which constrains model size and compute",
+              "<3 second response — use fastest models and optimise latency",
+              "12 languages — multilingual model required"
+            ],
+            "reveal": "Option 2 (GDPR/on-premise) is the meta-constraint that determines everything else. On-premise deployment shapes: model selection (limited to models that fit on your hardware), latency (no cloud inference APIs with 50ms response time), language support (must find multilingual model that runs on-prem). GDPR forces you to solve the other constraints within a hardware envelope. Approach: Llama 3 70B Q4_K_M (40GB VRAM, multilingual, 3s/doc on A100) with RAG for legal context, achieving 95% recall. The GDPR constraint is the foundation; build recall, latency, and language support within it."
+          }
         }
       ]
     },
@@ -425,6 +1098,39 @@
             "title": "Enterprise Insight",
             "content": "Candidate B wins because: monitoring (70% of real work), cost analysis (business awareness), before/after metrics (rigor), error handling (production experience). YOUR portfolio has all of this across 5 chapters: chunking benchmarks, semantic caching cost analysis, RAGAS evaluation, circuit breakers, GPU multiplexing, graceful degradation. That's top 1% — most candidates have none of it."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Standing Out as an AI Engineer",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Open Source Contributions (GitHub profile)",
+                "familiarIcon": "⭐",
+                "newConcept": "AI Engineering Portfolio Differentiators",
+                "newIcon": "🏆",
+                "bridgeText": "A GitHub profile shows you can code; a portfolio shows you solve real problems. AI engineering portfolios need the same two layers: (1) can you implement AI systems (fine-tuning, RAG, multimodal pipelines)? and (2) can you make tradeoffs for production (latency budget, cost analysis, eval pipelines, graceful degradation)? The differentiating projects show production thinking, not just model usage.",
+                "breakPoint": "Open source contributions can be incremental (fix a bug, improve docs). AI portfolio projects require end-to-end thinking — a RAG project without eval metrics is like a frontend project without accessibility. Always include: problem statement, metric-driven evaluation, production considerations, and observed limitations."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Portfolio Impact",
+          "content": {
+            "question": "Two candidates have built AI projects. Candidate A: 'Fine-tuned Llama 3 on my custom dataset, achieving 94% accuracy on test set.' Candidate B: 'Fine-tuned Llama 3 on customer support data, achieving 94% on eval set. Found 3% eval-production gap due to train-serve skew in feature preprocessing. Added drift monitoring, reducing production error rate by 28%.' Which candidate signals more production AI experience?",
+            "options": [
+              "Candidate A — higher technical depth in the fine-tuning itself",
+              "Candidate B — identifies production failure mode and closes the loop with monitoring",
+              "Both equally — same core technical achievement",
+              "Depends on the interviewer's preference"
+            ],
+            "reveal": "Candidate B demonstrates production AI engineering maturity. The 3% eval-production gap diagnosis (train-serve skew identification) is a senior ML engineering skill that requires: (1) knowing to look for this problem, (2) instrumenting both training and serving pipelines to compare, (3) finding the actual cause. Adding monitoring that measurably reduces errors (28%) shows the full ML lifecycle — not just model training but deployment, observability, and iteration. This is what separates ML researchers from production ML engineers."
+          }
         }
       ]
     },
@@ -449,6 +1155,39 @@
           "title": "Overview: CAPSTONE: System Design Interview",
           "content": {
             "markdown": "Final challenge: 10 whiteboard-style system design questions that test everything you've learned across all 5 chapters. This is the real interview format at top AI companies. 60 seconds per question."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "analogy",
+          "title": "AI System Design Interview Mastery",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Senior Engineer System Design Framework (requirements → capacity → components → tradeoffs)",
+                "familiarIcon": "🏗️",
+                "newConcept": "AI System Design Interview Framework",
+                "newIcon": "🎓",
+                "bridgeText": "Non-AI system design: functional requirements → non-functional (latency, scale) → high-level design → component deep-dives → tradeoffs. AI system design adds: (1) data requirements (training data, ground truth labels), (2) model selection rationale, (3) eval strategy (offline vs online), (4) production monitoring plan, (5) degradation/fallback strategy. The framework extends naturally — every AI system interview answer should include these 5 additional dimensions.",
+                "breakPoint": "Non-AI system design has established patterns (load balancer, DB, cache). AI system design patterns are still evolving — RAG vs fine-tuning vs prompt engineering tradeoffs change as models improve. Demonstrate awareness that 'the best approach today may not be the best approach in 12 months' as models become more capable."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "prediction",
+          "title": "Predict: Final Interview Question",
+          "content": {
+            "question": "An interviewer asks: 'Design YouTube's comment moderation system using AI.' Walk through the first 5 minutes of your answer. What do you establish first?",
+            "options": [
+              "Immediately propose: 'Use GPT-4o for all comments, it handles everything'",
+              "Clarify requirements: scale (10B comments/day), latency (real-time vs async), recall/precision target, and what 'moderation' means (spam, hate speech, CSAM?)",
+              "Draw the architecture diagram showing LLM + moderation pipeline",
+              "Discuss model selection: classifier vs LLM vs rule-based"
+            ],
+            "reveal": "Option 2 is correct — requirement clarification is always first. At YouTube scale: 10B comments/day = 115K comments/second. Clarify: (1) What categories: spam (high volume, needs fast classifier), hate speech (needs LLM-level nuance), CSAM (needs 100% recall, legal requirement). (2) Latency: real-time pre-publish moderation vs async post-publish removal. (3) Precision/recall tradeoff: false positives (removing good comments) vs false negatives (allowing bad content) — very different architectures. After clarification: propose tiered pipeline (fast classifier for obvious spam, LLM for borderline, human review queue for appeals). This shows systems thinking over technology enthusiasm."
           }
         }
       ]

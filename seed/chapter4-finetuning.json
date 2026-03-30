@@ -43,6 +43,57 @@
             "title": "Enterprise Insight",
             "content": "Fine-tune for FORMAT (JSON output, writing style, classification, structured extraction). RAG for KNOWLEDGE (facts, documents, citations, live data). The decision is about what changes: if the task structure changes → fine-tune; if the facts change → RAG."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Custom CSS Theme vs Override Stylesheet",
+                "familiarIcon": "🎨",
+                "newConcept": "Fine-tuning vs Prompt Engineering",
+                "newIcon": "🔧",
+                "bridgeText": "Prompt engineering is an override stylesheet — you add instructions on top of the base model's 'style rules'. Fine-tuning is building a custom theme — you modify the base model's weights to natively understand your domain. Override stylesheets are quick and reversible; custom themes require more upfront work but produce consistent, reliable outputs. Fine-tune when prompting requires >500 tokens of examples to get consistent results.",
+                "breakPoint": "CSS override specificity is permanent and cascades predictably. Fine-tuning is not reversible — you can't extract the original model from a fine-tuned version. Also, fine-tuning on low-quality data permanently degrades the model. Unlike CSS where you can always remove an override, a bad fine-tune requires retraining from scratch."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Views vs Stored Procedures vs Schema Extensions",
+                "familiarIcon": "🗄️",
+                "newConcept": "Prompt Engineering vs RAG vs Fine-tuning",
+                "newIcon": "🔧",
+                "bridgeText": "Views: read-only projections of existing data (prompt engineering — same model, different instructions). Stored procedures: reusable logic encapsulated in the DB (RAG — same model + external knowledge retrieval). Schema extensions: permanently adding new data types or constraints (fine-tuning — modifying the model itself). Match the tool to the problem: if you need the model to know domain-specific facts that change frequently, use RAG (views). If you need it to behave differently across all outputs, fine-tune (schema extension).",
+                "breakPoint": "DB views, stored procedures, and schema changes are independent and composable. Fine-tuning and RAG can be combined (fine-tune a model then add RAG on top) but fine-tuning on top of RAG is complex. The combinations have non-obvious interactions — a fine-tuned model may be less effective at following RAG retrieval instructions than the base model."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Docker Base Image vs Custom Image Build",
+                "familiarIcon": "🐳",
+                "newConcept": "Base Model vs Fine-tuned Model",
+                "newIcon": "🔧",
+                "bridgeText": "FROM python:3.11-slim gives you a base with Python installed. Then you ADD your app code, RUN pip install, and you have a custom image. Fine-tuning is the same: start FROM a base model (Llama 3, Mistral), then 'ADD' your training data to teach it domain knowledge. The resulting fine-tune is a derivative artifact — just like a custom Docker image. You can layer multiple fine-tunes (like multi-stage builds), though this has quality tradeoffs.",
+                "breakPoint": "Docker layers are stored and cached efficiently — a 'fine-tune layer' on top of the base image doesn't duplicate the entire base. Fine-tuning (non-LoRA) creates a completely new set of weights — you can't 'diff' the fine-tune from the base model without LoRA. LoRA adapters ARE the equivalent of Docker layers — lightweight overlays that don't require copying the entire base model."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Fine-tune or RAG?",
+          "content": {
+            "question": "A legal tech company wants an AI assistant that: (1) Knows their internal case templates, (2) Understands legal terminology accurately, (3) Can reference current case law (updated weekly), (4) Formats outputs in their firm's specific style. Which combination of approaches should they use?",
+            "options": [
+              "Fine-tune only — bake all knowledge into the model",
+              "RAG only — retrieve all knowledge from a document store",
+              "Fine-tune for style/format + RAG for case law + legal terminology",
+              "Prompt engineering only — no fine-tuning or RAG needed"
+            ],
+            "reveal": "Option 3 is correct. Fine-tune for: firm-specific output formatting, legal terminology understanding, and response style that matches the firm's templates. RAG for: current case law (changes weekly — can't be fine-tuned on fast enough), specific case documents, and any knowledge that updates faster than your retraining cadence. Prompt engineering alone can't reliably enforce consistent output format across thousands of queries — fine-tuning is more reliable for style."
+          }
         }
       ]
     },
@@ -77,6 +128,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "Start with lr=2e-5, warmup=10% of total steps, 3 epochs. Watch validation loss — when it diverges from training loss, you're overfitting. Flash Attention 2 has zero quality impact; enable it unconditionally for 3-10x speed improvement."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Component Library Customisation (Tailwind config, theme tokens)",
+                "familiarIcon": "🎨",
+                "newConcept": "SFT Training Data Format (instruction-response pairs)",
+                "newIcon": "📚",
+                "bridgeText": "Tailwind config lets you define 'this is what a primary button looks like in our brand'. SFT training data says 'this is what a correct assistant response looks like for this type of query'. Both are 'here's the design system; apply it consistently'. SFT training data is structured as <instruction, response> pairs — you're teaching the model 'when you see THIS type of instruction, respond LIKE THIS'.",
+                "breakPoint": "Tailwind config changes apply universally and immediately. SFT training requires thousands of examples to reliably generalise. A single example showing 'respond formally when asked about contracts' won't generalise — you need hundreds of formal contract queries. The model learns from distribution, not individual examples."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Function Signature + Docstring Contract",
+                "familiarIcon": "📝",
+                "newConcept": "SFT Instruction-Response Pairs",
+                "newIcon": "📚",
+                "bridgeText": "A function signature defines the contract: given these inputs, produce this output. SFT training pairs define the model's 'contract': given this instruction format, produce this response format. The instruction is the function signature, the response is the expected output. Building a high-quality SFT dataset is like writing comprehensive docstrings — you're specifying the intended behaviour of every function the model will be called to perform.",
+                "breakPoint": "Function contracts are enforced at type-check or runtime. SFT training data teaches by statistical approximation — the model learns to approximate the distribution, not follow the contract exactly. Edge cases in your training data that you assume the model will handle may not generalise if they're underrepresented."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Ansible Playbook Task Templates",
+                "familiarIcon": "⚙️",
+                "newConcept": "SFT Training Data Curation",
+                "newIcon": "📚",
+                "bridgeText": "Ansible tasks define the desired state: 'ensure Nginx is installed and configured'. SFT training examples define the desired model state: 'ensure the model responds like this when asked about X'. Building an SFT dataset is like writing a comprehensive Ansible playbook — you enumerate all the tasks (query types) the model needs to handle, and specify the correct response for each. Quality matters more than quantity: 1,000 high-quality examples beat 10,000 noisy ones.",
+                "breakPoint": "Ansible playbooks are idempotent — running them twice gives the same result. SFT training is not — running multiple fine-tuning epochs on the same data can cause catastrophic forgetting (the model forgets previously learned behaviours while learning new ones). Always monitor training metrics and use early stopping."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Data Quality Impact",
+          "content": {
+            "question": "You're creating an SFT dataset for a customer service bot. Option A: 5,000 carefully crafted examples with consistent tone, accurate information, and proper escalation paths. Option B: 50,000 examples scraped from your support ticket system (real conversations) with inconsistent tone, some incorrect information, and many incomplete resolutions. Which produces a better fine-tune?",
+            "options": [
+              "Option B — 10x more data always wins",
+              "Option A — quality beats quantity in SFT, especially for tone consistency",
+              "Combine both — use all 55,000 examples",
+              "Option B with cleaning — remove the worst 80% of examples"
+            ],
+            "reveal": "Option A produces better results for tone-sensitive use cases. SFT is highly sensitive to data quality — the model learns from every example, including the bad ones. 50,000 inconsistent examples teach inconsistency; 5,000 high-quality examples teach the desired behaviour reliably. Research shows 1,000–5,000 high-quality examples typically outperform 50,000+ noisy examples for instruction following. If you use Option B, you need aggressive filtering (keep only examples with verified-correct resolutions and consistent tone) — not just removing the worst 80%."
           }
         }
       ]
@@ -113,6 +215,205 @@
             "title": "Enterprise Insight",
             "content": "r=16, alpha=32 (scaling factor=2x) is the universal LoRA starting point. Target all linear layers (not just attention) for a 5-10% quality boost at 2x parameter cost. Beyond r=64, quality gains are marginal — you're wasting VRAM."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Custom Properties Override (var() → component-specific values)",
+                "familiarIcon": "🎨",
+                "newConcept": "LoRA: Low-Rank Adaptation",
+                "newIcon": "🔬",
+                "bridgeText": "CSS custom properties let you override a design token for a specific component without changing the global theme. LoRA is the LLM equivalent: instead of modifying all 7 billion weights (changing the global theme), you inject small 'adapter matrices' that override specific attention layer behaviours. The LoRA rank (r=8, r=16, r=64) is like CSS specificity — higher rank means more override power but more parameters to train.",
+                "breakPoint": "CSS overrides are additive and non-destructive. LoRA modifies the model's computation path — a LoRA adapter trained for medical text may cause the model to be worse at general conversation. The override is not isolated to just the target behaviour; it influences all model outputs."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Index (speeds up reads without changing the table)",
+                "familiarIcon": "🗄️",
+                "newConcept": "LoRA Adapter (adds capability without changing base weights)",
+                "newIcon": "🔬",
+                "bridgeText": "A database index is a separate data structure that accelerates lookups — it adds capability (fast queries) without modifying the underlying table. LoRA adapters are separate weight matrices (A and B, tiny compared to the model) that add capability (domain adaptation) without modifying the base model weights. You can have multiple LoRA adapters on the same base model (like multiple indexes on a table), and switch between them at runtime.",
+                "breakPoint": "Database indexes are purely additive and reversible — dropping an index never changes query results, only performance. LoRA adapters change model outputs — switching to a different LoRA adapter changes the model's behaviour. Unlike indexes, LoRA adapters are not interchangeable or composable without training conflicts."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Git Patch Files (diff from base)",
+                "familiarIcon": "📋",
+                "newConcept": "LoRA Weight Delta",
+                "newIcon": "🔬",
+                "bridgeText": "A git patch file is a compact representation of changes from a base commit — it stores only the delta, not the full file. LoRA weights are the LLM equivalent: instead of storing 14GB (full fine-tuned model), you store ~20MB (the delta between base and fine-tuned). Deployment: `git apply patch.diff` on the base repo; LoRA: load adapter on top of base model. Both require the exact base to apply the delta correctly.",
+                "breakPoint": "Git patches apply deterministically — same base + same patch = same result. LoRA merging (merging adapter into base weights permanently) is an approximation — the merged model is not mathematically identical to keeping adapter separate. Some quality is lost in the merge. Keep adapters separate in production for best quality."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: LoRA Rank Selection",
+          "content": {
+            "question": "You're fine-tuning Llama 3 8B on 3,000 customer support examples to learn your company's specific response format and product terminology. Which LoRA rank should you start with?",
+            "options": [
+              "r=4 — lowest rank, fastest training, minimal parameters",
+              "r=16 — standard starting point for most task adaptations",
+              "r=64 — higher rank for better quality",
+              "r=128 — maximum capability for complex adaptations"
+            ],
+            "reveal": "r=16 is the correct starting point. Research consensus: r=8 or r=16 handles most task adaptations. Higher rank (r=64, r=128) is only needed for complex structural changes (e.g., teaching a model a completely different language or highly specialised domain with unusual syntax). For format and terminology adaptation (your use case), r=16 with alpha=32 provides sufficient capacity. Higher ranks slow training, increase adapter size, and can cause overfitting on small datasets (3K examples is small). Start at r=16, evaluate, then adjust."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "LoRA Injection Points in a Transformer",
+          "content": {
+            "title": "LoRA Injection Points in a Transformer",
+            "description": "Click each layer to see where LoRA adapters attach and how they modify computation. Understanding the architecture helps you choose which layers to target.",
+            "nodes": [
+              {
+                "id": "input",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 0
+                },
+                "data": {
+                  "label": "Input Tokens",
+                  "icon": "📝",
+                  "active": true,
+                  "accentColor": "#3b82f6",
+                  "details": "Input: token IDs → embedding lookup → [seq_len, d_model] tensor\n\nExample: 'Classify this review: Great product!' → [8, 4096] tensor for Llama 3 8B.\n\nLoRA is NOT typically applied here — embedding tables are better handled by full fine-tuning or prefix tuning."
+                }
+              },
+              {
+                "id": "attention",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 150
+                },
+                "data": {
+                  "label": "Attention: Q, K, V Projections",
+                  "icon": "🎯",
+                  "accentColor": "#f97316",
+                  "details": "★ PRIMARY LoRA TARGET ★\n\nThe attention mechanism uses 4 weight matrices:\n- Wq: queries (what am I looking for?)\n- Wk: keys (what do I have?)\n- Wv: values (what should I output?)\n- Wo: output projection\n\nLoRA on Wq + Wv is the standard config (from the original LoRA paper). It modifies HOW the model attends to context — teaching it to pay attention to different features.\n\nLoRA math: W_new = W_original + B×A\nWhere A: [r, d_in] and B: [d_out, r]\nRank r=16 means A is [16,4096] and B is [4096,16] — 131K params vs 16.8M original."
+                }
+              },
+              {
+                "id": "feedforward",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 300
+                },
+                "data": {
+                  "label": "Feed-Forward Network (FFN)",
+                  "icon": "🔄",
+                  "accentColor": "#8b5cf6",
+                  "details": "Also a LoRA target — especially for factual knowledge.\n\nFFN layers store 'factual associations' (research finding). Adding LoRA to FFN helps when you need the model to learn new facts or terminology.\n\nTypical config: target_modules = ['q_proj', 'v_proj', 'up_proj', 'down_proj']\n- q_proj + v_proj: attention behaviour\n- up_proj + down_proj: factual knowledge\n\nFor format-only adaptation (your use case): just q_proj + v_proj.\nFor knowledge adaptation: add up_proj + down_proj."
+                }
+              },
+              {
+                "id": "layernorm",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 450
+                },
+                "data": {
+                  "label": "Layer Normalization",
+                  "icon": "📏",
+                  "accentColor": "#6b7280",
+                  "details": "Usually NOT targeted by LoRA.\n\nLayer norms stabilise training by normalising activations. Modifying them via LoRA can cause instability.\n\nException: QLoRA sometimes targets layer norms when doing aggressive quantization (4-bit base + LoRA) to recover quality lost to quantization noise."
+                }
+              },
+              {
+                "id": "output",
+                "type": "concept",
+                "position": {
+                  "x": 400,
+                  "y": 600
+                },
+                "data": {
+                  "label": "Output: LM Head",
+                  "icon": "📤",
+                  "accentColor": "#3b82f6",
+                  "details": "The final linear layer mapping hidden states to vocabulary logits.\n\nSometimes fine-tuned fully (not LoRA) for domain adaptation — especially when teaching a model a completely different output vocabulary.\n\nFor standard SFT with existing vocabulary: keep frozen."
+                }
+              },
+              {
+                "id": "lora_a",
+                "type": "concept",
+                "position": {
+                  "x": 100,
+                  "y": 150
+                },
+                "data": {
+                  "label": "LoRA Matrix A (down projection)",
+                  "icon": "🔽",
+                  "accentColor": "#f97316",
+                  "details": "Shape: [r, d_in] = [16, 4096] for r=16 on Llama 3 8B\nParameters: 65,536\nInitialisation: random Gaussian (small values)\n\nA projects the input down to the low-rank subspace. Think of it as extracting 16 'directions' from 4096-dimensional space that are most relevant for the adaptation task."
+                }
+              },
+              {
+                "id": "lora_b",
+                "type": "concept",
+                "position": {
+                  "x": 700,
+                  "y": 150
+                },
+                "data": {
+                  "label": "LoRA Matrix B (up projection)",
+                  "icon": "🔼",
+                  "accentColor": "#f97316",
+                  "details": "Shape: [d_out, r] = [4096, 16] for r=16 on Llama 3 8B\nParameters: 65,536\nInitialisation: zeros (so LoRA starts with zero delta)\n\nB projects back up from the low-rank subspace to the full dimension. Initialised to zeros so the adapter has zero effect at the start of training — training gradually learns the adaptation."
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "source": "input",
+                "target": "attention",
+                "label": "token embeddings"
+              },
+              {
+                "id": "e2",
+                "source": "attention",
+                "target": "feedforward",
+                "label": "attended features"
+              },
+              {
+                "id": "e3",
+                "source": "feedforward",
+                "target": "layernorm",
+                "label": "→ residual stream"
+              },
+              {
+                "id": "e4",
+                "source": "layernorm",
+                "target": "output",
+                "label": "normalised"
+              },
+              {
+                "id": "e5",
+                "source": "lora_a",
+                "target": "attention",
+                "label": "A×input"
+              },
+              {
+                "id": "e6",
+                "source": "lora_b",
+                "target": "attention",
+                "label": "B×A×input"
+              }
+            ]
+          }
         }
       ]
     },
@@ -148,6 +449,57 @@
             "title": "Enterprise Insight",
             "content": "7B QLoRA on RTX 4090 (~$0.40/hr on Vast.ai) = ~$1.20 for 3 hours on 1K samples. QLoRA matches full LoRA quality with negligible degradation from the 4-bit NF4 base model. NF4 beats standard INT4 because it places quantization bins at equal-area intervals matching the normal distribution of LLM weights."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Code Splitting + Lazy Loading",
+                "familiarIcon": "📦",
+                "newConcept": "QLoRA: 4-bit base + LoRA adapters",
+                "newIcon": "💰",
+                "bridgeText": "Code splitting loads only the JS chunks needed for the current page — the full bundle is too large to load upfront. QLoRA loads the base model in 4-bit quantization — the full FP16 model is too large to fit in consumer GPU VRAM. LoRA adapters are trained on top of the 4-bit base, just as your component logic runs on the lazy-loaded chunk. Both trade a small quality/performance cost (4-bit precision loss, async loading) for dramatic resource reduction.",
+                "breakPoint": "Code splitting is lossless — the same code, just loaded in chunks. QLoRA's 4-bit quantization is lossy — the base model has lower precision, introducing small errors that accumulate through LoRA training. QLoRA fine-tunes are typically 2–4% lower quality than full-precision LoRA fine-tunes. For most use cases this is acceptable; for high-precision tasks (code generation, math) consider LoRA on FP16 if VRAM allows."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Read Replicas + Write Leader (DB scaling pattern)",
+                "familiarIcon": "🗄️",
+                "newConcept": "QLoRA Training Architecture",
+                "newIcon": "💰",
+                "bridgeText": "A read replica offloads read traffic from the write leader without duplicating the full schema — just the data. QLoRA's double quantization offloads memory pressure without duplicating the model — quantize the base weights (NF4), then quantize the quantization constants themselves (8-bit). Two levels of compression, like read replicas providing tiered data access. The result: a 65B parameter model (>120GB in FP32) fine-tunable on a single A100 80GB.",
+                "breakPoint": "Read replicas are eventually consistent — slight lag vs write leader. QLoRA's quantized base introduces permanent precision loss — the gradients computed during LoRA training are based on slightly incorrect activations. This is why QLoRA quality is slightly below full LoRA — the approximation is built into the training process itself."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Spot Instance + Checkpointing",
+                "familiarIcon": "💸",
+                "newConcept": "QLoRA + Gradient Checkpointing",
+                "newIcon": "💰",
+                "bridgeText": "Spot instances save 70% on cost but can be interrupted — you checkpoint frequently so restarts lose minimal work. QLoRA with gradient checkpointing follows the same pattern: gradient checkpointing saves VRAM by recomputing activations instead of storing them (trades compute for memory), enabling larger batch sizes on smaller GPUs. Like spot instances, you pay a speed tax (20–30% slower) for a resource savings benefit (30–40% less VRAM).",
+                "breakPoint": "Spot instance interruptions are random and external. Gradient checkpointing slowdown is deterministic and proportional to model depth. At 32 layers, recomputing activations for gradient computation adds ~25% training time. Always benchmark: gradient checkpointing + larger batch size may be faster wall-clock than no checkpointing + smaller batch size."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Hardware Requirements",
+          "content": {
+            "question": "You want to QLoRA fine-tune Llama 3 8B (fp16 base: 14GB) with batch_size=4, max_seq_length=2048. With QLoRA (4-bit NF4 quantization), the base model uses ~5GB VRAM. Rough estimate: how much VRAM do you need for the full training setup?",
+            "options": [
+              "5GB — just the 4-bit model",
+              "8–10GB — model + small LoRA parameters",
+              "16–20GB — model + optimizer states + activations + LoRA",
+              "32GB+ — same as full fine-tuning"
+            ],
+            "reveal": "16–20GB is the practical answer for batch_size=4, seq_len=2048. Breakdown: 4-bit base model (~5GB) + LoRA parameters + optimizer states (AdamW states for LoRA: ~4× LoRA params in fp32) + activations for batch (batch_size × seq_len × d_model × bytes) + gradient checkpointing overhead. For these settings, 16GB VRAM (RTX 4080 or A10G) typically fits with careful configuration. Gradient checkpointing is mandatory to keep activations manageable. At batch_size=1, you can fit on 10GB (RTX 3080)."
+          }
         }
       ]
     },
@@ -181,6 +533,57 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "Try LoRA+ first — it's just a hyperparameter change (set B's LR 4-16x higher than A's). Then DoRA for low-rank scenarios (r≤8). rsLoRA only matters at r≥64. Use TIES merge when combining task-specific adapters to avoid sign conflicts."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "CSS Animations vs Transitions vs Keyframes",
+                "familiarIcon": "✨",
+                "newConcept": "LoRA vs DoRA vs AdaLoRA (LoRA variants)",
+                "newIcon": "🔬",
+                "bridgeText": "CSS transitions for simple A→B state changes; animations for complex multi-step sequences; keyframes for full control. LoRA variants follow the same progression: base LoRA for simple task adaptation; AdaLoRA dynamically allocates rank budget where needed (like adaptive animation timing); DoRA decomposes weight updates into magnitude and direction for better stability (like transform-origin gives you fine control over animation pivot).",
+                "breakPoint": "CSS animation variants are interchangeable with different performance characteristics. LoRA variants have fundamentally different mathematical properties — DoRA's weight decomposition changes the gradient flow in ways that aren't just 'better LoRA'. Use the standard LoRA unless you have specific evidence that a variant improves your use case."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Cache Eviction Strategies (LRU, LFU, ARC)",
+                "familiarIcon": "🗄️",
+                "newConcept": "AdaLoRA Dynamic Rank Allocation",
+                "newIcon": "🔬",
+                "bridgeText": "LRU evicts the least recently used cache entries; LFU evicts the least frequently used. AdaLoRA dynamically allocates rank (parameter budget) using SVD to find which attention heads need more 'capacity'. High-importance layers get higher rank; low-importance layers get pruned. It's like ARC (adaptive replacement cache) — the cache learns which data is worth keeping based on usage patterns.",
+                "breakPoint": "Cache eviction strategies are stateless heuristics that don't require additional computation. AdaLoRA adds a singular value decomposition step during training — this adds 20–30% training overhead. The rank allocation improves with longer training; for short fine-tunes (1–3 epochs), standard LoRA with manually-tuned rank often wins."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Health Check Strategies (passive vs active vs deep)",
+                "familiarIcon": "💓",
+                "newConcept": "LoRA, LoftQ, LoRA+",
+                "newIcon": "🔬",
+                "bridgeText": "Passive health checks just verify the service responds (HTTP 200). Active checks run a synthetic transaction. Deep checks verify the entire stack. LoRA variants have similar depth levels: base LoRA verifies the adapter is applied (minimal change). LoftQ initialises LoRA to minimise quantization error (active correction). LoRA+ assigns different learning rates to A and B matrices (deep tuning of the training dynamics). Use the minimal check that catches real problems.",
+                "breakPoint": "Health check depth adds latency proportionally. LoRA variant complexity adds training overhead proportionally — and more complex variants need larger datasets to show improvement. On datasets <10K examples, complex variants often underperform base LoRA. Run ablation studies before committing to a complex variant."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Variant Selection",
+          "content": {
+            "question": "You need to fine-tune a 7B model on 2,000 examples for a highly specialised technical domain (quantum computing research papers). Standard LoRA (r=16) shows good results on common quantum terms but struggles with cutting-edge techniques that appear in <5% of your training data. Which LoRA variant should you try first?",
+            "options": [
+              "AdaLoRA — adaptive rank allocation will give more capacity to rare patterns",
+              "DoRA — weight magnitude/direction decomposition improves rare pattern learning",
+              "Simply increase rank to r=64 with standard LoRA",
+              "Use more training data — 2,000 examples is insufficient for specialised domains"
+            ],
+            "reveal": "Option 1 (AdaLoRA) is the best targeted attempt. AdaLoRA's dynamic rank allocation specifically helps with imbalanced training distributions — it can allocate more rank capacity to the attention heads that process rare technical terms. However, option 4 (more data) is the correct underlying fix — 2,000 examples of a long-tail domain is genuinely insufficient. Practical approach: try AdaLoRA first as a quick win, but invest in data collection. The rare patterns in <5% of training data will remain weak with any LoRA variant."
           }
         }
       ]
@@ -217,6 +620,57 @@
             "title": "Enterprise Insight",
             "content": "DPO skips Reward Model and PPO entirely. Even 2K high-quality chosen/rejected pairs can produce 5% benchmark improvement. Focus annotation budget on CHOSEN response quality — a mediocre chosen example is worse than no example."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "User Testing with A/B Preference Ratings",
+                "familiarIcon": "👥",
+                "newConcept": "DPO (Direct Preference Optimization) Training",
+                "newIcon": "🎯",
+                "bridgeText": "A/B user testing shows users two versions of a feature and records which they prefer. DPO trains a model on preference pairs: for the same instruction, you provide a 'chosen' (preferred) and 'rejected' response. The model learns to increase the probability of chosen responses vs rejected ones. Like A/B testing, quality depends entirely on your preference raters — if your raters have inconsistent standards, the DPO model learns inconsistency.",
+                "breakPoint": "A/B user testing measures preference in controlled conditions. DPO assumes the preference signal is correct and trains the model to match it. If your preference data has labelling errors (raters disagreed, one rater was careless), the model learns the noise too. DPO is very sensitive to data quality — worse than SFT in this regard."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Ranking Functions in Search (BM25, relevance tuning)",
+                "familiarIcon": "🔍",
+                "newConcept": "RLHF vs DPO Training Signal",
+                "newIcon": "🎯",
+                "bridgeText": "BM25 ranks documents by statistical relevance (term frequency, inverse document frequency). Fine-tuning a reranker from user click feedback is RLHF for search: the model learns 'this result was preferred' from implicit signals. DPO is explicit preference learning: instead of inferred clicks, you directly label which response is better. DPO for text generation is the same as preference-based reranker training for search — both optimise directly on human preference labels.",
+                "breakPoint": "Search ranking can tolerate 10–20% noisy preference labels — there are thousands of data points and clear patterns dominate. DPO for chat models is more sensitive to noise — a 10% label error rate significantly degrades alignment. The smaller scale of DPO datasets means each label matters more. Budget for label quality review."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Canary Deployment Preference Signal (user feedback)",
+                "familiarIcon": "🐤",
+                "newConcept": "Online DPO from Production Feedback",
+                "newIcon": "🎯",
+                "bridgeText": "Canary deployments collect real user feedback on the new version before full rollout. Online DPO uses the same feedback loop: collect production preference data (thumbs up/down, output edits), convert to preference pairs, run DPO fine-tuning, deploy improved model, repeat. This continuous improvement cycle mirrors how canary deployment data informs whether to roll back or promote — except for model alignment instead of feature releases.",
+                "breakPoint": "Canary rollback is instant — flip a config. DPO retraining takes hours and requires high-quality preference pairs. Online DPO pipelines must include quality filters (reject ambiguous feedback, deduplicate, balance positive/negative). Raw thumbs-up/down data is too noisy for DPO training without significant cleaning."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: DPO Data Requirements",
+          "content": {
+            "question": "You want to DPO fine-tune a model to be more concise — always give shorter answers. You have 500 preference pairs: (verbose answer, concise answer) for each query. Is this sufficient, and what pitfalls should you watch for?",
+            "options": [
+              "500 pairs is sufficient — DPO is more data-efficient than SFT",
+              "500 pairs is sufficient but watch for the model becoming terse rather than concise",
+              "500 pairs is insufficient — need at least 5,000 pairs for reliable alignment",
+              "DPO is the wrong tool — use a length penalty in SFT training instead"
+            ],
+            "reveal": "Option 2 is the correct nuanced answer. DPO with 500 high-quality pairs can learn a simple preference like conciseness (the signal is clear and consistent). But watch for: (1) Terseness drift — the model may learn to truncate answers rather than being more efficient with words. Validate on open-ended questions where truncation would fail. (2) Quality-conciseness tradeoff — if your 'concise' training examples sacrificed accuracy for brevity, the model will learn to trade accuracy for conciseness. Always include accuracy as an implicit constraint in your preference labelling."
+          }
         }
       ]
     },
@@ -251,6 +705,39 @@
             "variant": "insight",
             "title": "Enterprise Insight",
             "content": "DPO for simplicity and fast iteration. SimPO for highest benchmark quality. GRPO for reasoning enhancement (math, code, chain-of-thought). ORPO for single-stage efficiency. RLHF is legacy for teams without dedicated RL researchers."
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Choosing a Database Type (relational vs document vs vector)",
+                "familiarIcon": "🗄️",
+                "newConcept": "Choosing an Alignment Method (SFT vs DPO vs RLHF vs PPO)",
+                "newIcon": "⚖️",
+                "bridgeText": "You don't choose Postgres vs MongoDB by popularity — you match to your data structure and query patterns. Alignment method selection is the same: SFT for format/style consistency (structured data → relational). DPO for preference-based improvements with small budgets (key-value lookups → document DB). Full RLHF with PPO for complex reward shaping (similarity search → vector DB). Match the complexity of the method to the complexity of the alignment goal.",
+                "breakPoint": "Database type selection is permanent architectural. Alignment methods can be stacked: SFT first, then DPO on top of the SFT model. The order matters — SFT on base model, then DPO on SFT checkpoint is better than DPO directly on base. Don't choose one and exclude others; they're often used in sequence."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Method Selection",
+          "content": {
+            "question": "A healthcare company needs a model that: (1) Follows a specific clinical note format, (2) Is more cautious about recommending medication dosages, (3) Doesn't suggest actions outside the scope of a nurse's authority. List the alignment methods in order of application.",
+            "options": [
+              "RLHF → DPO → SFT",
+              "SFT for format → DPO for caution + scope → constitutional AI for safety",
+              "Prompt engineering only — too risky to modify medical model behaviour",
+              "SFT only with all requirements baked into training examples"
+            ],
+            "reveal": "Option 2 is the senior ML engineer answer. Sequential alignment: (1) SFT first on clinical note format — structured, deterministic requirement best handled by format training. (2) DPO for caution preferences — 'less aggressive dosage recommendation' is a preference signal best captured by preference pairs. (3) Constitutional AI or safety RLHF for scope constraints — 'never suggest X' safety constraints are best enforced by constitutional methods that add hard constraints, not soft preferences. Each tool handles what it's best at."
           }
         }
       ]
@@ -287,6 +774,57 @@
             "title": "Enterprise Insight",
             "content": "Magpie synthetic generation costs 30x less than human curation. Always run benchmark contamination checks (MMLU, HumanEval, GSM8K n-gram overlap) before training — contaminated data inflates eval scores without real improvement. A 10K curated set beats 100K noisy data."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Design Tokens Audit (finding inconsistencies)",
+                "familiarIcon": "🎨",
+                "newConcept": "Training Data Audit (deduplication, quality filtering)",
+                "newIcon": "📊",
+                "bridgeText": "A design token audit finds where the team used hard-coded colours instead of tokens, inconsistent spacing values, or conflicting naming. Training data auditing finds duplicate examples (MinHash deduplication), near-duplicate responses with inconsistent quality, and formatting inconsistencies. Both audits are prerequisite to any major refactor — you need clean raw material before building on top of it.",
+                "breakPoint": "Design token inconsistencies affect visual appearance only. Training data inconsistencies corrupt model behaviour — a model that sees the same question answered differently learns ambiguity, not knowledge. Data quality issues compound during training, so fix them before training, not after."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "ETL Pipeline Quality Checks (Great Expectations)",
+                "familiarIcon": "🔄",
+                "newConcept": "Training Data Pipeline (filtering, dedup, quality scoring)",
+                "newIcon": "📊",
+                "bridgeText": "Great Expectations validates ETL pipeline data: 'this column should have no nulls', 'values should be within range'. Training data pipelines have equivalent quality checks: 'response length should be 50–500 tokens', 'no PII in training examples', 'language is English', 'no duplicate prompt-response pairs'. Both use the same pattern: define quality expectations → validate each record → filter failures → report statistics.",
+                "breakPoint": "ETL quality failures stop the pipeline — bad data is rejected before it reaches the database. Training data quality failures may not stop training — you might not catch them until model behaviour is wrong. Always validate your training dataset before starting a fine-tuning run, not after."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Infrastructure as Code Review (Terraform plan)",
+                "familiarIcon": "⚙️",
+                "newConcept": "Training Data as Code (version-controlled datasets)",
+                "newIcon": "📊",
+                "bridgeText": "Terraform plan shows exactly what changes will be applied to infrastructure before you apply them — reproducible, reviewable, revertible. DVC (Data Version Control) applies the same discipline to training datasets: version your data, track lineage (which filter pipeline produced this dataset version), diff datasets between runs. 'git blame for your training data' — know exactly what was in each training run when debugging model behaviour regressions.",
+                "breakPoint": "Terraform state is deterministic — same config = same infrastructure. Training data versioning is necessary but not sufficient — the same dataset produces slightly different model weights on different hardware (floating point non-determinism) or with different training order (data shuffling). Dataset versioning enables debugging, but doesn't guarantee reproducibility."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Pipeline Order",
+          "content": {
+            "question": "You're building a training data pipeline for 50,000 scraped web documents. You have these steps: (A) deduplication, (B) language filtering, (C) quality scoring, (D) PII removal, (E) format normalisation. What is the most efficient order?",
+            "options": [
+              "B → A → C → D → E",
+              "A → B → C → D → E",
+              "D → A → B → C → E",
+              "C → B → A → D → E"
+            ],
+            "reveal": "Option 1 (B → A → C → D → E) is most efficient. Rationale: (B) Language filtering first — remove non-target-language documents before processing (cheapest filter, highest rejection rate on web data). (A) Deduplication second — cheaper on the already-filtered set, removes exact/near-duplicate documents across the remaining corpus. (C) Quality scoring third — expensive model-based scoring only on non-duplicate, correct-language documents. (D) PII removal fourth — expensive regex/NER processing only on quality-passing documents. (E) Format normalisation last — clean final output format. General principle: apply cheapest filters first to reduce the dataset size for expensive operations."
+          }
         }
       ]
     },
@@ -322,6 +860,57 @@
             "title": "Enterprise Insight",
             "content": "Two deployment paths: (1) Merge LoRA → GGUF → Ollama: simple, single-user, edge deployment. (2) Keep LoRA separate → vLLM: multiple adapters sharing one base model in memory (enterprise multi-tenant). For >3 adapters, vLLM's LoRA multiplexing beats merged-model memory overhead."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "npm Ecosystem (create-react-app, Vite, Next.js)",
+                "familiarIcon": "📦",
+                "newConcept": "Fine-tuning Tooling (Axolotl, LLaMA-Factory, Unsloth)",
+                "newIcon": "🛠️",
+                "bridgeText": "create-react-app for quick starts, Vite for speed, Next.js for full-stack. Fine-tuning tools follow the same progression: Axolotl (opinionated YAML config, like Next.js — batteries included), LLaMA-Factory (visual interface, like create-react-app — best for getting started), Unsloth (speed-optimised, 2x faster training, like Vite — advanced users). Match the tool to your expertise and iteration speed requirements.",
+                "breakPoint": "npm ecosystem tools are interoperable — you can switch from CRA to Vite with a config change. Fine-tuning frameworks use different checkpoint formats and training configurations — switching mid-project requires restarting training and potentially converting checkpoints. Choose your framework before starting, not after."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Deploying with Docker Compose vs K8s",
+                "familiarIcon": "🐳",
+                "newConcept": "Deploying Fine-tuned Models (vLLM, TGI, Ollama)",
+                "newIcon": "🛠️",
+                "bridgeText": "Docker Compose for single-server simplicity, K8s for scalable production. Fine-tuned model serving follows the same choice: Ollama for single-server local serving (Docker Compose tier), Text Generation Inference (TGI) for production with batching and quantization (K8s tier), vLLM for high-throughput with PagedAttention (K8s production tier). The serving infrastructure complexity should match your scale.",
+                "breakPoint": "Docker Compose and K8s have identical deployment artifacts (Docker images). Fine-tuned model servers have very different performance characteristics — vLLM's PagedAttention provides 10–25x higher throughput than Ollama at scale, but is complex to configure. The 'right' server changes your capacity planning."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "CI/CD for Code Deployments",
+                "familiarIcon": "🔄",
+                "newConcept": "CI/CD for Model Training + Deployment",
+                "newIcon": "🛠️",
+                "bridgeText": "Code CI/CD: push → test → build → deploy. Model CI/CD: push training data → validate data quality → train model → evaluate model → register in model registry → deploy to serving infrastructure. Both use GitHub Actions or similar, both have pass/fail gates, both rollback on failure. The difference: model CI/CD jobs take hours (not minutes) and cost $5–50 per run. Gate early with data quality checks to fail fast before expensive training.",
+                "breakPoint": "Code CI fails fast (minutes) on syntax errors and tests. Model training CI can consume $50 of GPU compute and 4 hours before failing on a subtle data quality issue. Always run data validation and a 'smoke test' training run (1% of data, 1 epoch) before the full training job."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Merge vs Adapter",
+          "content": {
+            "question": "You've trained a LoRA adapter for your customer service model. At deployment time, you have two options: (A) Keep adapter separate, load at runtime. (B) Merge adapter into base model weights permanently. Your deployment needs to serve 3 different customer segment models (same base, different adapters). Which option should you choose?",
+            "options": [
+              "Option A — load different adapters at runtime without storing 3 full models",
+              "Option B — merged model is faster (no adapter overhead during inference)",
+              "Option A for development, Option B for production",
+              "Depends on whether your inference server supports dynamic adapter switching"
+            ],
+            "reveal": "Option A (keep adapters separate) is optimal for multi-adapter scenarios. Why: (1) Storage: one 14GB base + three 50MB adapters vs three 14GB merged models. (2) Memory: load one base model, swap adapters (if using adapter switching with vLLM/TGI). (3) Flexibility: add new segment-specific adapters without redeploying the base model. Option B (merge) is only better when you have a single adapter and need to use an inference server that doesn't support LoRA adapter loading (like basic Ollama). Always prefer adapter separation for multi-tenant or multi-use-case deployments."
+          }
         }
       ]
     },
@@ -356,6 +945,57 @@
             "title": "Enterprise Insight",
             "content": "Fix catastrophic forgetting by mixing 20-30% general instruction data into your fine-tuning dataset. Always track MMLU, safety scores, and perplexity on general text alongside task metrics. The goal is task improvement WITH zero regression on general benchmarks."
           }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "analogy",
+          "title": "Concepts You Already Know",
+          "content": {
+            "analogies": [
+              {
+                "background": "frontend",
+                "familiarConcept": "Jest Snapshot Testing",
+                "familiarIcon": "📸",
+                "newConcept": "Fine-tuned Model Regression Evaluation",
+                "newIcon": "🔬",
+                "bridgeText": "Snapshot tests capture component output at approval time and flag any deviation in future runs. Fine-tune evaluation creates a 'model snapshot': a fixed test set of inputs with known-correct outputs, evaluated after every training checkpoint. If the fine-tuned model diverges from expected outputs on your test set, the training run has a problem — same as a failed snapshot test. Both require the same discipline: maintain the test suite, don't blindly update snapshots.",
+                "breakPoint": "Jest snapshots are deterministic — same input always produces identical output. LLM evaluation metrics are probabilistic — the same model may give slightly different outputs on different runs (temperature > 0). Use multiple evaluation runs and report mean ± std, not a single number."
+              },
+              {
+                "background": "backend",
+                "familiarConcept": "Database Query Explain Plan (detecting regressions after schema change)",
+                "familiarIcon": "🗄️",
+                "newConcept": "Training Loss Curves + Validation Loss (detecting overfitting)",
+                "newIcon": "🔬",
+                "bridgeText": "After a schema change, EXPLAIN ANALYZE can reveal performance regressions: a query that was using an index is now doing a full table scan. Training loss curves reveal training regressions: if validation loss stops decreasing while training loss continues dropping, the model is overfitting (memorising training data, not learning generalisable patterns). Both are 'execution plan analysis' — checking whether the system is behaving as expected at a structural level.",
+                "breakPoint": "Query plans are deterministic and explainable — you can trace exactly why the planner chose a full scan. Overfitting diagnosis is probabilistic and requires heuristics: 'validation loss increased for 3 consecutive checkpoints' is the standard stopping criterion. There's no equivalent of 'force a specific index' for model training."
+              },
+              {
+                "background": "devops",
+                "familiarConcept": "Prometheus Metrics + Grafana Dashboards for Service Health",
+                "familiarIcon": "📊",
+                "newConcept": "MLflow / W&B Training Experiment Tracking",
+                "newIcon": "🔬",
+                "bridgeText": "Prometheus/Grafana give you real-time visibility into service health: latency, error rate, resource usage. MLflow and W&B give you the same for model training: training loss, validation loss, learning rate, GPU utilisation, gradient norms. You can even set alerts: 'notify me if validation loss doesn't improve for 5 epochs'. The tooling philosophy is identical — observable, dashboarded, alertable training runs.",
+                "breakPoint": "Prometheus metrics are sampled continuously at low cost. W&B/MLflow experiment logging stores every gradient, parameter snapshot, and output sample — this can consume significant storage and slow down training. Use selective logging: log training metrics every step, but validation metrics and sample outputs only every N steps."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 4,
+          "section_type": "prediction",
+          "title": "Predict: Overfitting Diagnosis",
+          "content": {
+            "question": "After 3 epochs of SFT fine-tuning on 2,000 examples, your training loss = 0.45 and validation loss = 1.23. After epoch 4: training loss = 0.31, validation loss = 1.41. What is happening and what should you do?",
+            "options": [
+              "Normal training — validation loss fluctuates, continue training",
+              "Classic overfitting — stop training and use the epoch 3 checkpoint",
+              "Underfitting — the model needs more training capacity (increase LoRA rank)",
+              "Learning rate too high — the loss jump is a gradient explosion"
+            ],
+            "reveal": "Option 2 (overfitting — use epoch 3 checkpoint) is correct. The divergence between training loss (still decreasing: 0.45 → 0.31) and validation loss (increasing: 1.23 → 1.41) is the definition of overfitting. At epoch 3, the model had generalised well; by epoch 4, it began memorising the training data. Standard response: restore epoch 3 checkpoint, consider early stopping at epoch 3 in future runs. Prevention: increase dropout, add weight decay, reduce LoRA rank, or increase training data diversity."
+          }
         }
       ]
     },
@@ -380,6 +1020,39 @@
           "title": "Overview: Interview Gauntlet",
           "content": {
             "markdown": "20 questions covering every dimension of production fine-tuning. These are real questions asked by AI teams at top companies. Score 16/20 (80%) to pass."
+          }
+        },
+        {
+          "sort_order": 2,
+          "section_type": "analogy",
+          "title": "Chapter 4 Core Decision Framework",
+          "content": {
+            "analogies": [
+              {
+                "background": "general",
+                "familiarConcept": "Custom vs Off-the-shelf Software Decision",
+                "familiarIcon": "🔧",
+                "newConcept": "Fine-tuning vs Prompt Engineering vs RAG",
+                "newIcon": "⚖️",
+                "bridgeText": "Custom software when: off-the-shelf doesn't fit your requirements, you have high volume, regulatory constraints. Buy/SaaS when: standard functionality, cost of custom > cost of compromise. Same logic: fine-tune when prompt engineering consistently fails on 10%+ of cases, when format requirements are too complex for prompts, or when latency from long system prompts is unacceptable. Use RAG when knowledge updates faster than retraining cadence. Use prompts when requirements are simple and the model already knows the domain.",
+                "breakPoint": "Software build/buy decisions are based on stable requirements. LLM approach decisions should be re-evaluated quarterly — model capabilities improve rapidly, making last year's 'must fine-tune' use case solvable with prompts today. Build in flexibility to switch approaches as the model ecosystem evolves."
+              }
+            ]
+          }
+        },
+        {
+          "sort_order": 3,
+          "section_type": "prediction",
+          "title": "Predict: The Senior Engineer Question",
+          "content": {
+            "question": "An interviewer asks: 'Your fine-tuned model scores 97% on your internal eval set but only 82% in production. What's most likely wrong, and how would you diagnose it?' Walk through your answer.",
+            "options": [
+              "Data leakage — training and eval data overlap",
+              "Distribution mismatch — production queries differ from eval queries",
+              "Both A and B — check for leakage first, then distribution mismatch",
+              "Model is too small — need to fine-tune a larger model"
+            ],
+            "reveal": "Option 3 is the complete answer. Step 1: check for data leakage — does your eval set contain examples similar or identical to training data? A 97% eval score with data leakage is meaningless. Step 2: check distribution mismatch — sample 100 production queries and compare to your eval set. Production queries likely have different length distribution, topic coverage, or phrasing that your eval set doesn't represent. Step 3: collect production examples that fail and add them to your eval set. The 97% vs 82% gap is almost always one of these two issues."
           }
         }
       ]
