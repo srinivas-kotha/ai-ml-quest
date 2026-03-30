@@ -1894,7 +1894,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "Bi-Encoder vs Cross-Encoder: The Speed-Accuracy Tradeoff",
           "content": {
@@ -1902,7 +1902,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 1,
           "section_type": "diagram",
           "title": "Retrieve → Re-rank → Generate Pipeline",
           "content": {
@@ -1949,7 +1949,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 6,
           "section_type": "code",
           "title": "Cohere Re-ranking with Conditional Skip",
           "content": {
@@ -1969,7 +1969,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 8,
           "section_type": "callout",
           "title": "Performance Insight",
           "content": {
@@ -2111,7 +2111,7 @@
           }
         },
         {
-          "sort_order": 6,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "Concepts You Already Know",
           "content": {
@@ -2174,7 +2174,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: Lost in the Middle",
           "content": {
@@ -2189,7 +2189,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 7,
           "section_type": "prediction",
           "title": "Predict: Reranker Latency Budget",
           "content": {
@@ -2234,7 +2234,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "RAGAS: The 4 Metrics That Matter",
           "content": {
@@ -2242,7 +2242,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 6,
           "section_type": "code",
           "title": "Correct RAG Quality Gate",
           "content": {
@@ -2262,7 +2262,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 9,
           "section_type": "steps",
           "title": "Building a Golden Dataset",
           "content": {
