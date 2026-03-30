@@ -16,27 +16,54 @@ interface AnalogyPanelProps {
   accentColor?: string;
 }
 
+const TAB_LABELS: Record<string, string> = {
+  frontend: "Frontend",
+  backend: "Backend",
+  devops: "DevOps",
+  general: "General",
+};
+
+function formatTabLabel(bg: string): string {
+  return TAB_LABELS[bg] ?? bg.charAt(0).toUpperCase() + bg.slice(1);
+}
+
 export default function AnalogyPanel({
   analogies,
   accentColor = "var(--color-accent-gold)",
 }: AnalogyPanelProps) {
-  const backgrounds = [...new Set(analogies.map((a) => a.background))];
-  const nonGeneralBackgrounds = backgrounds.filter((b) => b !== "general");
-  const [selectedBg, setSelectedBg] = useState(
-    nonGeneralBackgrounds[0] || "general",
-  );
+  // Extract all unique backgrounds, preserving insertion order
+  const allBackgrounds = [...new Set(analogies.map((a) => a.background))];
+  const hasGeneral = allBackgrounds.includes("general");
+
+  // Non-general tabs first, then General if it exists
+  const tabs = [
+    ...allBackgrounds.filter((b) => b !== "general"),
+    ...(hasGeneral ? ["general"] : []),
+  ];
+
+  const [selectedBg, setSelectedBg] = useState(tabs[0] ?? "general");
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const filtered = analogies.filter(
-    (a) => a.background === selectedBg || a.background === "general",
-  );
-  const analogy = filtered[currentIndex] || filtered[0];
+  // Each tab shows ONLY exact-match analogies (no bleed-in of "general")
+  const filtered = analogies.filter((a) => a.background === selectedBg);
+  const analogy = filtered[currentIndex] ?? filtered[0];
 
   if (!analogy) return null;
 
   const handleBgChange = (bg: string) => {
     setSelectedBg(bg);
     setCurrentIndex(0);
+  };
+
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === filtered.length - 1;
+
+  const handlePrev = () => {
+    if (!isFirst) setCurrentIndex((prev) => prev - 1);
+  };
+
+  const handleNext = () => {
+    if (!isLast) setCurrentIndex((prev) => prev + 1);
   };
 
   return (
@@ -62,7 +89,7 @@ export default function AnalogyPanel({
           💡 YOU ALREADY KNOW THIS
         </span>
         <div className="ml-auto flex gap-1 flex-wrap">
-          {nonGeneralBackgrounds.map((bg) => (
+          {tabs.map((bg) => (
             <button
               key={bg}
               onClick={() => handleBgChange(bg)}
@@ -79,7 +106,7 @@ export default function AnalogyPanel({
                 border: `1px solid ${selectedBg === bg ? "var(--color-accent-gold)" : "var(--color-border)"}`,
               }}
             >
-              {bg.charAt(0).toUpperCase() + bg.slice(1)}
+              {formatTabLabel(bg)}
             </button>
           ))}
         </div>
@@ -153,53 +180,56 @@ export default function AnalogyPanel({
           </p>
         </details>
 
-        {/* Pagination dots for multiple analogies */}
-        {filtered.length > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-2">
+        {/* Pagination — always visible when there is at least 1 item */}
+        {filtered.length >= 1 && (
+          <div className="flex items-center justify-center gap-3 mt-4">
             <button
-              onClick={() =>
-                setCurrentIndex((prev) =>
-                  prev > 0 ? prev - 1 : filtered.length - 1,
-                )
-              }
-              className="text-xs px-2 py-1 rounded transition-[background-color,color] duration-150"
-              style={{
-                color: "var(--color-text-muted)",
-                backgroundColor: "var(--color-bg-card)",
-                border: "1px solid var(--color-border)",
-              }}
+              onClick={handlePrev}
+              disabled={isFirst}
+              aria-disabled={isFirst}
               aria-label="Previous analogy"
+              style={{
+                opacity: isFirst ? 0.3 : 1,
+                color: accentColor,
+                minWidth: "44px",
+                minHeight: "44px",
+                background: "none",
+                border: "none",
+                cursor: isFirst ? "default" : "pointer",
+                fontSize: "1.25rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "opacity 150ms",
+              }}
             >
               ←
             </button>
-            {filtered.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentIndex(idx)}
-                className="w-2 h-2 rounded-full transition-[background-color] duration-150"
-                style={{
-                  backgroundColor:
-                    currentIndex === idx
-                      ? accentColor
-                      : "var(--color-text-muted)",
-                  opacity: currentIndex === idx ? 1 : 0.4,
-                }}
-                aria-label={`Analogy ${idx + 1}`}
-              />
-            ))}
+            <span
+              className="text-sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              {currentIndex + 1} of {filtered.length}
+            </span>
             <button
-              onClick={() =>
-                setCurrentIndex((prev) =>
-                  prev < filtered.length - 1 ? prev + 1 : 0,
-                )
-              }
-              className="text-xs px-2 py-1 rounded transition-[background-color,color] duration-150"
-              style={{
-                color: "var(--color-text-muted)",
-                backgroundColor: "var(--color-bg-card)",
-                border: "1px solid var(--color-border)",
-              }}
+              onClick={handleNext}
+              disabled={isLast}
+              aria-disabled={isLast}
               aria-label="Next analogy"
+              style={{
+                opacity: isLast ? 0.3 : 1,
+                color: accentColor,
+                minWidth: "44px",
+                minHeight: "44px",
+                background: "none",
+                border: "none",
+                cursor: isLast ? "default" : "pointer",
+                fontSize: "1.25rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "opacity 150ms",
+              }}
             >
               →
             </button>

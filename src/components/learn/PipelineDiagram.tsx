@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { DiagramContent } from "@/types/content";
+import Button from "@/components/ui/Button";
+import { GlossaryTooltip } from "./GlossaryTooltip";
 
 // Node dimensions
 const NODE_W = 160;
@@ -58,6 +60,78 @@ function DiagramIcon({ name, size = 16 }: { name: string; size?: number }) {
   );
 }
 
+// Renders a node description with key RAG terms wrapped in GlossaryTooltip.
+// Only a fixed set of terms are wrapped to avoid false matches in arbitrary text.
+const GLOSSARY_TERMS_IN_DESCRIPTIONS: Array<{ match: RegExp; term: string }> = [
+  { match: /\bembedding(?:\s+model)?\b/gi, term: "embedding" },
+  { match: /\bvector(?:s)?\b/gi, term: "vector" },
+  { match: /\bchunk(?:s|ing)?\b/gi, term: "chunk" },
+  { match: /\btop-K\b/gi, term: "top-K" },
+  { match: /\bBM25\b/g, term: "BM25" },
+  { match: /\bcontext window\b/gi, term: "context window" },
+  { match: /\bcosine similarity\b/gi, term: "cosine similarity" },
+];
+
+function NodeDescription({ description }: { description: string }) {
+  // Walk through the description and wrap matching terms with GlossaryTooltip.
+  // Each term is only wrapped on its first occurrence to keep the UI clean.
+  const wrapped = wrapTerms(description, GLOSSARY_TERMS_IN_DESCRIPTIONS);
+  return <>{wrapped}</>;
+}
+
+function wrapTerms(
+  text: string,
+  terms: Array<{ match: RegExp; term: string }>,
+): React.ReactNode[] {
+  // Build a list of replacement regions sorted by start index
+  type Region = { start: number; end: number; term: string; matched: string };
+  const regions: Region[] = [];
+  const usedTerms = new Set<string>();
+
+  for (const { match, term } of terms) {
+    if (usedTerms.has(term)) continue;
+    // Reset regex lastIndex for global patterns
+    match.lastIndex = 0;
+    const m = match.exec(text);
+    if (m) {
+      regions.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        term,
+        matched: m[0],
+      });
+      usedTerms.add(term);
+    }
+  }
+
+  // Sort by start position and remove overlaps
+  regions.sort((a, b) => a.start - b.start);
+  const noOverlap: Region[] = [];
+  let cursor = 0;
+  for (const r of regions) {
+    if (r.start >= cursor) {
+      noOverlap.push(r);
+      cursor = r.end;
+    }
+  }
+
+  if (noOverlap.length === 0) return [text];
+
+  const nodes: React.ReactNode[] = [];
+  let pos = 0;
+  for (const r of noOverlap) {
+    if (r.start > pos) nodes.push(text.slice(pos, r.start));
+    nodes.push(
+      <GlossaryTooltip key={`${r.term}-${r.start}`} term={r.term}>
+        {r.matched}
+      </GlossaryTooltip>,
+    );
+    pos = r.end;
+  }
+  if (pos < text.length) nodes.push(text.slice(pos));
+  return nodes;
+}
+
 // Compute topological order of node IDs
 function topoSort(nodeIds: string[], edges: Array<[string, string]>): string[] {
   const inDegree: Record<string, number> = {};
@@ -100,6 +174,7 @@ export default function PipelineDiagram({
 }: PipelineDiagramProps) {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [step, setStep] = useState<number>(-1); // -1 = not started
+  const [completed, setCompleted] = useState(false);
   const [tooltipNode, setTooltipNode] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -147,31 +222,36 @@ export default function PipelineDiagram({
     if (!stepThrough) setActiveNode((prev) => (prev === id ? null : id));
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setStep((prev) => {
       const next = prev + 1;
       if (next >= orderedIds.length) return prev;
       setTooltipNode(orderedIds[next]);
       return next;
     });
-  };
+  }, [orderedIds]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setStep((prev) => {
       if (prev <= 0) return prev;
       const next = prev - 1;
       setTooltipNode(orderedIds[next]);
       return next;
     });
-  };
+  }, [orderedIds]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setStep(-1);
+    setCompleted(false);
     setTooltipNode(null);
     setActiveNode(null);
-  };
+  }, []);
 
-  // Keyboard navigation for step-through
+  const handleDone = useCallback(() => {
+    setCompleted(true);
+  }, []);
+
+  // Fix R8: correct dependency array so listener is not re-added every render
   useEffect(() => {
     if (!stepThrough) return;
     const handler = (e: KeyboardEvent) => {
@@ -190,7 +270,7 @@ export default function PipelineDiagram({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  });
+  }, [stepThrough, step, orderedIds, handleNext, handlePrev, handleReset]);
 
   const tooltipNodeData = tooltipNode ? nodeMap.get(tooltipNode) : null;
 
@@ -208,6 +288,8 @@ export default function PipelineDiagram({
   }
 
   const accentRgb = hexToRgb(accentColor);
+
+  const isOnLastStep = step === orderedIds.length - 1;
 
   return (
     <div
@@ -230,280 +312,318 @@ export default function PipelineDiagram({
         </span>
         {stepThrough && (
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {step < 0
-              ? "Press Next to start"
-              : `Step ${step + 1} of ${orderedIds.length}`}
+            {completed
+              ? "Pipeline complete!"
+              : step < 0
+                ? "Press Start to begin"
+                : `Step ${step + 1} of ${orderedIds.length}`}
           </span>
         )}
       </div>
 
-      {/* SVG canvas */}
-      <div
-        className="w-full overflow-x-auto"
-        style={{ backgroundColor: "var(--code-bg)" }}
-      >
-        <svg
-          ref={svgRef}
-          width={svgWidth}
-          height={svgHeight}
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          style={{ minWidth: svgWidth, display: "block" }}
-          role="img"
-          aria-label="Pipeline diagram"
+      {/* Completion panel — shown when Done is clicked */}
+      {completed ? (
+        <div
+          className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center"
+          style={{ backgroundColor: "var(--code-bg)" }}
         >
-          {/* Arrow marker definition */}
-          <defs>
-            <marker
-              id="arrow"
-              markerWidth="8"
-              markerHeight="8"
-              refX="6"
-              refY="3"
-              orient="auto"
+          <div className="text-4xl" role="img" aria-label="Pipeline complete">
+            ✅
+          </div>
+          <p
+            className="text-base font-semibold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Pipeline complete!
+          </p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            You've walked through every step of the pipeline.
+          </p>
+          <Button variant="secondary" size="xs" onClick={handleReset}>
+            Reset
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* SVG canvas */}
+          <div
+            className="w-full overflow-x-auto"
+            style={{ backgroundColor: "var(--code-bg)" }}
+          >
+            <svg
+              ref={svgRef}
+              width={svgWidth}
+              height={svgHeight}
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              style={{ minWidth: svgWidth, display: "block" }}
+              role="img"
+              aria-label="Pipeline diagram"
             >
-              <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-text-muted)" />
-            </marker>
-            <marker
-              id="arrow-active"
-              markerWidth="8"
-              markerHeight="8"
-              refX="6"
-              refY="3"
-              orient="auto"
-            >
-              <path d="M0,0 L8,3 L0,6 Z" fill={accentColor} />
-            </marker>
-          </defs>
-
-          {/* Edges */}
-          {edges.map(([from, to]) => {
-            const active = isEdgeActive(from, to);
-            const isCurrent = isEdgeCurrent(from, to);
-            const d = edgePath(from, to);
-            return (
-              <path
-                key={`${from}-${to}`}
-                d={d}
-                fill="none"
-                stroke={
-                  isCurrent
-                    ? accentColor
-                    : active
-                      ? accentColor
-                      : "var(--color-text-muted)"
-                }
-                strokeWidth={isCurrent ? 2 : 1.5}
-                strokeDasharray={active ? "8 12" : undefined}
-                strokeOpacity={active ? 1 : 0.6}
-                markerEnd={isCurrent ? "url(#arrow-active)" : "url(#arrow)"}
-                className={active ? "edge-path" : undefined}
-                style={
-                  active
-                    ? { animation: "flowPulse 1s linear infinite" }
-                    : undefined
-                }
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {nodes.map((node) => {
-            const pos = nodePositions[node.id];
-            if (!pos) return null;
-            const isActive = activeNode === node.id || currentId === node.id;
-            const isVisited = visitedIds.has(node.id);
-            const isDimmed = stepThrough && step >= 0 && !isVisited;
-            const isTooltipOpen = tooltipNode === node.id;
-
-            return (
-              <g
-                key={node.id}
-                onClick={() => handleNodeClick(node.id)}
-                style={{ cursor: "pointer" }}
-                role="button"
-                tabIndex={0}
-                aria-label={`${node.label}: ${node.description}`}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ")
-                    handleNodeClick(node.id);
-                }}
-              >
-                {/* Node glow effect */}
-                {isActive && (
-                  <rect
-                    x={pos.x - 4}
-                    y={pos.y - 4}
-                    width={NODE_W + 8}
-                    height={NODE_H + 8}
-                    rx="14"
-                    fill="none"
-                    stroke={accentColor}
-                    strokeWidth="1.5"
-                    strokeOpacity="0.4"
-                    filter={`drop-shadow(0 0 10px ${accentColor})`}
-                  />
-                )}
-
-                {/* Node rectangle */}
-                <rect
-                  x={pos.x}
-                  y={pos.y}
-                  width={NODE_W}
-                  height={NODE_H}
-                  rx="10"
-                  fill={
-                    isActive
-                      ? `rgba(${accentRgb}, 0.18)`
-                      : isVisited && stepThrough
-                        ? `rgba(${accentRgb}, 0.08)`
-                        : "var(--color-bg-surface)"
-                  }
-                  stroke={
-                    isActive
-                      ? accentColor
-                      : isTooltipOpen
-                        ? accentColor
-                        : "var(--color-border)"
-                  }
-                  strokeWidth={isActive ? 1.5 : 1}
-                  opacity={isDimmed ? 0.35 : 1}
-                  style={{ transition: "all 200ms" }}
-                />
-
-                {/* Icon + Label */}
-                <foreignObject
-                  x={pos.x}
-                  y={pos.y}
-                  width={NODE_W}
-                  height={NODE_H}
-                  style={{
-                    opacity: isDimmed ? 0.35 : 1,
-                    transition: "opacity 200ms",
-                  }}
+              {/* Arrow marker definition */}
+              <defs>
+                <marker
+                  id="arrow"
+                  markerWidth="8"
+                  markerHeight="8"
+                  refX="6"
+                  refY="3"
+                  orient="auto"
                 >
-                  <div
-                    style={{
-                      width: NODE_W,
-                      height: NODE_H,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
+                  <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-text-muted)" />
+                </marker>
+                <marker
+                  id="arrow-active"
+                  markerWidth="8"
+                  markerHeight="8"
+                  refX="6"
+                  refY="3"
+                  orient="auto"
+                >
+                  <path d="M0,0 L8,3 L0,6 Z" fill={accentColor} />
+                </marker>
+              </defs>
+
+              {/* Edges */}
+              {edges.map(([from, to]) => {
+                const active = isEdgeActive(from, to);
+                const isCurrent = isEdgeCurrent(from, to);
+                const d = edgePath(from, to);
+                return (
+                  <path
+                    key={`${from}-${to}`}
+                    d={d}
+                    fill="none"
+                    stroke={
+                      isCurrent
+                        ? accentColor
+                        : active
+                          ? accentColor
+                          : "var(--color-text-muted)"
+                    }
+                    strokeWidth={isCurrent ? 2 : 1.5}
+                    strokeDasharray={active ? "8 12" : undefined}
+                    strokeOpacity={active ? 1 : 0.6}
+                    markerEnd={isCurrent ? "url(#arrow-active)" : "url(#arrow)"}
+                    className={active ? "edge-path" : undefined}
+                    style={
+                      active
+                        ? { animation: "flowPulse 1s linear infinite" }
+                        : undefined
+                    }
+                  />
+                );
+              })}
+
+              {/* Nodes */}
+              {nodes.map((node) => {
+                const pos = nodePositions[node.id];
+                if (!pos) return null;
+                const isActive =
+                  activeNode === node.id || currentId === node.id;
+                const isVisited = visitedIds.has(node.id);
+                const isDimmed = stepThrough && step >= 0 && !isVisited;
+                const isTooltipOpen = tooltipNode === node.id;
+
+                return (
+                  <g
+                    key={node.id}
+                    onClick={() => handleNodeClick(node.id)}
+                    style={{ cursor: "pointer" }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${node.label}: ${node.description}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        handleNodeClick(node.id);
                     }}
                   >
-                    <span
-                      style={{
-                        color: isActive ? accentColor : "var(--text-muted)",
-                      }}
-                    >
-                      <DiagramIcon name={node.icon} size={14} />
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: isActive
-                          ? "var(--text-primary)"
-                          : "var(--text-secondary)",
-                        textAlign: "center",
-                        padding: "0 8px",
-                        lineHeight: 1.3,
-                        transition: "color 200ms",
-                      }}
-                    >
-                      {node.label}
-                    </span>
-                  </div>
-                </foreignObject>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+                    {/* Node glow effect */}
+                    {isActive && (
+                      <rect
+                        x={pos.x - 4}
+                        y={pos.y - 4}
+                        width={NODE_W + 8}
+                        height={NODE_H + 8}
+                        rx="14"
+                        fill="none"
+                        stroke={accentColor}
+                        strokeWidth="1.5"
+                        strokeOpacity="0.4"
+                        filter={`drop-shadow(0 0 10px ${accentColor})`}
+                      />
+                    )}
 
-      {/* Tooltip / description panel */}
-      {tooltipNodeData && (
-        <div
-          className="px-4 py-3 text-sm"
-          style={{
-            backgroundColor: `rgba(${accentRgb}, 0.07)`,
-            borderTop: `1px solid rgba(${accentRgb}, 0.18)`,
-            color: "var(--text-secondary)",
-          }}
-        >
-          <div className="flex items-start gap-2">
-            <span style={{ color: accentColor, marginTop: 2 }}>
-              <DiagramIcon name={tooltipNodeData.icon} size={14} />
-            </span>
-            <div>
-              <p
-                className="font-medium text-sm mb-0.5"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {tooltipNodeData.label}
-              </p>
-              <p style={{ color: "var(--text-secondary)" }}>
-                {tooltipNodeData.description}
-              </p>
-            </div>
+                    {/* Node rectangle */}
+                    <rect
+                      x={pos.x}
+                      y={pos.y}
+                      width={NODE_W}
+                      height={NODE_H}
+                      rx="10"
+                      fill={
+                        isActive
+                          ? `rgba(${accentRgb}, 0.18)`
+                          : isVisited && stepThrough
+                            ? `rgba(${accentRgb}, 0.08)`
+                            : "var(--color-bg-surface)"
+                      }
+                      stroke={
+                        isActive
+                          ? accentColor
+                          : isTooltipOpen
+                            ? accentColor
+                            : "var(--color-border)"
+                      }
+                      strokeWidth={isActive ? 1.5 : 1}
+                      opacity={isDimmed ? 0.35 : 1}
+                      style={{
+                        transition:
+                          "var(--motion-safe, fill 200ms, stroke 200ms, opacity 200ms)",
+                      }}
+                    />
+
+                    {/* Icon + Label */}
+                    <foreignObject
+                      x={pos.x}
+                      y={pos.y}
+                      width={NODE_W}
+                      height={NODE_H}
+                      style={{
+                        opacity: isDimmed ? 0.35 : 1,
+                        transition: "var(--motion-safe, opacity 200ms)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: NODE_W,
+                          height: NODE_H,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: isActive ? accentColor : "var(--text-muted)",
+                          }}
+                        >
+                          <DiagramIcon name={node.icon} size={14} />
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: isActive
+                              ? "var(--text-primary)"
+                              : "var(--text-secondary)",
+                            textAlign: "center",
+                            padding: "0 8px",
+                            lineHeight: 1.3,
+                            transition: "var(--motion-safe, color 200ms)",
+                          }}
+                        >
+                          {node.label}
+                        </span>
+                      </div>
+                    </foreignObject>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
-        </div>
-      )}
 
-      {/* Step-through controls */}
-      {stepThrough && (
-        <div
-          className="flex items-center justify-between px-4 py-2.5"
-          style={{
-            borderTop: "1px solid var(--color-border)",
-            backgroundColor: "var(--color-bg-surface)",
-          }}
-        >
-          <button
-            onClick={handleReset}
-            className="text-xs px-2.5 py-1 rounded cursor-pointer"
-            style={{
-              color: "var(--text-muted)",
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            Reset
-          </button>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePrev}
-              disabled={step <= 0}
-              className="text-xs px-2.5 py-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          {/* Tooltip / description panel */}
+          {tooltipNodeData && (
+            <div
+              className="px-4 py-3 text-sm"
               style={{
-                backgroundColor: "var(--color-bg-card)",
+                backgroundColor: `rgba(${accentRgb}, 0.07)`,
+                borderTop: `1px solid rgba(${accentRgb}, 0.18)`,
                 color: "var(--text-secondary)",
-                border: "1px solid var(--color-border)",
               }}
-              aria-label="Previous step"
             >
-              ← Prev
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={step >= orderedIds.length - 1}
-              className="text-xs px-2.5 py-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              <div className="flex items-start gap-2">
+                <span style={{ color: accentColor, marginTop: 2 }}>
+                  <DiagramIcon name={tooltipNodeData.icon} size={14} />
+                </span>
+                <div>
+                  <p
+                    className="font-medium text-sm mb-0.5"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {tooltipNodeData.label}
+                  </p>
+                  <p style={{ color: "var(--text-secondary)" }}>
+                    <NodeDescription
+                      description={tooltipNodeData.description}
+                    />
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step-through controls */}
+          {stepThrough && (
+            <div
+              className="flex items-center justify-between px-4 py-2.5"
               style={{
-                backgroundColor:
-                  step < 0 ? accentColor : "var(--color-bg-card)",
-                color: step < 0 ? "#fff" : "var(--text-secondary)",
-                border: `1px solid ${step < 0 ? accentColor : "var(--color-border)"}`,
+                borderTop: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-bg-surface)",
               }}
-              aria-label="Next step"
             >
-              {step < 0
-                ? "Start →"
-                : step >= orderedIds.length - 1
-                  ? "Done ✓"
-                  : "Next →"}
-            </button>
-          </div>
-        </div>
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleReset}
+                aria-label="Reset pipeline"
+              >
+                Reset
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={handlePrev}
+                  disabled={step <= 0}
+                  aria-label="Previous step"
+                >
+                  ← Prev
+                </Button>
+                {step < 0 ? (
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    onClick={handleNext}
+                    aria-label="Start pipeline walkthrough"
+                  >
+                    Start →
+                  </Button>
+                ) : isOnLastStep ? (
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    onClick={handleDone}
+                    aria-label="Done — mark pipeline as complete"
+                  >
+                    Done ✓
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    onClick={handleNext}
+                    aria-label="Next step in pipeline"
+                  >
+                    Next →
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

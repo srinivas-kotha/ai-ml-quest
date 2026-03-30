@@ -299,6 +299,18 @@ export default function StepOutline({
           >
             In this level
           </p>
+          <p
+            data-testid="step-of-total"
+            style={{
+              fontSize: "12px",
+              fontFamily: "var(--font-sans)",
+              fontWeight: 600,
+              marginTop: "4px",
+              color: accentColor,
+            }}
+          >
+            Step {Math.min(currentStep + 1, totalCount)} of {totalCount}
+          </p>
         </div>
 
         {/* Step list */}

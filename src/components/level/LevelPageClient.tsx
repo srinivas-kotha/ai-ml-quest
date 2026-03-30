@@ -5,6 +5,7 @@ import type { LearnSection, GameType, GameConfig } from "@/types/content";
 import StepOutline from "@/components/level/StepOutline";
 import CardFlow from "@/components/level/CardFlow";
 import GamePanel from "@/components/games/GamePanel";
+import LevelHeader from "@/components/level/LevelHeader";
 
 // ── Helper: default title per section type ────────────────────────────────────
 function getSectionDefaultTitle(type: string): string {
@@ -32,13 +33,20 @@ export interface LevelPageClientProps {
   gameConfig: GameConfig;
   levelTitle: string;
   levelId: number;
+  levelNum: number;
   chapterId: number;
   chapterSlug: string;
+  chapterTitle: string;
   xpReward: number;
   keyInsight: string | null;
   nextLevelUrl: string | null;
   backUrl: string;
   isAuthenticated: boolean;
+  // Header fields
+  levelSubtitle?: string | null;
+  hookQuote?: string | null;
+  totalLevels: number;
+  estimatedMinutes?: number | null;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -49,13 +57,19 @@ export default function LevelPageClient({
   gameConfig,
   levelTitle,
   levelId,
+  levelNum,
   chapterId,
   chapterSlug,
+  chapterTitle,
   xpReward,
   keyInsight,
   nextLevelUrl,
   backUrl,
   isAuthenticated,
+  levelSubtitle,
+  hookQuote,
+  totalLevels,
+  estimatedMinutes,
 }: LevelPageClientProps) {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -70,43 +84,57 @@ export default function LevelPageClient({
   }));
 
   return (
-    <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-      {/* Desktop sidebar — hidden on mobile via StepOutline's internal media query */}
-      <StepOutline
-        sections={stepItems}
-        currentStep={currentStep}
-        onStepClick={setCurrentStep}
-        gameTitle={levelTitle}
+    <>
+      <LevelHeader
+        levelNum={levelNum}
+        title={levelTitle}
+        subtitle={levelSubtitle}
+        hookQuote={hookQuote}
         accentColor={accentColor}
+        currentStep={currentStep}
+        totalLevels={totalLevels}
+        chapterTitle={chapterTitle}
+        xpReward={xpReward}
+        estimatedMinutes={estimatedMinutes}
       />
-
-      {/* Main content area */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <CardFlow
-          learnSections={learnSections}
-          accentColor={accentColor}
-          gameType={gameType}
-          gameTitle={levelTitle}
+      <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+        {/* Desktop sidebar — hidden on mobile via StepOutline's internal media query */}
+        <StepOutline
+          sections={stepItems}
           currentStep={currentStep}
-          onStepChange={setCurrentStep}
-          totalSteps={totalSteps}
-        >
-          <GamePanel
-            gameType={gameType}
-            gameConfig={gameConfig}
+          onStepClick={setCurrentStep}
+          gameTitle={levelTitle}
+          accentColor={accentColor}
+        />
+
+        {/* Main content area */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CardFlow
+            learnSections={learnSections}
             accentColor={accentColor}
-            levelTitle={levelTitle}
-            levelId={levelId}
-            chapterId={chapterId}
-            chapterSlug={chapterSlug}
-            xpReward={xpReward}
-            keyInsight={keyInsight}
-            nextLevelUrl={nextLevelUrl}
-            backUrl={backUrl}
-            isAuthenticated={isAuthenticated}
-          />
-        </CardFlow>
+            gameType={gameType}
+            gameTitle={levelTitle}
+            currentStep={currentStep}
+            onStepChange={setCurrentStep}
+            totalSteps={totalSteps}
+          >
+            <GamePanel
+              gameType={gameType}
+              gameConfig={gameConfig}
+              accentColor={accentColor}
+              levelTitle={levelTitle}
+              levelId={levelId}
+              chapterId={chapterId}
+              chapterSlug={chapterSlug}
+              xpReward={xpReward}
+              keyInsight={keyInsight}
+              nextLevelUrl={nextLevelUrl}
+              backUrl={backUrl}
+              isAuthenticated={isAuthenticated}
+            />
+          </CardFlow>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -16,6 +16,15 @@ export default function PredictionPrompt({
 }: PredictionPromptProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const handleTryAgain = () => {
+    setSelected(null);
+    setRevealed(false);
+    setCollapsed(false);
+  };
+
+  const answerVisible = revealed && !collapsed;
 
   return (
     <div
@@ -49,20 +58,24 @@ export default function PredictionPrompt({
           {question}
         </p>
 
-        {options && !revealed && (
+        {/* Options: interactive before reveal, non-interactive (highlighted) when collapsed */}
+        {options && (!revealed || collapsed) && (
           <div className="space-y-2 mb-4">
             {options.map((opt, i) => (
               <button
                 key={i}
-                onClick={() => setSelected(i)}
-                className="w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors duration-150"
+                onClick={() => (!collapsed ? setSelected(i) : undefined)}
+                disabled={collapsed}
+                className="w-full text-left px-4 py-2.5 rounded-lg text-sm transition-[background-color,border-color] duration-150"
                 style={{
+                  minHeight: "44px",
                   backgroundColor:
                     selected === i
                       ? `color-mix(in srgb, ${accentColor} 12%, var(--color-bg-surface))`
                       : "var(--color-bg-surface)",
                   border: `1px solid ${selected === i ? accentColor : "var(--color-border)"}`,
                   color: "var(--color-text-primary)",
+                  cursor: collapsed ? "default" : "pointer",
                 }}
               >
                 {opt}
@@ -71,18 +84,26 @@ export default function PredictionPrompt({
           </div>
         )}
 
-        {!revealed ? (
+        {/* State: not yet revealed */}
+        {!revealed && (
           <button
             onClick={() => setRevealed(true)}
             disabled={options ? selected === null : false}
             className="btn-3d text-sm"
-            style={{ opacity: options && selected === null ? 0.5 : 1 }}
+            style={{
+              minHeight: "44px",
+              opacity: options && selected === null ? 0.5 : 1,
+            }}
           >
             Reveal Answer →
           </button>
-        ) : (
+        )}
+
+        {/* State: revealed + expanded — show answer panel */}
+        {revealed && !collapsed && (
           <div
-            className="rounded-lg p-4 animate-fade-up"
+            aria-expanded={true}
+            className="rounded-lg p-4 motion-safe:animate-fade-up"
             style={{
               backgroundColor: `color-mix(in srgb, ${accentColor} 6%, var(--color-bg-card))`,
               border: `1px solid ${accentColor}`,
@@ -90,11 +111,75 @@ export default function PredictionPrompt({
             }}
           >
             <p
-              className="text-sm leading-relaxed"
+              className="text-sm leading-relaxed mb-3"
               style={{ color: "var(--color-text-primary)" }}
             >
               {reveal}
             </p>
+            <button
+              onClick={() => setCollapsed(true)}
+              className="text-xs"
+              style={{
+                color: "var(--color-text-secondary)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "8px 0",
+                minHeight: "44px",
+              }}
+            >
+              Hide answer ▲
+            </button>
+          </div>
+        )}
+
+        {/* Try again — shown below answer panel when expanded */}
+        {revealed && !collapsed && (
+          <button
+            onClick={handleTryAgain}
+            className="mt-3 text-xs"
+            style={{
+              color: "var(--color-text-secondary)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "8px 0",
+              minHeight: "44px",
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+            }}
+          >
+            Try again
+          </button>
+        )}
+
+        {/* State: revealed + collapsed — show "Reveal again" + "Reset prediction" */}
+        {revealed && collapsed && (
+          <div className="flex flex-col gap-2">
+            <button
+              aria-expanded={false}
+              onClick={() => setCollapsed(false)}
+              className="btn-3d text-sm"
+              style={{ minHeight: "44px" }}
+            >
+              Reveal again →
+            </button>
+            <button
+              onClick={handleTryAgain}
+              className="text-xs"
+              style={{
+                color: "var(--color-text-secondary)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "8px 0",
+                minHeight: "44px",
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+              }}
+            >
+              Reset prediction
+            </button>
           </div>
         )}
       </div>
