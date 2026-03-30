@@ -9,8 +9,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
-import LearnPanel from "@/components/learn/LearnPanel";
-import GamePanel from "@/components/games/GamePanel";
+import LevelPageClient from "@/components/level/LevelPageClient";
 import type { LearnSection, GameType, GameConfig } from "@/types/content";
 
 export const dynamic = "force-dynamic";
@@ -191,54 +190,6 @@ function ChevronRight({ className }: { className?: string }) {
   );
 }
 
-// ── Key insight banner ───────────────────────────────────────────────────────
-function KeyInsightBanner({
-  insight,
-}: {
-  insight: string;
-  accentColor: string;
-}) {
-  return (
-    <div
-      className="mt-8 rounded-xl p-5 flex items-start gap-4"
-      style={{
-        backgroundColor: "rgba(255, 184, 0, 0.08)",
-        border: "1px solid rgba(255, 184, 0, 0.20)",
-        borderLeft: "4px solid var(--color-accent-gold)",
-      }}
-    >
-      {/* Lightbulb icon */}
-      <div
-        className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 text-lg"
-        style={{
-          backgroundColor: "rgba(255, 184, 0, 0.15)",
-          border: "1px solid rgba(255, 184, 0, 0.25)",
-        }}
-        aria-hidden="true"
-      >
-        💡
-      </div>
-      <div>
-        <p
-          className="text-xs font-bold uppercase mb-1.5"
-          style={{
-            color: "var(--color-accent-gold)",
-            letterSpacing: "1.5px",
-          }}
-        >
-          Key Insight
-        </p>
-        <p
-          className="text-sm leading-relaxed font-medium"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          {insight}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default async function LevelPage({
   params,
@@ -264,6 +215,10 @@ export default async function LevelPage({
 
   // Cast DB types to our content types
   const typedLearnSections = learnSections as unknown as LearnSection[];
+  // Sort sections by sortOrder before passing to the client
+  const sortedSections = [...typedLearnSections].sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  );
   const gameType = level.gameType as GameType;
   const gameConfig = level.gameConfig as unknown as GameConfig;
 
@@ -456,43 +411,22 @@ export default async function LevelPage({
           </div>
         </div>
 
-        {/* Main two-column layout */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-          {/* Learn panel — 60% on desktop */}
-          <div className="w-full lg:w-[60%]">
-            <LearnPanel
-              learnSections={typedLearnSections}
-              accentColor={accentColor}
-              className="min-h-[400px]"
-            />
-          </div>
-
-          {/* Game panel — 40% on desktop, sticky on scroll */}
-          <div className="w-full lg:w-[40%] lg:sticky lg:top-6">
-            <GamePanel
-              gameType={gameType}
-              gameConfig={gameConfig}
-              accentColor={accentColor}
-              levelTitle={level.title}
-              levelId={level.id}
-              chapterId={chapter.id}
-              chapterSlug={slug}
-              xpReward={level.xpReward ?? 100}
-              keyInsight={level.keyInsight ?? null}
-              nextLevelUrl={nextLevelUrl}
-              backUrl={chapterUrl}
-              isAuthenticated={!!session?.user?.id}
-            />
-          </div>
-        </div>
-
-        {/* Key insight */}
-        {level.keyInsight && (
-          <KeyInsightBanner
-            insight={level.keyInsight}
-            accentColor={accentColor}
-          />
-        )}
+        {/* Step-flow layout: sidebar outline + card-by-card content */}
+        <LevelPageClient
+          learnSections={sortedSections}
+          accentColor={accentColor}
+          gameType={gameType}
+          gameConfig={gameConfig}
+          levelTitle={level.title}
+          levelId={level.id}
+          chapterId={chapter.id}
+          chapterSlug={slug}
+          xpReward={level.xpReward ?? 100}
+          keyInsight={level.keyInsight ?? null}
+          nextLevelUrl={nextLevelUrl}
+          backUrl={chapterUrl}
+          isAuthenticated={!!session?.user?.id}
+        />
 
         {/* Level navigation */}
         <nav

@@ -95,7 +95,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 6,
+          "sort_order": 3,
           "section_type": "text",
           "title": "What is Retrieval-Augmented Generation?",
           "content": {
@@ -150,7 +150,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 9,
           "section_type": "comparison",
           "title": "Keyword Search vs Semantic Search (RAG)",
           "content": {
@@ -165,7 +165,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 10,
           "section_type": "callout",
           "title": "Enterprise Skills Bridge",
           "content": {
@@ -274,7 +274,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: Keyword vs Semantic",
           "content": {
@@ -289,7 +289,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 5,
           "section_type": "exploration",
           "title": "RAG Pipeline Data Flow",
           "content": {
@@ -402,7 +402,7 @@
           }
         },
         {
-          "sort_order": 9,
+          "sort_order": 8,
           "section_type": "prediction",
           "title": "Predict: What Happens with Bad Chunks?",
           "content": {
@@ -417,7 +417,7 @@
           }
         },
         {
-          "sort_order": 10,
+          "sort_order": 11,
           "section_type": "prediction",
           "title": "Predict: Updating Knowledge",
           "content": {
@@ -432,7 +432,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 6,
           "section_type": "d2_diagram",
           "title": "RAG Architecture Overview",
           "content": {
@@ -442,7 +442,7 @@
           }
         },
         {
-          "sort_order": 11,
+          "sort_order": 7,
           "section_type": "d2_diagram",
           "title": "RAG vs Fine-Tuning Decision Tree",
           "content": {
@@ -511,7 +511,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "Why Chunking Matters More Than Your Embedding Model",
           "content": {
@@ -519,7 +519,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 7,
           "section_type": "playground",
           "title": "Chunk Size Explorer",
           "content": {
@@ -549,7 +549,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 6,
           "section_type": "code",
           "title": "Production Chunking Pipeline",
           "content": {
@@ -573,7 +573,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 8,
           "section_type": "steps",
           "title": "The 4-Step Chunking Pipeline",
           "content": {
@@ -598,7 +598,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 9,
           "section_type": "callout",
           "title": "Production Insight",
           "content": {
@@ -608,7 +608,7 @@
           }
         },
         {
-          "sort_order": 6,
+          "sort_order": 1,
           "section_type": "d2_diagram",
           "title": "Chunking Strategies Comparison",
           "content": {
@@ -618,7 +618,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 5,
           "section_type": "exploration",
           "title": "Chunking Strategies — See the Difference",
           "content": {
@@ -742,7 +742,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "Concepts You Already Know",
           "content": {
@@ -805,7 +805,7 @@
           }
         },
         {
-          "sort_order": 9,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: The Perfect Chunk Size",
           "content": {
@@ -875,7 +875,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "How Embeddings Capture Meaning",
           "content": {
@@ -883,7 +883,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 1,
           "section_type": "comparison",
           "title": "Sparse vs Dense Embeddings",
           "content": {
@@ -898,7 +898,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 7,
           "section_type": "code",
           "title": "OpenAI Embedding with Matryoshka Truncation",
           "content": {
@@ -922,7 +922,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 6,
           "section_type": "playground",
           "title": "Embedding Dimension vs Quality/Storage Trade-off",
           "content": {
@@ -942,7 +942,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 8,
           "section_type": "callout",
           "title": "Production Recommendation",
           "content": {
@@ -952,7 +952,7 @@
           }
         },
         {
-          "sort_order": 6,
+          "sort_order": 5,
           "section_type": "exploration",
           "title": "Embedding Models — From Text to Vectors",
           "content": {
@@ -1084,7 +1084,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "Concepts You Already Know",
           "content": {
@@ -1147,7 +1147,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: The Dimension Dilemma",
           "content": {
@@ -1219,7 +1219,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "Why Regular Databases Cannot Do Similarity Search",
           "content": {
@@ -1227,7 +1227,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 1,
           "section_type": "diagram",
           "title": "Vector Database Architecture",
           "content": {
@@ -1274,7 +1274,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 7,
           "section_type": "comparison",
           "title": "pgvector vs Pinecone vs Qdrant",
           "content": {
@@ -1289,7 +1289,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 8,
           "section_type": "callout",
           "title": "Enterprise Skills Bridge",
           "content": {
@@ -1299,7 +1299,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 6,
           "section_type": "d2_diagram",
           "title": "Vector Search Visualization",
           "content": {
@@ -1309,7 +1309,7 @@
           }
         },
         {
-          "sort_order": 6,
+          "sort_order": 5,
           "section_type": "exploration",
           "title": "Vector Similarity Search — Step by Step",
           "content": {
@@ -1422,7 +1422,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "Concepts You Already Know",
           "content": {
@@ -1485,7 +1485,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: The Index Choice",
           "content": {
@@ -1545,7 +1545,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "text",
           "title": "Why Dense Search Alone Is Not Enough",
           "content": {
@@ -1553,7 +1553,7 @@
           }
         },
         {
-          "sort_order": 2,
+          "sort_order": 9,
           "section_type": "steps",
           "title": "Hybrid Search Pipeline",
           "content": {
@@ -1578,7 +1578,7 @@
           }
         },
         {
-          "sort_order": 3,
+          "sort_order": 8,
           "section_type": "comparison",
           "title": "Keyword-Only vs Semantic-Only vs Hybrid",
           "content": {
@@ -1593,7 +1593,7 @@
           }
         },
         {
-          "sort_order": 4,
+          "sort_order": 10,
           "section_type": "callout",
           "title": "Production Insight",
           "content": {
@@ -1603,7 +1603,7 @@
           }
         },
         {
-          "sort_order": 5,
+          "sort_order": 1,
           "section_type": "d2_diagram",
           "title": "Production RAG Stack",
           "content": {
@@ -1623,7 +1623,7 @@
           }
         },
         {
-          "sort_order": 7,
+          "sort_order": 5,
           "section_type": "exploration",
           "title": "Hybrid Retrieval — Keyword + Semantic Combined",
           "content": {
@@ -1763,7 +1763,7 @@
           }
         },
         {
-          "sort_order": 8,
+          "sort_order": 4,
           "section_type": "analogy",
           "title": "Concepts You Already Know",
           "content": {
@@ -1826,7 +1826,7 @@
           }
         },
         {
-          "sort_order": 9,
+          "sort_order": 2,
           "section_type": "prediction",
           "title": "Predict: The Keyword Trap",
           "content": {
@@ -1841,7 +1841,7 @@
           }
         },
         {
-          "sort_order": 10,
+          "sort_order": 7,
           "section_type": "prediction",
           "title": "Predict: RRF Parameter Tuning",
           "content": {

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { GameType, GameConfig } from "@/types/content";
+import type {
+  GameType,
+  GameConfig,
+  SpeedQuizConfig,
+  CodeDebuggerConfig,
+  DiagnosisLabConfig,
+  ArchitectureBattleConfig,
+} from "@/types/content";
 import { saveGuestProgress } from "@/lib/guest-progress";
 import LevelComplete from "@/components/hud/LevelComplete";
 
@@ -66,6 +73,48 @@ const GAME_TYPE_ICONS: Record<GameType, string> = {
   ArchitectureBattle: "⚔️",
 };
 
+// ── Question count helper ───────────────────────────────────────────────────
+
+function getQuestionCount(gameType: string, config: GameConfig): number {
+  switch (gameType) {
+    case "SpeedQuiz":
+      return (config as SpeedQuizConfig).questions?.length ?? 0;
+    case "PipelineBuilder":
+      return 1;
+    case "CodeDebugger":
+      return (config as CodeDebuggerConfig).bugs?.length ?? 0;
+    case "ConceptMatcher":
+      return 1;
+    case "ParameterTuner":
+      return 1;
+    case "DiagnosisLab":
+      return (config as DiagnosisLabConfig).cases?.length ?? 0;
+    case "CostOptimizer":
+      return 1;
+    case "ArchitectureBattle":
+      return (config as ArchitectureBattleConfig).battles?.length ?? 0;
+    default:
+      return 0;
+  }
+}
+
+function getEstimatedMinutes(
+  gameType: string,
+  config: GameConfig,
+  timerEnabled: boolean,
+): string {
+  const qCount = getQuestionCount(gameType, config);
+  if (gameType === "SpeedQuiz") {
+    const tpq = (config as SpeedQuizConfig).timePerQuestion ?? 30;
+    // With timer: time-per-question total; without timer: ~20s average to read + answer
+    const secsEach = timerEnabled ? tpq : 20;
+    const totalSecs = qCount * secsEach + qCount * 2; // +2s feedback per question
+    return `~${Math.max(1, Math.round(totalSecs / 60))} min`;
+  }
+  if (qCount <= 1) return "~2 min";
+  return `~${Math.max(1, Math.round((qCount * 25) / 60))} min`;
+}
+
 // ── Game renderer switch ────────────────────────────────────────────────────
 
 interface GameRendererProps {
@@ -73,6 +122,7 @@ interface GameRendererProps {
   gameConfig: GameConfig;
   accentColor: string;
   onComplete: (score: number, maxScore: number) => void;
+  timerEnabled: boolean;
 }
 
 function GameRenderer({
@@ -80,6 +130,7 @@ function GameRenderer({
   gameConfig,
   accentColor,
   onComplete,
+  timerEnabled,
 }: GameRendererProps) {
   const commonProps = { accentColor, onComplete };
 
@@ -88,6 +139,7 @@ function GameRenderer({
       return (
         <SpeedQuiz
           config={gameConfig as import("@/types/content").SpeedQuizConfig}
+          timerEnabled={timerEnabled}
           {...commonProps}
         />
       );
@@ -153,6 +205,8 @@ function GameRenderer({
 
 // ── Main GamePanel ──────────────────────────────────────────────────────────
 
+const TIMER_PREF_KEY = "aiquest_timer_pref";
+
 export default function GamePanel({
   gameType,
   gameConfig,
@@ -171,6 +225,40 @@ export default function GamePanel({
   const label = GAME_TYPE_LABELS[gameType] ?? gameType;
   const description = GAME_TYPE_DESCRIPTIONS[gameType] ?? "";
   const icon = GAME_TYPE_ICONS[gameType] ?? "🎮";
+
+  // Pre-game state
+  const [gameStarted, setGameStarted] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const startBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Load saved timer preference on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(TIMER_PREF_KEY);
+      if (saved !== null) setTimerEnabled(saved === "true");
+    } catch {
+      // localStorage may be unavailable (SSR, incognito)
+    }
+  }, []);
+
+  // Persist timer preference on change
+  const handleTimerToggle = (enabled: boolean) => {
+    setTimerEnabled(enabled);
+    try {
+      localStorage.setItem(TIMER_PREF_KEY, String(enabled));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Focus the Start button when the start card becomes visible
+  useEffect(() => {
+    if (!gameStarted) {
+      // Defer one tick so the DOM is ready
+      const id = setTimeout(() => startBtnRef.current?.focus(), 0);
+      return () => clearTimeout(id);
+    }
+  }, [gameStarted]);
 
   const [gameKey, setGameKey] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -238,10 +326,136 @@ export default function GamePanel({
   const handleRetry = () => {
     setCompleted(false);
     setShowCompletion(false);
+    setGameStarted(false); // Return to start card on retry
     setGameKey((k) => k + 1);
     startTimeRef.current = Date.now();
   };
 
+  const qCount = getQuestionCount(gameType, gameConfig);
+  const estTime = getEstimatedMinutes(gameType, gameConfig, timerEnabled);
+  const timerSeconds =
+    gameType === "SpeedQuiz"
+      ? ((gameConfig as SpeedQuizConfig).timePerQuestion ?? 30)
+      : 0;
+
+  // ── Start Card ─────────────────────────────────────────────────────────────
+  if (!gameStarted) {
+    return (
+      <div
+        className="p-6 flex flex-col gap-5"
+        style={{
+          backgroundColor: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "16px",
+          borderTop: `4px solid ${color}`,
+        }}
+      >
+        {/* Icon + game type badge */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+            style={{
+              backgroundColor: `${color}18`,
+              border: `1px solid ${color}30`,
+            }}
+          >
+            {icon}
+          </div>
+          <div>
+            <p
+              className="text-xs font-semibold uppercase"
+              style={{ color: color, letterSpacing: "0.08em" }}
+            >
+              {label}
+            </p>
+            <h3
+              className="font-semibold text-base leading-tight mt-0.5"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {levelTitle ?? label}
+            </h3>
+          </div>
+        </div>
+
+        {/* Meta: question count + estimated time */}
+        <p
+          id="game-info"
+          className="text-sm"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          {qCount > 0
+            ? `${qCount} question${qCount !== 1 ? "s" : ""}`
+            : "1 challenge"}{" "}
+          &bull; {estTime}
+        </p>
+
+        {/* Start button */}
+        <button
+          ref={startBtnRef}
+          type="button"
+          aria-describedby="game-info"
+          onClick={() => {
+            startTimeRef.current = Date.now();
+            setGameStarted(true);
+          }}
+          className="w-full rounded-xl py-3 px-5 text-sm font-semibold flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: color,
+            color: "#ffffff",
+            border: "none",
+            cursor: "pointer",
+            transition: "filter 150ms ease, transform 80ms ease",
+          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.filter =
+              "brightness(1.1)")
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.filter = "")
+          }
+          onMouseDown={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.transform =
+              "translateY(1px)")
+          }
+          onMouseUp={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.transform = "")
+          }
+        >
+          Start Challenge
+          <span aria-hidden="true">→</span>
+        </button>
+
+        {/* Timer toggle — only shown for SpeedQuiz */}
+        {gameType === "SpeedQuiz" && timerSeconds > 0 && (
+          <label
+            htmlFor="timer-toggle"
+            className="flex items-center gap-3 cursor-pointer select-none text-sm"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            <input
+              id="timer-toggle"
+              type="checkbox"
+              checked={timerEnabled}
+              onChange={(e) => handleTimerToggle(e.target.checked)}
+              className="w-4 h-4 rounded"
+              style={{ accentColor: color, cursor: "pointer" }}
+            />
+            Enable timer ({timerSeconds}s per question)
+          </label>
+        )}
+
+        {/* Tip */}
+        <p
+          className="text-xs leading-relaxed"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          Tip: Complete the learn sections first for the best score.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Active game ─────────────────────────────────────────────────────────────
   return (
     <>
       <div
@@ -305,6 +519,7 @@ export default function GamePanel({
               gameConfig={gameConfig}
               accentColor={color}
               onComplete={handleComplete}
+              timerEnabled={timerEnabled}
             />
           )}
         </div>
