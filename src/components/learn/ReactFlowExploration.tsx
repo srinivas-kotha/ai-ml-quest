@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -11,6 +11,42 @@ import {
   useEdgesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import Dagre from "@dagrejs/dagre";
+
+// Node dimension lookup by type for dagre layout
+const NODE_DIMS: Record<string, { w: number; h: number }> = {
+  concept: { w: 180, h: 60 },
+  decision: { w: 160, h: 52 },
+  outcome: { w: 130, h: 44 },
+  leaf: { w: 150, h: 44 },
+};
+
+/**
+ * Apply dagre auto-layout to nodes/edges.
+ * Always runs — overrides any seed positions to guarantee clean layout.
+ */
+function applyDagreLayout(nodes: Node[], edges: Edge[]): Node[] {
+  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+  // Use TB (top-bottom) for trees, LR could be used for pipelines
+  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 80 });
+
+  nodes.forEach((node) => {
+    const dims = NODE_DIMS[node.type || "concept"] || NODE_DIMS.concept;
+    g.setNode(node.id, { width: dims.w, height: dims.h });
+  });
+  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
+
+  Dagre.layout(g);
+
+  return nodes.map((node) => {
+    const pos = g.node(node.id);
+    const dims = NODE_DIMS[node.type || "concept"] || NODE_DIMS.concept;
+    return {
+      ...node,
+      position: { x: pos.x - dims.w / 2, y: pos.y - dims.h / 2 },
+    };
+  });
+}
 
 // Custom node component
 function ConceptNode({ data }: { data: Record<string, unknown> }) {
@@ -175,7 +211,12 @@ export default function ReactFlowExploration({
   edges: initialEdges,
   interactive = true,
 }: ReactFlowExplorationProps) {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  // Always apply dagre layout — seed positions are unreliable
+  const layoutedNodes = useMemo(
+    () => applyDagreLayout(initialNodes, initialEdges),
+    [initialNodes, initialEdges],
+  );
+  const [nodes, , onNodesChange] = useNodesState(layoutedNodes);
   // Apply default edge styles — ensure edges are visible on both light and dark themes
   const styledEdges = initialEdges.map((edge) => ({
     ...edge,

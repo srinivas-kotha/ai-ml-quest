@@ -56,6 +56,46 @@ export default function LevelHeader({
     el.style.opacity = isExpanded ? "1" : "0";
   }, [isExpanded]);
 
+  // On step > 0, show only a minimal compact bar instead of the full header card
+  if (!isExpanded) {
+    return (
+      <div
+        className="flex items-center gap-2 px-4 py-2 mb-3 rounded-lg"
+        style={{
+          backgroundColor: "var(--color-bg-surface)",
+          borderLeft: `3px solid ${accentColor}`,
+        }}
+      >
+        <span
+          className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-bold flex-shrink-0"
+          style={{
+            backgroundColor: `${accentColor}20`,
+            color: accentColor,
+          }}
+        >
+          {levelNum}
+        </span>
+        <span
+          className="text-sm font-medium truncate"
+          style={{ color: "var(--color-text-primary)" }}
+        >
+          {title}
+        </span>
+        {xpReward && (
+          <span
+            className="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
+            style={{
+              color: "var(--color-accent-gold)",
+              backgroundColor: "rgba(245, 158, 11, 0.10)",
+            }}
+          >
+            +{xpReward} XP
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative overflow-hidden rounded-2xl p-5 mb-6"
