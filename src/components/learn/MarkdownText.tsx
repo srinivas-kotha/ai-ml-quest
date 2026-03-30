@@ -1,12 +1,35 @@
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import { GlossaryTooltip } from "./GlossaryTooltip";
 
 interface MarkdownTextProps {
   content: string;
   className?: string;
 }
 
-const components: Components = {
+// Preprocesses markdown content, converting [[term:X]] syntax into
+// a placeholder that react-markdown won't mangle, then post-processes
+// the rendered text nodes to swap in GlossaryTooltip elements.
+// Simpler approach: replace [[term:X]] with a custom HTML tag before
+// passing to ReactMarkdown, then handle it as a custom component.
+const GLOSSARY_TAG_RE = /\[\[term:([^\]]+)\]\]/g;
+
+function preprocessGlossary(content: string): string {
+  return content.replace(
+    GLOSSARY_TAG_RE,
+    (_, termKey) => `<glossary term="${termKey}">${termKey}</glossary>`,
+  );
+}
+
+const components: Components & Record<string, React.ComponentType<any>> = {
+  // Custom element produced by preprocessGlossary() for [[term:X]] syntax
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  glossary: ({ node, ...props }: any) => {
+    const term = node?.properties?.term as string | undefined;
+    const children = props.children as React.ReactNode;
+    if (!term) return <>{children}</>;
+    return <GlossaryTooltip term={term}>{children}</GlossaryTooltip>;
+  },
   // Headings
   h1: ({ children }) => (
     <h1
@@ -204,9 +227,17 @@ export default function MarkdownText({
   content,
   className,
 }: MarkdownTextProps) {
+  const processed = preprocessGlossary(content);
   return (
     <div className={className}>
-      <ReactMarkdown components={components}>{content}</ReactMarkdown>
+      <ReactMarkdown
+        components={components}
+        // Allow our custom <glossary> HTML elements through
+        allowedElements={undefined}
+        unwrapDisallowed={false}
+      >
+        {processed}
+      </ReactMarkdown>
     </div>
   );
 }

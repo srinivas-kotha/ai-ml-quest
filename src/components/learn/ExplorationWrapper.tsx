@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import type { Node, Edge } from "@xyflow/react";
 
@@ -39,24 +39,36 @@ export default function ExplorationWrapper({
   accentColor = "var(--color-accent-gold)",
   staticFallbackUrl,
 }: ExplorationWrapperProps) {
-  const [viewportWidth, setViewportWidth] = useState(1024);
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Safe SSR default — gets corrected on mount by ResizeObserver
+  const [containerWidth, setContainerWidth] = useState(800);
   const [mounted, setMounted] = useState(false);
 
+  // Step 1: mark as mounted (so the wrapper div renders and containerRef attaches)
   useEffect(() => {
     setMounted(true);
-    setViewportWidth(window.innerWidth);
-    const handleResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Step 2: once mounted, observe the container for size changes
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width;
+      setContainerWidth(width);
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [mounted]);
 
   if (!mounted) return <SectionSkeleton />;
 
-  const isDesktop = viewportWidth >= 1024;
-  const isTablet = viewportWidth >= 768;
+  const isDesktop = containerWidth >= 768;
+  const isTablet = containerWidth >= 480;
 
   return (
     <div
+      ref={containerRef}
       className="rounded-2xl overflow-hidden"
       style={{
         backgroundColor: "var(--color-bg-surface)",
@@ -105,7 +117,7 @@ export default function ExplorationWrapper({
       {/* Content */}
       <div
         style={{
-          height: isDesktop ? "450px" : isTablet ? "350px" : "auto",
+          height: isDesktop ? "500px" : isTablet ? "400px" : "auto",
           minHeight: "250px",
         }}
       >

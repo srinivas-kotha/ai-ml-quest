@@ -56,8 +56,111 @@ function ConceptNode({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+/** Decision node — rounded rect with gold border for branching questions */
+function DecisionNode({ data }: { data: Record<string, unknown> }) {
+  return (
+    <div
+      style={{
+        backgroundColor: "var(--color-bg-card)",
+        border: "2px solid var(--color-accent-gold)",
+        borderRadius: "10px",
+        padding: "8px 12px",
+        width: "160px",
+        minHeight: "52px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        boxShadow: "0 0 12px rgba(255, 184, 0, 0.15)",
+      }}
+    >
+      <span
+        style={{
+          color: "var(--color-text-primary)",
+          fontSize: "12px",
+          fontWeight: 600,
+          lineHeight: "1.35",
+          whiteSpace: "pre-line",
+        }}
+      >
+        {data.label as string}
+      </span>
+    </div>
+  );
+}
+
+/** Outcome node — filled with branch accent color, for major outcomes */
+function OutcomeNode({ data }: { data: Record<string, unknown> }) {
+  const bg = (data.color as string) ?? "#3b82f6";
+  return (
+    <div
+      style={{
+        backgroundColor: bg,
+        border: `2px solid ${bg}`,
+        borderRadius: "10px",
+        padding: "8px 12px",
+        width: "130px",
+        minHeight: "44px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        boxShadow: `0 0 16px ${bg}40`,
+      }}
+    >
+      <span
+        style={{
+          color: "#ffffff",
+          fontSize: "13px",
+          fontWeight: 700,
+          lineHeight: "1.35",
+          whiteSpace: "pre-line",
+        }}
+      >
+        {data.label as string}
+      </span>
+    </div>
+  );
+}
+
+/** Leaf node — subtle tinted background for terminal outcomes */
+function LeafNode({ data }: { data: Record<string, unknown> }) {
+  const bg = (data.color as string) ?? "#3b82f6";
+  return (
+    <div
+      style={{
+        backgroundColor: `${bg}22`,
+        border: `1.5px solid ${bg}`,
+        borderRadius: "8px",
+        padding: "7px 10px",
+        width: "150px",
+        minHeight: "44px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+      }}
+    >
+      <span
+        style={{
+          color: "var(--color-text-primary)",
+          fontSize: "11.5px",
+          fontWeight: 600,
+          lineHeight: "1.35",
+          whiteSpace: "pre-line",
+        }}
+      >
+        {data.label as string}
+      </span>
+    </div>
+  );
+}
+
 const nodeTypes: NodeTypes = {
   concept: ConceptNode,
+  decision: DecisionNode as unknown as NodeTypes[string],
+  outcome: OutcomeNode as unknown as NodeTypes[string],
+  leaf: LeafNode as unknown as NodeTypes[string],
 };
 
 interface ReactFlowExplorationProps {

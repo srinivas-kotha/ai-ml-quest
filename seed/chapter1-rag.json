@@ -95,7 +95,7 @@
       "is_published": true,
       "learn_sections": [
         {
-          "sort_order": 3,
+          "sort_order": 1,
           "section_type": "text",
           "title": "What is Retrieval-Augmented Generation?",
           "content": {
@@ -103,7 +103,7 @@
           }
         },
         {
-          "sort_order": 1,
+          "sort_order": 3,
           "section_type": "diagram",
           "title": "The RAG Pipeline",
           "content": {
@@ -187,7 +187,7 @@
                 "newConcept": "Vector Database",
                 "newIcon": "🧮",
                 "bridgeText": "A SQL B-tree index maps column values to row pointers so lookups are O(log n) instead of full table scans. A vector database does the same thing for meaning — it maps embedding vectors to document chunks so semantic lookups are O(log n) instead of comparing every document. pgvector literally adds this capability to Postgres, so you already have the mental model.",
-                "breakPoint": "B-tree indexes work on exact or range matches over scalar values. Vector indexes use approximate nearest neighbor (ANN) algorithms like HNSW or IVF — they trade perfect recall for speed, and the 'distance' is cosine similarity in 768+ dimensions, not simple value comparison. There is no vector equivalent of a composite index."
+                "breakPoint": "B-tree indexes work on exact or range matches over scalar values. Vector indexes use approximate matching — they find the closest meanings rather than exact values, trading perfect recall for speed. The 'distance' is how similar two meanings are, not a simple value comparison. There is no vector equivalent of a composite index."
               },
               {
                 "background": "frontend",
@@ -213,7 +213,7 @@
                 "familiarIcon": "🧩",
                 "newConcept": "Embedding Model",
                 "newIcon": "📐",
-                "bridgeText": "When a JS engine parses your code, the tokenizer breaks 'const x = 42' into tokens: [CONST, IDENTIFIER, EQUALS, NUMBER]. An embedding model does something similar but for meaning — it breaks 'how do I handle auth timeouts?' into subword tokens, then transforms them through neural network layers into a single vector that captures the full semantic meaning.",
+                "bridgeText": "When a JS engine parses your code, the tokenizer breaks 'const x = 42' into tokens: [CONST, IDENTIFIER, EQUALS, NUMBER]. An embedding model does something similar but for meaning — Think of it as breaking text into the smallest meaningful pieces (like how 'cannot' becomes ['can', 'not']), then mapping those pieces into a space where similar meanings end up close together. The output is a single vector that captures the full semantic meaning of the input.",
                 "breakPoint": "JS tokenization is rule-based and lossless — you can reconstruct the source from tokens. Embedding is lossy and learned — the model compresses all meaning into a fixed-size vector, so nuances can be lost. Also, JS tokens are discrete symbols, while embedding dimensions are continuous floating-point values with no human-interpretable meaning."
               },
               {
@@ -232,7 +232,7 @@
                 "newConcept": "RAG vs Fine-tuning",
                 "newIcon": "🔧",
                 "bridgeText": "Passing data as runtime props means your component adapts instantly when data changes — no rebuild needed. Baking data at build time (getStaticProps) means it is frozen until the next deployment. RAG is runtime props: the model receives fresh context with every query. Fine-tuning is build-time: knowledge is baked into weights and frozen until you retrain.",
-                "breakPoint": "Runtime props do not change the component's rendering logic — it still renders the same JSX. Fine-tuning literally rewrites the model's neural network weights, changing its fundamental behavior. A fine-tuned model can learn entirely new output patterns, while RAG only provides new input context."
+                "breakPoint": "Runtime props do not change the component's rendering logic — it still renders the same JSX. Fine-tuning changes the model's fundamental behavior — think of it as the difference between configuring an app at runtime versus rebuilding it with new defaults baked in. A fine-tuned model can learn entirely new output patterns, while RAG only provides new input context."
               },
               {
                 "background": "frontend",
@@ -250,7 +250,7 @@
                 "newConcept": "Retrieval-Augmented Generation",
                 "newIcon": "🔗",
                 "bridgeText": "Express middleware intercepts requests and enriches them before the handler runs: auth middleware adds user info, logging middleware adds timestamps. RAG is middleware for LLM prompts: the retrieval step intercepts the user query, enriches it with relevant document chunks, and then passes the augmented prompt to the LLM handler.",
-                "breakPoint": "Middleware is synchronous and deterministic — each layer adds predictable data. RAG retrieval is probabilistic — the chunks returned depend on embedding similarity scores, and different embedding models may return different chunks for the same query. The 'augmented prompt' changes based on what the retriever finds."
+                "breakPoint": "Middleware is synchronous and deterministic — each layer adds predictable data. RAG retrieval is probabilistic — think of it as: each document in your index has a meaning-fingerprint, and the retriever ranks documents by how closely their fingerprint matches your query's fingerprint. Different embedding models may return different chunks for the same query. The 'augmented prompt' changes based on what the retriever finds."
               },
               {
                 "background": "backend",
@@ -259,7 +259,7 @@
                 "newConcept": "Vector Store",
                 "newIcon": "🗄️",
                 "bridgeText": "Redis sits between your app and the database as a fast lookup layer — you check Redis first, and only hit Postgres if the key is not cached. A vector store sits between your app and the LLM — you search the vector store first to find relevant context, then send only the relevant chunks to the LLM. Both are optimized for fast retrieval to avoid expensive operations.",
-                "breakPoint": "Redis uses exact key-value lookup (O(1) hash table). Vector stores use approximate nearest neighbor search (O(log n) with HNSW). Redis returns exactly what was stored; vector stores return the most similar items, which may not be exactly what you need. Also, Redis cache invalidation is explicit (TTL, delete), while vector stores need re-embedding when source documents change."
+                "breakPoint": "Redis uses exact key-value lookup — you provide the key, it returns the value (O(1)). Vector stores use meaning-based retrieval rather than exact key lookup — there is no key, only vectors that are more or less similar to your query. Redis returns exactly what was stored; vector stores return the most similar items, which may not be exactly what you need. Also, Redis cache invalidation is explicit (TTL, delete), while vector stores need re-embedding when source documents change."
               },
               {
                 "background": "frontend",
@@ -268,7 +268,7 @@
                 "newConcept": "Vector Store",
                 "newIcon": "🗄️",
                 "bridgeText": "localStorage stores key-value pairs in the browser for fast access without server roundtrips. A vector store is similar in spirit — it stores pre-computed embeddings for fast semantic retrieval without re-computing them every query. Both are persistence layers optimized for read-heavy workloads where computing the value from scratch would be too slow.",
-                "breakPoint": "localStorage uses string keys for exact lookup. Vector stores use multi-dimensional similarity search — there is no 'key', only vectors that are more or less similar. localStorage has a 5MB limit per origin; production vector stores hold millions of embeddings using specialized data structures (HNSW graphs, IVF indexes) that have no browser equivalent."
+                "breakPoint": "localStorage uses string keys for exact lookup — same key always returns the same value. Vector stores use similarity search — there is no 'key', only vectors that are more or less similar to your query. localStorage has a 5MB limit per origin; production vector stores hold millions of embeddings using specialized similarity-search data structures (covered in Level 4) that have no browser equivalent."
               }
             ]
           }
@@ -433,22 +433,470 @@
         },
         {
           "sort_order": 6,
-          "section_type": "d2_diagram",
+          "section_type": "exploration",
           "title": "RAG Architecture Overview",
           "content": {
-            "svgPath": "/diagrams/rag-architecture-overview.svg",
-            "altText": "Architecture diagram showing the complete RAG pipeline: user query flows through embedding model, vector database retrieval, prompt augmentation, and LLM generation, with a parallel indexing pipeline showing document ingestion, chunking, embedding, and vector storage.",
-            "caption": "The full RAG architecture has two pipelines: an offline indexing pipeline (documents to vectors) and an online query pipeline (question to grounded answer). Understanding both is essential for production debugging."
+            "title": "RAG Architecture Overview",
+            "description": "Click each node to learn what happens at that stage. The full pipeline has two paths: an offline indexing pipeline (left column) and an online query pipeline (right column).",
+            "nodes": [
+              {
+                "id": "user-query-arch",
+                "type": "concept",
+                "position": { "x": 600, "y": 0 },
+                "data": {
+                  "label": "User Query",
+                  "icon": "🔍",
+                  "details": "A natural language question from the user. E.g. 'How do I handle auth timeouts?' — no knowledge of your docs' terminology required.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "embed-model",
+                "type": "concept",
+                "position": { "x": 600, "y": 130 },
+                "data": {
+                  "label": "Embedding Model",
+                  "icon": "📐",
+                  "details": "Converts text into a dense vector (e.g. 1536 floats with text-embedding-3-small). Both the query and all stored documents go through this same model so similarity is meaningful.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "vector-db",
+                "type": "concept",
+                "position": { "x": 600, "y": 260 },
+                "data": {
+                  "label": "Vector Database",
+                  "icon": "🗄️",
+                  "details": "Stores pre-computed document embeddings and runs approximate nearest-neighbor (ANN) search (HNSW). Returns top-K most semantically similar chunks in ~8ms over 100K vectors.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "retrieved-chunks",
+                "type": "concept",
+                "position": { "x": 600, "y": 390 },
+                "data": {
+                  "label": "Retrieved Chunks",
+                  "icon": "📄",
+                  "details": "The top-K document passages with highest cosine similarity to the query. Typically K=5–20 chunks, each 256–512 tokens. Quality here determines answer quality.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "prompt-template",
+                "type": "concept",
+                "position": { "x": 300, "y": 440 },
+                "data": {
+                  "label": "Prompt Template",
+                  "icon": "📝",
+                  "details": "A system prompt that instructs the LLM to answer using ONLY the provided sources and to cite them. This is what grounds the response and prevents hallucination.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "llm",
+                "type": "concept",
+                "position": { "x": 600, "y": 520 },
+                "data": {
+                  "label": "LLM (with Context)",
+                  "icon": "✨",
+                  "details": "The LLM receives the augmented prompt (template + retrieved chunks + user question) and generates a grounded answer with citations. GPT-4o-mini costs ~$0.002 per query at this scale.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "response",
+                "type": "concept",
+                "position": { "x": 600, "y": 650 },
+                "data": {
+                  "label": "Response",
+                  "icon": "💬",
+                  "details": "The final answer with inline citations [1][2][3] pointing back to source documents. Hallucination risk drops dramatically because every claim is grounded in retrieved text.",
+                  "active": true,
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "raw-docs",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Raw Documents",
+                  "icon": "📚",
+                  "details": "Your knowledge base: PDFs, Confluence pages, Notion docs, code files, Slack messages. Anything you want the LLM to be able to answer questions about.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "chunking",
+                "type": "concept",
+                "position": { "x": 0, "y": 130 },
+                "data": {
+                  "label": "Chunking",
+                  "icon": "✂️",
+                  "details": "Split documents into overlapping passages of 256–512 tokens. RecursiveCharacterTextSplitter with 10–15% overlap is the production default — prevents context loss at boundaries.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "embed-index",
+                "type": "concept",
+                "position": { "x": 0, "y": 260 },
+                "data": {
+                  "label": "Embed & Index",
+                  "icon": "⚡",
+                  "details": "Run each chunk through the embedding model, then upsert the vectors + metadata into the vector store. This offline step is what makes query-time retrieval fast. Re-run when docs change.",
+                  "accentColor": "#8b5cf6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-query-embed",
+                "source": "user-query-arch",
+                "target": "embed-model",
+                "label": "text",
+                "animated": true
+              },
+              {
+                "id": "e-embed-vector",
+                "source": "embed-model",
+                "target": "vector-db",
+                "label": "query vector",
+                "animated": true
+              },
+              {
+                "id": "e-vector-chunks",
+                "source": "vector-db",
+                "target": "retrieved-chunks",
+                "label": "top-K results",
+                "animated": true
+              },
+              {
+                "id": "e-chunks-llm",
+                "source": "retrieved-chunks",
+                "target": "llm",
+                "animated": true
+              },
+              {
+                "id": "e-template-llm",
+                "source": "prompt-template",
+                "target": "llm",
+                "label": "grounding instructions"
+              },
+              {
+                "id": "e-llm-response",
+                "source": "llm",
+                "target": "response",
+                "label": "cited answer",
+                "animated": true
+              },
+              {
+                "id": "e-docs-chunk",
+                "source": "raw-docs",
+                "target": "chunking",
+                "label": "parse & split",
+                "animated": false
+              },
+              {
+                "id": "e-chunk-index",
+                "source": "chunking",
+                "target": "embed-index",
+                "label": "passages",
+                "animated": false
+              },
+              {
+                "id": "e-index-vector",
+                "source": "embed-index",
+                "target": "vector-db",
+                "label": "upsert vectors",
+                "animated": false
+              }
+            ]
           }
         },
         {
           "sort_order": 7,
-          "section_type": "d2_diagram",
+          "section_type": "exploration",
           "title": "RAG vs Fine-Tuning Decision Tree",
           "content": {
-            "svgPath": "/diagrams/rag-vs-finetuning-decision-tree.svg",
-            "altText": "Decision tree showing when to use RAG, fine-tuning, or prompt engineering based on knowledge requirements and update frequency. Starts with 'Do you need external knowledge?' — if yes and data updates frequently, use RAG; if you need style or behavior changes, use fine-tuning; if neither, prompt engineering may suffice.",
-            "caption": "This decision tree helps you choose the right approach. Start with 'Do you need external knowledge?' — if yes and the data changes regularly, RAG is usually the answer. Fine-tuning is for behavioral changes like style, tone, or classification into proprietary categories."
+            "title": "RAG vs Fine-Tuning — Interactive Decision Tree",
+            "description": "Follow the branches to find the right approach for your use case. Gold-bordered nodes are decision points; filled nodes are outcomes.",
+            "nodes": [
+              {
+                "id": "root",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Do you need\nup-to-date knowledge?" }
+              },
+              {
+                "id": "use-rag",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Use RAG", "color": "#3b82f6" }
+              },
+              {
+                "id": "enterprise-docs",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Need enterprise\ndocs?" }
+              },
+              {
+                "id": "rag-vector",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "RAG + Vector DB", "color": "#3b82f6" }
+              },
+              {
+                "id": "public-knowledge",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Public knowledge\nonly?" }
+              },
+              {
+                "id": "rag-web",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "RAG + Web Search", "color": "#3b82f6" }
+              },
+              {
+                "id": "task-specific",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Need task-specific\nbehavior?" }
+              },
+              {
+                "id": "fine-tune",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Fine-Tune", "color": "#f59e0b" }
+              },
+              {
+                "id": "labeled-data",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Have labeled\ndata?" }
+              },
+              {
+                "id": "sft",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Supervised\nFine-Tuning",
+                  "color": "#f59e0b"
+                }
+              },
+              {
+                "id": "preference-data",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "Have preference\ndata?" }
+              },
+              {
+                "id": "dpo-rlhf",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": { "label": "DPO / RLHF", "color": "#f59e0b" }
+              },
+              {
+                "id": "prompt-eng",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Use Prompt\nEngineering",
+                  "color": "#10b981"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "root-yes",
+                "source": "root",
+                "target": "use-rag",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#3b82f6", "strokeWidth": 2 },
+                "labelStyle": {
+                  "fill": "#3b82f6",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "root-no",
+                "source": "root",
+                "target": "task-specific",
+                "label": "No",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 2 },
+                "labelStyle": {
+                  "fill": "#f59e0b",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "rag-enterprise",
+                "source": "use-rag",
+                "target": "enterprise-docs",
+                "type": "smoothstep",
+                "style": { "stroke": "#3b82f6", "strokeWidth": 1.5 }
+              },
+              {
+                "id": "enterprise-yes",
+                "source": "enterprise-docs",
+                "target": "rag-vector",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#3b82f6", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#3b82f6",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "enterprise-no",
+                "source": "enterprise-docs",
+                "target": "public-knowledge",
+                "label": "No",
+                "type": "smoothstep",
+                "style": { "stroke": "#3b82f6", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#3b82f6",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "public-yes",
+                "source": "public-knowledge",
+                "target": "rag-web",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#3b82f6", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#3b82f6",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "task-yes",
+                "source": "task-specific",
+                "target": "fine-tune",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 2 },
+                "labelStyle": {
+                  "fill": "#f59e0b",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "task-no",
+                "source": "task-specific",
+                "target": "prompt-eng",
+                "label": "No",
+                "type": "smoothstep",
+                "style": { "stroke": "#10b981", "strokeWidth": 2 },
+                "labelStyle": {
+                  "fill": "#10b981",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "finetune-labeled",
+                "source": "fine-tune",
+                "target": "labeled-data",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 1.5 }
+              },
+              {
+                "id": "labeled-yes",
+                "source": "labeled-data",
+                "target": "sft",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#f59e0b",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "labeled-no",
+                "source": "labeled-data",
+                "target": "preference-data",
+                "label": "No",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#f59e0b",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              },
+              {
+                "id": "preference-yes",
+                "source": "preference-data",
+                "target": "dpo-rlhf",
+                "label": "Yes",
+                "type": "smoothstep",
+                "style": { "stroke": "#f59e0b", "strokeWidth": 1.5 },
+                "labelStyle": {
+                  "fill": "#f59e0b",
+                  "fontWeight": 600,
+                  "fontSize": 11
+                },
+                "labelBgStyle": {
+                  "fill": "var(--color-bg-card)",
+                  "fillOpacity": 0.9
+                }
+              }
+            ]
           }
         }
       ]

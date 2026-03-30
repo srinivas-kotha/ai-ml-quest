@@ -277,22 +277,25 @@ export default function CardFlow({
         </h2>
 
         {/* Render each learn section card — all in DOM, only active visible */}
-        {sortedSections.map((section, idx) => (
-          <div
-            key={section.id}
-            id={`card-step-${idx}`}
-            role="tabpanel"
-            aria-labelledby={`step-tab-${idx}`}
-            style={{
-              display: currentStep === idx ? "block" : "none",
-              maxWidth: "800px",
-              margin: "0 auto",
-              padding: "24px 16px",
-            }}
-          >
-            <LearnPanel learnSections={[section]} accentColor={accentColor} />
-          </div>
-        ))}
+        {sortedSections.map((section, idx) => {
+          const isExploration = section.sectionType === "exploration";
+          return (
+            <div
+              key={section.id}
+              id={`card-step-${idx}`}
+              role="tabpanel"
+              aria-labelledby={`step-tab-${idx}`}
+              style={{
+                display: currentStep === idx ? "block" : "none",
+                maxWidth: isExploration ? "none" : "800px",
+                margin: "0 auto",
+                padding: "24px 16px",
+              }}
+            >
+              <LearnPanel learnSections={[section]} accentColor={accentColor} />
+            </div>
+          );
+        })}
 
         {/* Game step — rendered as last card */}
         {children && (

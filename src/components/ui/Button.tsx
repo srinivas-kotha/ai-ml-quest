@@ -1,7 +1,7 @@
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 type Variant = "primary" | "secondary" | "danger";
-type Size = "sm" | "md" | "lg";
+type Size = "xs" | "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -30,6 +30,7 @@ const variantStyles: Record<Variant, React.CSSProperties> = {
 };
 
 const sizeStyles: Record<Size, string> = {
+  xs: "px-2 py-1 text-xs rounded-md",
   sm: "px-3 py-1.5 text-xs rounded-lg",
   md: "px-4 py-2 text-sm rounded-xl",
   lg: "px-6 py-3 text-base rounded-xl",
@@ -55,9 +56,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
+        aria-disabled={isDisabled}
         className={`
           inline-flex items-center justify-center gap-2 font-medium
-          transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 cursor-pointer select-none
+          motion-safe:transition-[background-color,border-color,color,box-shadow,opacity,transform] motion-safe:duration-150 cursor-pointer select-none
           disabled:opacity-50 disabled:cursor-not-allowed
           ${sizeStyles[size]}
           ${className}
