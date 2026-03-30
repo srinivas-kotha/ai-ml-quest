@@ -94,6 +94,164 @@
             ],
             "reveal": "API wins at 2K requests/day. Daily token cost: 2K × (500 × $0.00000015 + 200 × $0.00000060) = $0.39/day = ~$12/month. GPU TCO: $1,500/18mo depreciation + $50 electricity = $133/mo. Break-even is ~11K requests/day for this prompt size. At 2K/day, keep using the API for at least 12 months before reconsidering."
           }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "SLM Architecture: LLM vs SLM Tradeoffs",
+          "content": {
+            "title": "SLM vs LLM — What Actually Changes?",
+            "description": "Click each node to explore the real tradeoffs between cloud LLMs and local SLMs. The decision isn't just about size — it's about parameters, deployment, latency, cost, and privacy.",
+            "nodes": [
+              {
+                "id": "decision",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "LLM vs SLM?",
+                  "icon": "⚖️",
+                  "details": "The choice between a Large Language Model (LLM) hosted in the cloud and a Small Language Model (SLM) running locally depends on five dimensions: parameter count, deployment target, latency, cost, and data privacy. Click the branches to explore each tradeoff.",
+                  "active": true,
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "llm",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "LLM (Cloud)",
+                  "icon": "☁️",
+                  "details": "Examples: GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro\nParameter count: 70B–1T+ parameters\nDeployment: Cloud API endpoint\nLatency: 500ms–3s TTFT\nCost: $0.001–$0.06 per 1K tokens\nPrivacy: Data leaves your network\n\nBest for: Complex reasoning, broad knowledge, creative tasks requiring maximum capability.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "slm",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "SLM (Local)",
+                  "icon": "💻",
+                  "details": "Examples: Llama 3.2 3B, Phi-3.5-mini, Mistral 7B, Gemma 2 2B\nParameter count: 1B–13B parameters\nDeployment: Your hardware (CPU/GPU)\nLatency: 50–300ms TTFT (GPU)\nCost: $0/query after hardware\nPrivacy: Data never leaves your machine\n\nBest for: High-volume repetitive tasks, privacy-sensitive data, air-gapped environments, sub-100ms latency requirements.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "parameters",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Parameters",
+                  "icon": "🔢",
+                  "details": "LLM: 70B–1T+ parameters\nSLM: 1B–13B parameters\n\nParameters are the learned weights of the model — more parameters generally means more knowledge and reasoning ability, but also more memory and compute.\n\nA 7B model at Q4_K_M quantization uses ~4GB VRAM. A 70B model needs ~40GB. The 10× parameter gap drives the entire local vs cloud decision.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "deployment",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Deployment Target",
+                  "icon": "🚀",
+                  "details": "LLM: Cloud datacenter (A100/H100 clusters)\nSLM: Your hardware — laptop, workstation, edge device, on-prem server\n\nOllama runs on MacBook M-series, Linux with NVIDIA GPU, or Windows with WSL2. A 7B model at Q4 quantization runs on consumer hardware: RTX 3060 (8GB), M2 MacBook Pro (16GB unified memory), or even CPU-only (slower).",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "latency",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Latency",
+                  "icon": "⚡",
+                  "details": "LLM (cloud): 500ms–3s time-to-first-token (network round-trip + datacenter queue)\nSLM (local GPU): 50–300ms TTFT — no network hop\nSLM (local CPU): 1–5s TTFT — slower but still private\n\nFor interactive apps, 200ms is the perceptual threshold. Local SLMs on GPU reliably hit <150ms TTFT for 7B models. Cloud LLMs rarely beat 300ms due to network latency alone.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "cost",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Cost",
+                  "icon": "💰",
+                  "details": "LLM: $0.001–$0.06 per 1K tokens (GPT-4o-mini at $0.00015/1K input)\nSLM: $0 per query after hardware investment\n\nBreak-even example: At 5K requests/day × 700 tokens avg, GPT-4o-mini costs ~$1.50/day = $45/mo. An RTX 4090 ($1,500) + electricity ($50/mo) pays off in ~4 months. At >5K req/day, local almost always wins on pure cost.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "privacy",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Privacy Winner: SLM",
+                  "icon": "🔒",
+                  "details": "SLM wins unconditionally on privacy.\n\nCloud LLMs: your prompts are transmitted to external servers, processed in shared infrastructure, and logged for safety monitoring.\n\nLocal SLMs: data never leaves your machine or network perimeter. This is the only way to achieve HIPAA/GDPR compliance without a BAA, support air-gapped deployments, and guarantee zero data exfiltration.\n\nFor regulated industries (healthcare, finance, defence), local SLMs are often the only legal option.",
+                  "accentColor": "#8b5cf6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-decision-llm",
+                "source": "decision",
+                "target": "llm",
+                "label": "max capability",
+                "animated": false
+              },
+              {
+                "id": "e-decision-slm",
+                "source": "decision",
+                "target": "slm",
+                "label": "local control",
+                "animated": false
+              },
+              {
+                "id": "e-llm-params",
+                "source": "llm",
+                "target": "parameters",
+                "label": "70B–1T+",
+                "animated": false
+              },
+              {
+                "id": "e-slm-params",
+                "source": "slm",
+                "target": "parameters",
+                "label": "1B–13B",
+                "animated": false
+              },
+              {
+                "id": "e-params-deploy",
+                "source": "parameters",
+                "target": "deployment",
+                "label": "drives hardware",
+                "animated": true
+              },
+              {
+                "id": "e-deploy-latency",
+                "source": "deployment",
+                "target": "latency",
+                "label": "determines",
+                "animated": true
+              },
+              {
+                "id": "e-latency-cost",
+                "source": "latency",
+                "target": "cost",
+                "label": "tradeoff",
+                "animated": true
+              },
+              {
+                "id": "e-cost-privacy",
+                "source": "cost",
+                "target": "privacy",
+                "label": "SLM wins",
+                "animated": true
+              }
+            ]
+          }
         }
       ]
     },
@@ -408,6 +566,146 @@
             ],
             "reveal": "Option 3 is closest to correct. Every token generation passes through ALL layers — there's no skipping. The 5 CPU layers run sequentially on every forward pass, creating a bottleneck even though 35 layers are GPU-accelerated. In practice, 5 CPU layers in a 40-layer model reduces throughput by 60–80% vs full GPU. The correct approach: use a smaller model (7B Q4_K_M = 4.1GB) that fits entirely in 8GB VRAM."
           }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Inference Flow: Inside Ollama",
+          "content": {
+            "title": "Inference Pipeline — What Happens to Your Prompt",
+            "description": "Click each node to see what actually happens at each stage of inference inside Ollama/llama.cpp. Follow your prompt from text to tokens to response.",
+            "nodes": [
+              {
+                "id": "user-prompt",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "User Prompt",
+                  "icon": "💬",
+                  "details": "Input: plain text string\nExample: \"Explain transformers in one paragraph\"\n\nOllama receives this via POST /api/generate or POST /api/chat. The raw text is passed to the llama.cpp tokenizer. At this point it's just a string — no special processing yet.",
+                  "active": true,
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "tokenizer",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Tokenizer",
+                  "icon": "✂️",
+                  "details": "Converts text → token IDs using the model's vocabulary (BPE or SentencePiece)\n\nExample: \"Explain transformers in one paragraph\"\n→ [849, 15668, 18975, 297, 697, 14880]\n\n6 tokens for 5 words — common words like 'in' and 'one' are single tokens; less common words split into subwords. The vocabulary size determines tokenization efficiency (Llama 3 uses 128K vocab vs original Llama's 32K).",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "kv-cache",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "KV Cache Check",
+                  "icon": "🗄️",
+                  "details": "Checks if the attention keys and values for this token sequence are already cached from a previous request.\n\nCache HIT: skip re-computation for cached prefix tokens — major speed improvement for repeated system prompts\nCache MISS: compute attention K/V for all prompt tokens from scratch\n\nMemory cost: ~0.5 MB per 1K cached tokens for a 7B model. A 4K context window costs ~2MB of VRAM for KV cache. This is why context length is the second-biggest VRAM consumer after model weights.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "transformer-layers",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Transformer Layers",
+                  "icon": "🧠",
+                  "details": "The core computation — repeated for each transformer block (32 blocks in a 7B model):\n\n1. Self-attention: each token attends to all previous tokens via Q·Kᵀ/√d matrix multiply\n2. Feed-forward: 2-layer MLP applies learned transformations\n3. Residual + LayerNorm: stabilises training signal\n\nFor a Q4_K_M 7B model on RTX 4090: each forward pass takes ~15ms. Every generated token requires a full forward pass — so 100 tokens = 100 forward passes = ~1.5 seconds generation time.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "sampling",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Sampling (Logits → Token)",
+                  "icon": "🎲",
+                  "details": "The transformer outputs a logits vector (one float per vocabulary token, ~128K values for Llama 3).\n\nSampling converts logits to the next token:\n- Temperature (default 0.8): scales logits — lower = more deterministic\n- Top-p (nucleus): keeps the smallest set of tokens with cumulative probability ≥ p\n- Top-k: keeps the k most likely tokens\n\nExample: top-5 candidates for next token after 'Explain transformers':\n'as' (32%), 'in' (24%), 'the' (18%), 'briefly' (14%), 'using' (8%).\nWith temp=0.8, 'as' or 'in' most likely to be selected.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "detokenizer",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "De-tokenizer",
+                  "icon": "🔤",
+                  "details": "Converts the sampled token ID back to text and streams it to the client.\n\nExample: token ID 263 → ' transform'\n\nOllama streams each token as it's generated via Server-Sent Events (SSE). The client sees tokens arrive word-by-word, creating the typewriter effect. Generation stops when the model outputs the EOS (end-of-sequence) token or when max_tokens is reached.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "response",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Streamed Response",
+                  "icon": "✅",
+                  "details": "The final streamed text assembled from N generated tokens.\n\nOllama response format (POST /api/generate):\n{\"model\": \"llama3.2\", \"response\": \"Transformers are...\", \"done\": false}\n{\"model\": \"llama3.2\", \"response\": \" neural\", \"done\": false}\n...\n{\"model\": \"llama3.2\", \"response\": \"\", \"done\": true, \"total_duration\": 2341ms}\n\nThe eval_count in the final response tells you how many tokens were generated, so you can calculate actual tokens/sec.",
+                  "accentColor": "#8b5cf6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-prompt-tok",
+                "source": "user-prompt",
+                "target": "tokenizer",
+                "label": "raw text",
+                "animated": true
+              },
+              {
+                "id": "e-tok-kv",
+                "source": "tokenizer",
+                "target": "kv-cache",
+                "label": "token IDs",
+                "animated": true
+              },
+              {
+                "id": "e-kv-layers",
+                "source": "kv-cache",
+                "target": "transformer-layers",
+                "label": "cached K/V + tokens",
+                "animated": true
+              },
+              {
+                "id": "e-layers-sampling",
+                "source": "transformer-layers",
+                "target": "sampling",
+                "label": "logits (128K floats)",
+                "animated": true
+              },
+              {
+                "id": "e-sampling-detok",
+                "source": "sampling",
+                "target": "detokenizer",
+                "label": "next token ID",
+                "animated": true
+              },
+              {
+                "id": "e-detok-response",
+                "source": "detokenizer",
+                "target": "response",
+                "label": "streamed text",
+                "animated": true
+              },
+              {
+                "id": "e-response-kv",
+                "source": "response",
+                "target": "kv-cache",
+                "label": "append to cache",
+                "animated": false
+              }
+            ]
+          }
         }
       ]
     },
@@ -494,6 +792,103 @@
             ],
             "reveal": "Mistral 7B Q8_0 is correct. Structured extraction is NOT a complex reasoning task — it's pattern matching, which 7B models handle well. Q8_0 (7.7GB) fits easily in 16GB VRAM with room for context. Latency will be ~200ms for clinical note length inputs, well under 500ms. Llama 3 70B Q4_K_M (40GB) doesn't fit in 16GB. Phi-3 mini can do extraction but less reliably on clinical terminology. GPT-4o violates the on-prem requirement."
           }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Model Comparison: Pick the Right SLM",
+          "content": {
+            "title": "Which Ollama Model? — Interactive Comparison",
+            "description": "Click the decision node to explore how to choose between the four most popular SLMs available via Ollama. Each model has a different sweet spot — size, speed, and task fit.",
+            "nodes": [
+              {
+                "id": "which-model",
+                "type": "decision",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "Which model for your task?",
+                  "icon": "🤔",
+                  "details": "Four popular SLMs available via `ollama pull`. The right choice depends on your VRAM, task complexity, and whether you need multilingual support or deep code generation.\n\nCommand to pull any of these:\nollama pull llama3.2\nollama pull phi3.5\nollama pull mistral\nollama pull gemma2:2b",
+                  "active": true,
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "llama32",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "llama3.2 (3B)",
+                  "icon": "🦙",
+                  "details": "Size: 3B parameters (Q4_K_M: ~2GB VRAM)\nPull: ollama pull llama3.2\nSpeed: ~80 tokens/sec on M2 MacBook, ~120 t/s on RTX 4070\n\nBest for: General-purpose tasks, chat, summarisation, instruction following. Best balance of quality and speed for everyday use.\n\nStrengths: Meta's RLHF training makes it extremely instruction-compliant. Great for tool-calling, structured extraction, and conversational AI.\nWeakness: 3B parameters means knowledge gaps on niche topics. Not ideal for complex multi-step reasoning.",
+                  "accentColor": "#10b981"
+                }
+              },
+              {
+                "id": "phi35",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "phi3.5 (3.8B)",
+                  "icon": "🔷",
+                  "details": "Size: 3.8B parameters (Q4_K_M: ~2.4GB VRAM)\nPull: ollama pull phi3.5\nSpeed: ~70 tokens/sec on M2 MacBook, ~110 t/s on RTX 4070\n\nBest for: Code generation, reasoning, STEM tasks. Microsoft's Phi-3.5 punches far above its weight class on coding benchmarks (HumanEval: 78.6% vs Llama 3.2's 68%).\n\nStrengths: Trained heavily on code and synthetic reasoning data — outperforms larger models on coding tasks. Excellent for copilot-style features.\nWeakness: Less instruction-following fidelity than Llama 3.2 for open-ended chat. Multilingual support is weaker.",
+                  "accentColor": "#3b82f6"
+                }
+              },
+              {
+                "id": "mistral7b",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "mistral (7B)",
+                  "icon": "💨",
+                  "details": "Size: 7B parameters (Q4_K_M: ~4.1GB VRAM)\nPull: ollama pull mistral\nSpeed: ~45 tokens/sec on M2 MacBook, ~75 t/s on RTX 4070\n\nBest for: Multilingual tasks, balanced quality/speed production deployments. Sliding Window Attention enables efficient long-context processing.\n\nStrengths: Best-in-class multilingual support (French, German, Spanish, Italian, Portuguese). Excellent for document analysis, summarisation, and classification. Industry-standard model — most community fine-tunes target Mistral.\nWeakness: Larger VRAM requirement than 3B models. Needs at least 6GB VRAM for comfortable Q4_K_M operation.",
+                  "accentColor": "#f59e0b"
+                }
+              },
+              {
+                "id": "gemma2",
+                "type": "leaf",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "gemma2:2b (2B)",
+                  "icon": "💎",
+                  "details": "Size: 2B parameters (Q4_K_M: ~1.6GB VRAM)\nPull: ollama pull gemma2:2b\nSpeed: ~120 tokens/sec on M2 MacBook, ~180 t/s on RTX 4070\n\nBest for: Edge deployment, CI/CD pipelines, ultra-low-latency applications where <100ms TTFT is required. Smallest quality model that fits in 2GB VRAM.\n\nStrengths: Google DeepMind's architecture optimisation — despite 2B parameters, quality exceeds many older 7B models. Fastest of the four by a wide margin. Ideal for high-throughput batch processing.\nWeakness: Knowledge gaps on complex or specialised topics. Not suitable for multi-step reasoning chains or complex code generation.",
+                  "accentColor": "#ec4899"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-which-llama",
+                "source": "which-model",
+                "target": "llama32",
+                "label": "general purpose",
+                "animated": false
+              },
+              {
+                "id": "e-which-phi",
+                "source": "which-model",
+                "target": "phi35",
+                "label": "code & reasoning",
+                "animated": false
+              },
+              {
+                "id": "e-which-mistral",
+                "source": "which-model",
+                "target": "mistral7b",
+                "label": "multilingual",
+                "animated": false
+              },
+              {
+                "id": "e-which-gemma",
+                "source": "which-model",
+                "target": "gemma2",
+                "label": "ultra-fast / edge",
+                "animated": false
+              }
+            ]
+          }
         }
       ]
     },
@@ -578,6 +973,103 @@
               "Ollama uses a round-robin scheduler between users"
             ],
             "reveal": "Option 1 is correct for single-model Ollama (default config). Ollama processes one request at a time per loaded model. User B waits in queue. This is intentional — splitting GPU memory between concurrent generations would slow both. For true concurrency, use llama.cpp server with --parallel flag or vLLM (which uses PagedAttention for efficient KV cache sharing across concurrent requests)."
+          }
+        },
+        {
+          "sort_order": 5,
+          "section_type": "exploration",
+          "title": "Ollama Setup Pipeline",
+          "content": {
+            "title": "Ollama Setup — Step-by-Step Pipeline",
+            "description": "Click each step to see the exact commands and what happens at each stage. Follow this pipeline to go from zero to running local inference in under 5 minutes.",
+            "nodes": [
+              {
+                "id": "install",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "1. Install Ollama",
+                  "icon": "📥",
+                  "details": "One-line install for Linux/macOS:\ncurl -fsSL https://ollama.ai/install.sh | sh\n\nFor macOS with Homebrew:\nbrew install ollama\n\nFor Windows: Download installer from https://ollama.ai/download\n\nWhat it does: installs the ollama binary, sets up a systemd service (Linux), and configures the model storage directory (~/.ollama/models). After install, Ollama runs as a background daemon automatically.",
+                  "active": true,
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "pull",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "2. Pull a Model",
+                  "icon": "⬇️",
+                  "details": "Download a model from the Ollama registry:\nollama pull llama3.2\n\nOther popular models:\nollama pull phi3.5          # 3.8B, great for code\nollama pull mistral         # 7B, multilingual\nollama pull gemma2:2b       # 2B, ultra-fast\nollama pull codellama       # Code-specific\n\nModels are stored in ~/.ollama/models as GGUF files. Use `ollama list` to see downloaded models. Pull time depends on your internet speed — llama3.2 is ~2GB.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "serve",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "3. Start Server",
+                  "icon": "🚀",
+                  "details": "Start the Ollama API server:\nollama serve\n\nOr it may already be running as a daemon. Check:\ncurl http://localhost:11434\n# Returns: \"Ollama is running\"\n\nConfiguration via environment variables:\nOLLAMA_HOST=0.0.0.0:11434  # Listen on all interfaces\nOLLAMA_MODELS=/data/models  # Custom model directory\nOLLAMA_NUM_PARALLEL=2       # Concurrent requests\n\nThe server exposes a REST API compatible with OpenAI's format at http://localhost:11434.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "verify",
+                "type": "concept",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "4. Verify Health",
+                  "icon": "✅",
+                  "details": "Check the server is running and a model is loaded:\n\n# Health check\ncurl http://localhost:11434/api/health\n# Returns: {\"status\":\"ok\"}\n\n# List available models\ncurl http://localhost:11434/api/tags\n# Returns JSON with all pulled models\n\n# Check a specific model\nollama show llama3.2\n# Shows: parameters, template, modelfile\n\nIf the health check fails: check if ollama is running with `pgrep ollama` and restart with `ollama serve`.",
+                  "accentColor": "#8b5cf6"
+                }
+              },
+              {
+                "id": "inference",
+                "type": "outcome",
+                "position": { "x": 0, "y": 0 },
+                "data": {
+                  "label": "5. Run Inference",
+                  "icon": "🧠",
+                  "details": "Run inference three ways:\n\n# 1. CLI (interactive)\nollama run llama3.2 \"Hello, explain transformers briefly\"\n\n# 2. REST API (POST)\ncurl http://localhost:11434/api/generate \\\n  -d '{\"model\":\"llama3.2\",\"prompt\":\"Hello\",\"stream\":false}'\n\n# 3. OpenAI-compatible endpoint\ncurl http://localhost:11434/v1/chat/completions \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"model\":\"llama3.2\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'\n\nThe OpenAI-compatible endpoint means you can use any OpenAI SDK by just changing the base URL to http://localhost:11434/v1.",
+                  "accentColor": "#8b5cf6"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e-install-pull",
+                "source": "install",
+                "target": "pull",
+                "label": "ollama binary ready",
+                "animated": true
+              },
+              {
+                "id": "e-pull-serve",
+                "source": "pull",
+                "target": "serve",
+                "label": "model downloaded",
+                "animated": true
+              },
+              {
+                "id": "e-serve-verify",
+                "source": "serve",
+                "target": "verify",
+                "label": "port 11434 open",
+                "animated": true
+              },
+              {
+                "id": "e-verify-inference",
+                "source": "verify",
+                "target": "inference",
+                "label": "health check passed",
+                "animated": true
+              }
+            ]
           }
         }
       ]
