@@ -325,7 +325,7 @@ export default function PipelineDiagram({
       {completed ? (
         <div
           className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center"
-          style={{ backgroundColor: "var(--code-bg)" }}
+          style={{ backgroundColor: "var(--color-bg-card, var(--code-bg))" }}
         >
           <div className="text-4xl" role="img" aria-label="Pipeline complete">
             ✅
@@ -348,14 +348,18 @@ export default function PipelineDiagram({
           {/* SVG canvas */}
           <div
             className="w-full overflow-x-auto"
-            style={{ backgroundColor: "var(--code-bg)" }}
+            style={{ backgroundColor: "var(--color-bg-card, var(--code-bg))" }}
           >
             <svg
               ref={svgRef}
               width={svgWidth}
               height={svgHeight}
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              style={{ minWidth: svgWidth, display: "block" }}
+              style={{
+                minWidth: svgWidth,
+                display: "block",
+                backgroundColor: "var(--color-bg-card, transparent)",
+              }}
               role="img"
               aria-label="Pipeline diagram"
             >
